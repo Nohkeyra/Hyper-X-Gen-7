@@ -69,8 +69,8 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
 
       <button
         type="button"
-        className={`canvas-stage relative w-full h-auto max-w-[900px] aspect-square md:aspect-video group transition-all duration-700 rounded-sm overflow-hidden border-4 border-brandCharcoal dark:border-white/10 bg-zinc-200 dark:bg-zinc-900 shadow-[10px_10px_0px_0px_rgba(1,0,102,0.05)] dark:shadow-[10px_10px_0px_0px_rgba(204,0,1,0.05)] md:shadow-[20px_20px_0px_0px_rgba(1,0,102,0.05)] md:dark:shadow-[20px_20px_0px_0px_rgba(204,0,1,0.05)] ${
-          isProcessing ? 'border-brandRed shadow-[0_0_30px_rgba(204,0,1,0.15)]' : ''
+        className={`canvas-stage relative w-full h-auto max-w-[900px] aspect-square md:aspect-video group transition-all duration-700 rounded-sm overflow-hidden border-4 border-brandCharcoal dark:border-brandRed/50 bg-zinc-200 dark:bg-white shadow-[10px_10px_0px_0px_rgba(1,0,102,0.05)] dark:shadow-[10px_10px_0px_0px_rgba(204,0,1,0.2)] dark:shadow-neon-red-soft md:shadow-[20px_20px_0px_0px_rgba(1,0,102,0.05)] md:dark:shadow-[20px_20px_0px_0px_rgba(204,0,1,0.2)] md:dark:shadow-neon-red-soft ${
+          isProcessing ? 'border-brandRed dark:border-brandRed shadow-[0_0_30px_rgba(204,0,1,0.3)] dark:shadow-neon-red' : ''
         }`}
         onClick={handleClick}
         disabled={isProcessing}
@@ -151,7 +151,7 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
                 <BoxIcon className="w-8 h-8 md:w-10 md:h-10 text-brandRed opacity-40" />
               </div>
               <div className="space-y-1">
-                <span className="text-4xl xs:text-5xl lg:text-7xl font-black italic tracking-tighter uppercase text-brandCharcoal/10 dark:text-white/5 select-none block">VOID</span>
+                <span className="text-4xl xs:text-5xl lg:text-7xl font-black italic tracking-tighter uppercase text-brandCharcoal/10 dark:text-brandBlue/10 select-none block">VOID</span>
                 <p className="text-[8px] md:text-[9px] font-black text-brandRed/30 uppercase tracking-[0.4em] bg-black/40 px-3 py-1 rounded-full border border-brandRed/10">
                   Upload_Source_Image
                 </p>

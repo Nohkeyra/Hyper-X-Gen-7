@@ -1,5 +1,3 @@
-
-
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -28,12 +26,13 @@ export const DESIGN_FIDELITY_TOKENS = [
 
 /**
  * Injects design-focused fidelity tokens to ensure the model adheres to 
- * geometric and design-first construction rules.
+ * geometric and design-first construction rules. No duplicate tokens.
  */
 export function injectAntiCensor(prompt: string): string {
-  const token1 = DESIGN_FIDELITY_TOKENS[Math.floor(Math.random() * DESIGN_FIDELITY_TOKENS.length)];
-  const token2 = DESIGN_FIDELITY_TOKENS[Math.floor(Math.random() * DESIGN_FIDELITY_TOKENS.length)];
-  const token3 = DESIGN_FIDELITY_TOKENS[Math.floor(Math.random() * DESIGN_FIDELITY_TOKENS.length)];
+  // Shuffle a copy of the tokens
+  const shuffledTokens = [...DESIGN_FIDELITY_TOKENS].sort(() => Math.random() - 0.5);
+  // Pick first 3 unique tokens
+  const [token1, token2, token3] = shuffledTokens.slice(0, 3);
   
   return `${token1}, ${token2}, ${token3}, ${prompt}`;
 }

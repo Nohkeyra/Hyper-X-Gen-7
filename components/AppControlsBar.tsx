@@ -1,7 +1,7 @@
 
 import React, { useState, memo, useMemo } from 'react';
 import { PanelMode, CloudArchiveEntry } from '../types';
-import { VectorIcon, TypographyIcon, MonogramIcon, ExtractorIcon, FilterIcon, StarIcon, BoxIcon, PulseIcon } from './Icons'; 
+import { VectorIcon, TypographyIcon, MonogramIcon, ExtractorIcon, FilterIcon, StarIcon, BoxIcon, PulseIcon, TrashIcon } from './Icons'; 
 
 interface HistoryItem {
   id: string;
@@ -25,22 +25,22 @@ interface AppModeMenuProps {
 
 const AppModeMenu: React.FC<AppModeMenuProps> = memo(({ visibleModes, activeMode, onSwitchMode }) => {
   return (
-    <div className="flex-1 flex items-stretch border-r border-brandCharcoal dark:border-white/5 overflow-x-auto no-scrollbar mask-gradient-right">
+    <div className="flex-1 flex items-stretch border-r border-brandCharcoal dark:border-brandBlue/20 overflow-x-auto no-scrollbar mask-gradient-right">
       {visibleModes.map((m) => (
         <button 
           key={m.id} 
           onClick={() => onSwitchMode(m.id)} 
-          className={`px-3 md:px-5 flex flex-col md:flex-col items-center justify-center gap-1 md:gap-1.5 transition-all relative min-w-[60px] md:min-w-[80px] border-r border-brandCharcoal/5 dark:border-white/5
+          className={`px-3 md:px-5 flex flex-col md:flex-col items-center justify-center gap-1 md:gap-1.5 transition-all relative min-w-[60px] md:min-w-[80px] border-r border-brandCharcoal/5 dark:border-brandBlue/20
             ${activeMode === m.id 
-              ? 'bg-brandCharcoal dark:bg-zinc-900 text-brandRed' 
-              : 'text-brandCharcoalMuted dark:text-white/30 hover:bg-brandRed/5 hover:text-brandCharcoal dark:hover:text-white'
+              ? 'bg-brandCharcoal dark:bg-brandBlue text-brandRed dark:text-white' 
+              : 'text-brandCharcoalMuted dark:text-brandBlue hover:bg-brandRed/5 dark:hover:bg-brandBlue/10'
             }
           `}
         >
           <m.Icon className={`w-3.5 h-3.5 md:w-4 md:h-4 ${activeMode === m.id ? 'animate-pulse' : ''}`} />
           <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest leading-none">{m.label}</span>
           {activeMode === m.id && (
-            <div className="absolute top-0 left-0 right-0 h-0.5 md:h-1 bg-brandRed" />
+            <div className="absolute top-0 left-0 right-0 h-0.5 md:h-1 bg-brandRed dark:bg-white" />
           )}
         </button>
       ))}
@@ -60,6 +60,8 @@ interface AppControlsBarProps {
   onLoadHistoryItem?: (item: any) => void;
   onLoadCloudArchive?: (item: any) => void;
   onForceSave?: () => void;
+  onClearRecentWorks?: () => void;
+  onClearSavedPresets?: () => void;
   enabledModes?: PanelMode[];
 }
 
@@ -74,6 +76,8 @@ export const AppControlsBar: React.FC<AppControlsBarProps> = memo(({
   onLoadHistoryItem = (_item) => {},
   onLoadCloudArchive = (_item) => {},
   onForceSave = () => {},
+  onClearRecentWorks = () => {},
+  onClearSavedPresets = () => {},
   enabledModes = Object.values(PanelMode),
 }) => {
   const [activePanel, setActivePanel] = useState<'recent' | 'presets' | 'archives' | null>(null);
@@ -135,7 +139,7 @@ export const AppControlsBar: React.FC<AppControlsBarProps> = memo(({
   }, [allModes, enabledModes]);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 h-[var(--app-controls-bar-h)] bg-white dark:bg-brandDeep border-t-2 md:border-t-4 border-brandCharcoal dark:border-white/5 flex flex-row z-[120] shadow-[0_-10px_30px_rgba(0,0,0,0.1)] transition-colors duration-300">
+    <div className="fixed bottom-0 left-0 right-0 h-[var(--app-controls-bar-h)] bg-white dark:bg-brandYellow dark:text-brandBlue border-t-2 md:border-t-4 border-brandCharcoal dark:border-brandBlue/20 flex flex-row z-[120] shadow-[0_-10px_30px_rgba(0,0,0,0.1)] transition-colors duration-300 app-controls-bar-with-glow">
       <div className="w-full max-w-screen-2xl mx-auto flex flex-row h-full">
         <AppModeMenu 
           visibleModes={visibleModes} 
@@ -147,8 +151,8 @@ export const AppControlsBar: React.FC<AppControlsBarProps> = memo(({
           <div className="flex items-stretch">
             <button 
               onClick={() => togglePanel('recent')} 
-              className={`px-3 md:px-6 flex items-center justify-center gap-2 md:gap-3 text-[10px] font-black uppercase tracking-widest transition-all border-r border-brandCharcoal/10 dark:border-white/5
-                ${activePanel === 'recent' ? 'bg-brandRed text-white' : 'hover:bg-brandRed/5 dark:text-white/60'}
+              className={`px-3 md:px-6 flex items-center justify-center gap-2 md:gap-3 text-[10px] font-black uppercase tracking-widest transition-all border-r border-brandCharcoal/10 dark:border-brandBlue/20
+                ${activePanel === 'recent' ? 'bg-brandRed text-white dark:bg-brandBlue dark:text-white' : 'hover:bg-brandRed/5 dark:hover:bg-brandBlue/10'}
               `}
               title="History"
             >
@@ -158,8 +162,8 @@ export const AppControlsBar: React.FC<AppControlsBarProps> = memo(({
             </button>
             <button 
               onClick={() => togglePanel('presets')} 
-              className={`px-3 md:px-6 flex items-center justify-center gap-2 md:gap-3 text-[10px] font-black uppercase tracking-widest transition-all border-r border-brandCharcoal/10 dark:border-white/5
-                ${activePanel === 'presets' ? 'bg-brandYellow text-brandBlue' : 'hover:bg-brandYellow/10 dark:text-white/60'}
+              className={`px-3 md:px-6 flex items-center justify-center gap-2 md:gap-3 text-[10px] font-black uppercase tracking-widest transition-all border-r border-brandCharcoal/10 dark:border-brandBlue/20
+                ${activePanel === 'presets' ? 'bg-brandYellow text-brandBlue dark:bg-brandBlue dark:text-white' : 'hover:bg-brandYellow/10 dark:hover:bg-brandBlue/10'}
               `}
               title="Vault"
             >
@@ -169,12 +173,12 @@ export const AppControlsBar: React.FC<AppControlsBarProps> = memo(({
           </div>
 
           <div className="flex items-stretch">
-            <div className="flex items-center gap-2 md:gap-4 px-3 md:px-6 border-l border-brandCharcoal/10 dark:border-white/5">
+            <div className="flex items-center gap-2 md:gap-4 px-3 md:px-6 border-l border-brandCharcoal/10 dark:border-brandBlue/20">
               <div className="hidden lg:flex flex-col items-end">
-                <span className="text-[7px] font-black text-brandCharcoalMuted dark:text-white/20 uppercase tracking-[0.2em]">Kernel_Status</span>
+                <span className="text-[7px] font-black text-brandCharcoalMuted dark:text-brandBlue/50 uppercase tracking-[0.2em]">Kernel_Status</span>
                 <div className="flex items-center gap-2">
-                  <div className={`w-1.5 h-1.5 rounded-full ${isSaving ? 'bg-brandYellow animate-ping' : 'bg-brandYellow'}`} />
-                  <span className={`text-[9px] font-black uppercase ${isSaving ? 'text-brandYellow' : 'text-brandCharcoal dark:text-white/40'}`}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${isSaving ? 'bg-brandBlue animate-ping' : 'bg-brandBlue'}`} />
+                  <span className={`text-[9px] font-black uppercase ${isSaving ? 'text-brandBlue animate-pulse' : 'text-brandCharcoal dark:text-brandBlue'}`}>
                     {isSaving ? 'SYNC_ACTIVE' : 'IDLE'}
                   </span>
                 </div>
@@ -182,7 +186,7 @@ export const AppControlsBar: React.FC<AppControlsBarProps> = memo(({
               <button 
                 onClick={onForceSave} 
                 disabled={isSaving} 
-                className="px-2 md:px-4 py-1.5 md:py-2 bg-brandRed text-white text-[8px] md:text-[9px] font-black uppercase italic tracking-widest hover:bg-brandCharcoal dark:hover:bg-zinc-800 transition-all shadow-[2px_2px_0px_0px_rgba(204,0,1,0.3)] md:shadow-[4px_4px_0px_0px_rgba(204,0,1,0.3)] rounded-sm"
+                className="px-2 md:px-4 py-1.5 md:py-2 bg-brandRed text-white dark:bg-brandBlue dark:text-white dark:hover:bg-brandBlue/90 text-[8px] md:text-[9px] font-black uppercase italic tracking-widest hover:bg-brandCharcoal transition-all shadow-[2px_2px_0px_0px_rgba(204,0,1,0.3)] md:shadow-[4px_4px_0px_0px_rgba(204,0,1,0.3)] rounded-sm"
               >
                 <span className="hidden sm:inline">COMMIT</span>
                 <span className="sm:hidden">SAVE</span>
@@ -198,7 +202,19 @@ export const AppControlsBar: React.FC<AppControlsBarProps> = memo(({
             <h4 className="text-[9px] font-black uppercase tracking-[0.2em] italic">
               {activePanel === 'recent' ? 'SESSION_BUFFER' : 'STYLE_ARCHIVES'}
             </h4>
-            <button onClick={() => setActivePanel(null)} className="text-[9px] font-black uppercase p-2 -mr-2">✕</button>
+            <div className="flex items-center gap-2">
+              {activePanel === 'recent' && recentWorks.length > 0 && (
+                <button onClick={onClearRecentWorks} className="text-[8px] font-black uppercase hover:opacity-70 flex items-center gap-1 transition-opacity" title="Clear History">
+                  <TrashIcon className="w-3 h-3" /> CLEAR
+                </button>
+              )}
+              {activePanel === 'presets' && savedPresets.length > 0 && (
+                <button onClick={onClearSavedPresets} className="text-[8px] font-black uppercase hover:opacity-70 flex items-center gap-1 transition-opacity" title="Clear Vault">
+                  <TrashIcon className="w-3 h-3" /> CLEAR
+                </button>
+              )}
+              <button onClick={() => setActivePanel(null)} className="text-[9px] font-black uppercase p-2 -mr-2">✕</button>
+            </div>
           </div>
           <div className="overflow-y-auto custom-scrollbar flex-1 bg-brandNeutral dark:bg-brandDeep">
             {activePanel === 'recent' ? (

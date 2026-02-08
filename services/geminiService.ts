@@ -1,8 +1,17 @@
-
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
-import { ExtractionResult, KernelConfig, PanelMode, RealIssue } from "../types.ts";
+// FIX: MonogramPreset is defined in types.ts and should be imported from there.
+import { ExtractionResult, KernelConfig, PanelMode, RealIssue, TypographyPreset, MonogramPreset } from "../types.ts";
 import { injectAntiCensor } from '../utils/antiCensor.ts';
-import { GLOBAL_VECTOR_LOCK, GLOBAL_TYPO_LOCK, GLOBAL_MONO_LOCK } from '../presets/enginePrompts.ts';
+import { 
+    GLOBAL_VECTOR_LOCK, 
+    GLOBAL_TYPO_LOCK, 
+    GLOBAL_MONO_LOCK,
+    monogramPresets,
+    typographyPresets,
+    ENGINE_PROMPTS,
+    GLOBAL_STYLE_EXTRACTOR_LOCK,
+    injectPresetTokens
+} from '../presets/enginePrompts.ts';
 
 // Helper function to extract pure base64 data from a data URL
 function getPureBase64Data(dataUrl: string | null | undefined): string | null {
@@ -26,9 +35,10 @@ All operations must be geometric, precise, and deterministic.
 Maintain absolute architectural consistency across the lattice.`;
 
 const IMAGE_GEN_SYSTEM_DIRECTIVE = `You are a specialized image generation engine focused on geometric purity and industrial precision. Your output must be abstract, safe-for-work, and adhere to strict design principles.
-1. STRICT VISUAL ONLY: Render the visual geometry described. Do not include any text, labels, or metadata.
-2. HIGH CONTRAST & PRECISION: Prioritize sharp edges, mathematical accuracy, and clean vector aesthetics.
-3. CONTENT SAFETY LOCK: Generate only abstract geometric patterns, logos, typographic art, or technical illustrations. Strictly avoid generating photorealistic images, people, faces, or any potentially sensitive or controversial content. Adherence to this rule is mandatory.
+1. STRICT VISUAL ONLY: Render only the visual geometry described.
+2. NO TEXT RENDER: Your output must be a pure image. Absolutely do not render any text, including characters from the user's prompt or any words from these instructions. Use prompt text only as a reference for the geometric shape to create. The final image must contain zero text characters.
+3. HIGH CONTRAST & PRECISION: Prioritize sharp edges, mathematical accuracy, and clean vector aesthetics.
+4. CONTENT SAFETY LOCK: Generate only abstract geometric patterns, logos, typographic art, or technical illustrations. Strictly avoid generating photorealistic images, people, faces, or any potentially sensitive or controversial content. Adherence to this rule is mandatory.
 `;
 
 const FALLBACK_NAME_PARTS = {
@@ -117,42 +127,14 @@ function compileVisualPrompt(subject: string, mode: 'vector' | 'typo' | 'monogra
 
 export async function extractStyleFromImage(
   base64Image: string, 
-  config: KernelConfig = DEFAULT_CONFIG
+  config: KernelConfig = DEFAULT_CONFIG,
+  prompt: string
 ): Promise<ExtractionResult> {
   return reliableRequest(async () => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const dataOnly = getPureBase64Data(base64Image);
     if (!dataOnly) throw new Error("Empty buffer.");
     
-    const prompt = `[PROTOCOL: AUTONOMOUS_FORENSIC_AUDIT_V4]
-1.  DETECT "CENTER OF GRAVITY": Analyze this image and classify its dominant domain. Your response MUST be one of: 'Vector', 'Typography', or 'Monogram'.
-    - Monogram Logic: Trigger for distinct, overlapping characters with high spatial complexity.
-    - Typography Logic: Trigger for fluid, single-stroke lines or rhythmic handwriting.
-    - Vector Logic: Trigger for solid silhouettes, icons, or geometric shapes with no text-intent.
-
-2.  AUTONOMOUS EXTRACTION: Based on the detected domain, apply the corresponding precision parameters from FORENSIC_AUDIT_V3 and extract the style DNA.
-
-3.  GENERATE NAME, DESCRIPTION & CATEGORY: Populate the JSON response according to these rules:
-    - name: Generate a short, 2-word stylistic name for the extracted design signature (e.g., 'Apex_Grid', 'Kinetic_Handstyle'). The name MUST NOT include the detected domain ('Vector', 'Typography', 'Monogram') as a prefix.
-    - description: This field MUST contain a technical summary explaining why the specific domain was chosen and describing the resulting 1:1 style DNA.
-    - category: Generate a concise, descriptive category for the style (e.g., 'Geometric Core', 'Kinetic Typography', 'Urban Handstyle').
-    - styleAuthenticityScore: This must be 100.
-    - parameters.threshold: This must be 0.65.
-    - parameters.smoothing: This must be 0.40.
-
-[PROTOCOL: FORENSIC_AUDIT_V3]
-STRICT PARAMETER ENFORCEMENT:
-- THRESHOLD_FILTER: 0.65%.
-- JITTER_SMOOTHING: 0.40%.
-- STROKE_SKIN_LOCK: Maintain immutable "Skin" thickness.
-- AUTHENTICITY_TARGET: 100%.
-
-ISOLATION RULE:
-- IF domain is "Vector": Extract raw Bézier paths. Optimize for path efficiency and Bézier accuracy.
-- IF domain is "Monogram": Decode spatial hierarchy and Z-index layering. Map structural negative space intersections.
-- IF domain is "Typography": Extract "Skeleton" (pen path) and "Skin" (stroke pressure). Analyze terminal angles and stroke velocity.
-`;
-
     const systemInstruction = `${BASE_SYSTEM_DIRECTIVE}\nROLE: AUTONOMOUS_FORENSIC_AUTHENTICATOR.`;
     
     const response: GenerateContentResponse = await ai.models.generateContent({
@@ -346,12 +328,28 @@ export async function refineTextPrompt(
 ): Promise<string> {
   return reliableRequest(async () => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
+    let contents = `Refine: "${prompt}". DNA: ${dna?.name || 'none'}. Output only the refined string.`;
+    let systemInstruction = "Prompt Architect V5.2";
+    let temperature = 0.7;
+
+    if (mode === PanelMode.TYPOGRAPHY) {
+      systemInstruction = `You are an expert graffiti artist and typographer specializing in aggressive, high-energy styles. Your task is to rewrite a user's prompt to be extremely dynamic and infused with street art terminology.
+      - Keywords to use: wildstyle, razor-sharp edges, explosive energy, kinetic flow, chisel-tip calligraphy, fat cap, urban decay, aggressive interlocking forms, drips.
+      - The output MUST BE ONLY the refined prompt string. Do not add any conversational text, explanations, or quotes.`;
+      contents = `Rewrite for maximum aggression: "${prompt}"`;
+      temperature = 0.85; // Increase creativity for more aggressive styles
+    }
+
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Refine: "${prompt}". DNA: ${dna?.name || 'none'}. Output only the refined string.`,
-      config: { systemInstruction: "Prompt Architect V5.2", temperature: 0.7 }
+      contents: contents,
+      config: { 
+        systemInstruction: systemInstruction, 
+        temperature: temperature 
+      }
     });
-    return response.text || prompt;
+    return response.text?.replace(/"/g, '') || prompt;
   });
 }
 
@@ -399,3 +397,166 @@ export async function analyzeCodeForRefinements(code: string): Promise<RealIssue
     }
   });
 }
+
+// To use fs for saving, you'd need node types: npm i -D @types/node
+// import fs from 'fs'; 
+
+/**
+ * =================================================================================
+ * HYPERXGEN - BACKEND / GEMINI USAGE EXAMPLES
+ * =================================================================================
+ * This file serves as a backend/CLI usage example for the synthesis engine.
+ * It is not directly wired into the frontend application but demonstrates how to 
+ * programmatically call the synthesis services for each panel.
+ * 
+ * To run this example (requires ts-node and a .env file with GEMINI_API_KEY):
+ * > npx ts-node --esm services/geminiService.ts
+ * =================================================================================
+ */
+
+// --- SHARED CONFIGURATION ---
+
+const KERNEL_CONFIG: KernelConfig = {
+    thinkingBudget: 0,
+    temperature: 0.1,
+    model: 'gemini-3-flash-preview',
+    deviceContext: 'MAXIMUM_ARCHITECTURE_OMEGA_V5'
+};
+
+// A placeholder 1x1 black pixel PNG for image-based examples
+const PLACEHOLDER_IMAGE_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
+// --- EXAMPLE: MONOGRAM PANEL ---
+
+async function runMonogramSynthesisExample() {
+    console.log("\n--- [1/4] Starting Monogram Synthesis Example ---");
+    const selectedPresetName = 'Radial Fusion';
+    const userInitials = 'HXG';
+    const preset = monogramPresets.find(p => p.name === selectedPresetName);
+
+    if (!preset) {
+        console.error(`Error: Monogram Preset "${selectedPresetName}" not found.`);
+        return;
+    }
+
+    const textPrompt = `${preset.prompt}. The monogram should fuse the initials: ${userInitials}.`;
+    const extraDirectives = Object.entries(preset)
+        .filter(([key]) => !['name', 'prompt', 'directives'].includes(key))
+        .map(([key, value]) => `${key.replace(/([A-Z])/g, '_$1').toUpperCase()}: ${String(value).toUpperCase()}`)
+        .join('\n');
+
+    try {
+        console.log(`Requesting monogram with preset: ${preset.name}`);
+        const result = await synthesizeMonogramStyle(textPrompt, undefined, KERNEL_CONFIG, undefined, extraDirectives);
+        console.log('✅ Monogram Synthesis successful! (Output: base64 data URL)');
+    } catch (error) {
+        console.error('❌ Monogram Synthesis failed:', error);
+    }
+}
+
+// --- EXAMPLE: VECTOR PANEL ---
+
+async function runVectorSynthesisExample() {
+    console.log("\n--- [2/4] Starting Vector Synthesis Example ---");
+    const preset = ENGINE_PROMPTS.find(p => p.id === 'sig-vec-01'); // Omega Lattice Alpha
+    if (!preset) {
+        console.error('Error: Vector Preset "sig-vec-01" not found.');
+        return;
+    }
+
+    const textPrompt = `A complex, symmetrical logo for a quantum computing company. ${preset.prompt}`;
+    const extraDirectives = `
+      GEOMETRY_ENGINE: PRIMITIVES
+      PRIMITIVE_LOCK: ALL
+      NODE_COMPLEXITY: 8/10
+      STROKE_PARITY: MONOWEIGHT_ENFORCED
+      CORNER_RADIUS: 5%
+      ALIGNMENT_GRID: ISOMETRIC
+      NEGATIVE_SPACE_RATIO: 15%
+    `.trim();
+    
+    try {
+        console.log(`Requesting vector with preset: ${preset.name}`);
+        const result = await synthesizeVectorStyle(textPrompt, undefined, KERNEL_CONFIG, undefined, extraDirectives);
+        console.log('✅ Vector Synthesis successful! (Output: base64 data URL)');
+    } catch (error) {
+        console.error('❌ Vector Synthesis failed:', error);
+    }
+}
+
+// --- EXAMPLE: TYPOGRAPHY PANEL ---
+
+async function runTypoSynthesisExample() {
+    console.log("\n--- [3/4] Starting Typography Synthesis Example ---");
+    const presetName = "Urban Graffiti";
+    const preset = typographyPresets.find(p => p.name === presetName);
+    
+    if (!preset) {
+        console.error(`Error: Typography Preset "${presetName}" not found.`);
+        return;
+    }
+    
+    const textPrompt = `The word 'HYPERX' rendered in a ${injectPresetTokens(preset.prompt)}`;
+    const extraDirectives = `
+      CAP_HEIGHT: ${preset.capHeight}%
+      STROKE_CONTRAST: ${preset.strokeContrast}%
+      TERMINAL_LOGIC: ${preset.terminals.toUpperCase()}
+      FONT_WEIGHT: ${preset.weight.toUpperCase()}
+      SPLICING_INTENSITY: ${preset.splicingIntensity}%
+      INTERLOCK_GUTTER: ${preset.interlockGutter}px
+      X_HEIGHT_BIAS: ${preset.xHeightBias}%
+      LIGATURE_LOGIC: ${preset.ligatureThreshold.toUpperCase()}
+    `.trim();
+
+    try {
+        console.log(`Requesting typography with preset: ${preset.name}`);
+        const result = await synthesizeTypoStyle(textPrompt, undefined, KERNEL_CONFIG, undefined, extraDirectives);
+        console.log('✅ Typography Synthesis successful! (Output: base64 data URL)');
+    } catch (error) {
+        console.error('❌ Typography Synthesis failed:', error);
+    }
+}
+
+// --- EXAMPLE: STYLE EXTRACTOR PANEL ---
+
+async function runStyleExtractionExample() {
+    console.log("\n--- [4/4] Starting Style Extractor Example ---");
+    try {
+        console.log("Requesting style extraction from a placeholder image...");
+        const result = await extractStyleFromImage(PLACEHOLDER_IMAGE_BASE64, KERNEL_CONFIG, GLOBAL_STYLE_EXTRACTOR_LOCK);
+        console.log('✅ Style Extraction successful!');
+        console.log('Extracted DNA:', JSON.stringify(result, null, 2));
+    } catch (error) {
+        console.error('❌ Style Extraction failed:', error);
+    }
+}
+
+// --- MAIN EXECUTION ---
+
+async function runAllExamples() {
+    console.log("=================================================");
+    console.log("  HYPERXGEN BACKEND/GEMINI EXAMPLES");
+    console.log("=================================================");
+
+    await runMonogramSynthesisExample();
+    await runVectorSynthesisExample();
+    await runTypoSynthesisExample();
+    await runStyleExtractionExample();
+
+    console.log("\n--- All examples finished ---");
+}
+
+// Fix: Commented out Node.js-specific CLI execution logic that causes build errors in a browser environment.
+// This block is intended for backend/CLI testing only and is not part of the main application bundle.
+/*
+if (typeof process !== 'undefined' && process.env.GEMINI_API_KEY) {
+    if (process.env.GEMINI_API_KEY === 'PLACEHOLDER_API_KEY') {
+        console.error("\nERROR: GEMINI_API_KEY is a placeholder. Please create a .env file and set your API key.");
+    } else {
+       // Check if being run directly from node
+       if (typeof require !== 'undefined' && require.main === module) {
+          runAllExamples();
+       }
+    }
+}
+*/

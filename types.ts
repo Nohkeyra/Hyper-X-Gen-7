@@ -1,5 +1,4 @@
 
-
 export enum PanelMode {
   START = 'start',
   VECTOR = 'vector',
@@ -15,29 +14,50 @@ export interface KernelConfig {
   temperature: number;
   model: string;
   deviceContext: string;
-  // Removed precision?: 'MAX' | 'STD';
 }
-
-// export interface Message {
-//   id: string;
-//   role: 'user' | 'model';
-//   content: string;
-//   timestamp: string;
-//   isTrace?: boolean;
-//   groundingSources?: { title: string; uri: string }[];
-// }
 
 export interface PresetItem {
   id: string;
   name: string;
   description: string;
   type?: string;
-  parameters?: Record<string, number>;
+  parameters?: Record<string, any>;
   timestamp?: string;
   filter?: string;
   dna?: ExtractionResult;
   imageUrl?: string;
   prompt?: string;
+}
+
+export interface TypographyPreset {
+  name: string;
+  prompt: string;
+  description: string;
+  weight: "light" | "regular" | "bold" | "ultra";
+  terminals: "clipped" | "flare" | "rounded" | "spike" | "blunt";
+  capHeight: number;
+  strokeContrast: number;
+  splicingIntensity: number;
+  interlockGutter: number;
+  xHeightBias: number;
+  ligatureThreshold: "manual" | "auto" | "aggressive";
+}
+
+export interface MonogramPreset {
+  name: string;
+  prompt: string;
+  description: string;
+  layoutMode: 'interlocked' | 'stacked' | 'block' | 'mirrored';
+  initialCount: 1 | 2 | 3 | 4;
+  orientation: 'horizontal' | 'vertical' | 'diagonal';
+  intersectionGap: number;
+  autoWeave: boolean;
+  strokeWeight: 'hairline' | 'regular' | 'bold' | 'ultra';
+  terminalShape: 'sheared' | 'rounded' | 'blunt' | 'tapered';
+  cornerRadius: number;
+  aspectRatio: 'condensed' | 'normal' | 'expanded';
+  geoFrame: 'circle' | 'hexagon' | 'shield' | 'none';
+  opticalKerning: boolean;
 }
 
 export interface PresetCategory {
@@ -60,16 +80,14 @@ export interface ExtractionResult {
   name: string;
   description: string;
   confidence: number;
-  styleAuthenticityScore: number; // New: Quantifies how "100% legit" the detected style is.
+  styleAuthenticityScore: 100;
   palette: string[];
   parameters: {
     threshold: number;
     smoothing: number;
     detail: number;
     edge: number;
-    [key: string]: number;
   };
-  preview_png?: string;
 }
 
 export interface AppState {

@@ -240,9 +240,9 @@ export const RealRefineDiagnostic: React.FC<RealRefineDiagnosticProps> = ({
     return (
       <div className="fixed inset-0 z-[500] bg-brandNeutral dark:bg-brandDeep flex flex-col items-center justify-center">
         <div className="w-32 h-32 relative mb-8">
-          <div className="absolute inset-0 border-4 border-brandYellow/20 rounded-full" />
+          <div className="absolute inset-0 border-4 border-brandYellow/20 rounded-full dark:drop-shadow-neon-yellow" />
           <div 
-            className="absolute inset-0 border-4 border-brandYellow border-t-transparent rounded-full animate-spin"
+            className="absolute inset-0 border-4 border-brandYellow border-t-transparent rounded-full animate-spin dark:drop-shadow-neon-yellow"
             style={{ animationDuration: '1.5s' }}
           />
           <div className="absolute inset-0 flex items-center justify-center">
@@ -251,7 +251,7 @@ export const RealRefineDiagnostic: React.FC<RealRefineDiagnosticProps> = ({
         </div>
         
         <div className="text-center space-y-4">
-          <h2 className="text-xl font-black uppercase tracking-widest text-brandYellow">
+          <h2 className="text-xl font-black uppercase tracking-widest text-brandYellow dark:drop-shadow-neon-yellow">
             Scanning Real Codebase
           </h2>
           <p className="text-brandCharcoalMuted dark:text-white/70 max-w-md">

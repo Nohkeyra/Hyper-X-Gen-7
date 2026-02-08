@@ -22,14 +22,14 @@ interface CardPalette {
 }
 
 const PALETTES: CardPalette[] = [
-  { bgColor: "bg-brandYellow", textColor: "text-brandBlue", accentColor: "bg-brandBlue/10", shadowColor: "#010066", darkBgColor: "dark:bg-zinc-800", darkTextColor: "dark:text-brandYellow", darkAccentColor: "dark:bg-brandYellow/10" },
-  { bgColor: "bg-brandBlue", textColor: "text-brandYellow", accentColor: "bg-brandYellow/10", shadowColor: "#FFCC00", darkBgColor: "dark:bg-zinc-800", darkTextColor: "dark:text-brandYellow", darkAccentColor: "dark:bg-brandYellow/10" },
-  { bgColor: "bg-white", textColor: "text-brandRed", accentColor: "bg-brandRed/10", shadowColor: "#CC0001", darkBgColor: "dark:bg-zinc-800", darkTextColor: "dark:text-brandRed", darkAccentColor: "dark:bg-brandRed/10" },
-  { bgColor: "bg-brandRed", textColor: "text-white", accentColor: "bg-white/10", shadowColor: "#010066", darkBgColor: "dark:bg-zinc-900", darkTextColor: "dark:text-white", darkAccentColor: "dark:bg-white/10" },
-  { bgColor: "bg-white", textColor: "text-brandBlue", accentColor: "bg-brandBlue/10", shadowColor: "#CC0001", darkBgColor: "dark:bg-zinc-800", darkTextColor: "dark:text-brandRed", darkAccentColor: "dark:bg-brandRed/10" },
-  { bgColor: "bg-brandBlue", textColor: "text-white", accentColor: "bg-white/10", shadowColor: "#010066", darkBgColor: "dark:bg-zinc-900", darkTextColor: "dark:text-white", darkAccentColor: "dark:bg-white/10" },
-  { bgColor: "bg-brandRed", textColor: "text-brandYellow", accentColor: "bg-brandYellow/10", shadowColor: "#FFCC00", darkBgColor: "dark:bg-zinc-900", darkTextColor: "dark:text-brandYellow", darkAccentColor: "dark:bg-brandYellow/10" },
-  { bgColor: "bg-brandYellow", textColor: "text-brandRed", accentColor: "bg-brandRed/10", shadowColor: "#CC0001", darkBgColor: "dark:bg-zinc-800", darkTextColor: "dark:text-brandRed", darkAccentColor: "dark:bg-brandRed/10" },
+  { bgColor: "bg-brandYellow", textColor: "text-brandBlue", accentColor: "bg-brandBlue/10", shadowColor: "#010066", darkBgColor: "dark:bg-brandYellow", darkTextColor: "dark:text-brandBlue", darkAccentColor: "dark:bg-brandBlue/10" },
+  { bgColor: "bg-brandRed", textColor: "text-white", accentColor: "bg-white/10", shadowColor: "#010066", darkBgColor: "dark:bg-brandRed", darkTextColor: "dark:text-white", darkAccentColor: "dark:bg-white/10" },
+  { bgColor: "bg-brandBlue", textColor: "text-brandYellow", accentColor: "bg-brandYellow/10", shadowColor: "#FFCC00", darkBgColor: "dark:bg-brandBlue", darkTextColor: "dark:text-brandYellow", darkAccentColor: "dark:bg-brandYellow/10" },
+  { bgColor: "bg-white", textColor: "text-brandRed", accentColor: "bg-brandRed/10", shadowColor: "#CC0001", darkBgColor: "dark:bg-white", darkTextColor: "dark:text-brandRed", darkAccentColor: "dark:bg-brandRed/10" },
+  { bgColor: "bg-brandRed", textColor: "text-brandYellow", accentColor: "bg-brandYellow/10", shadowColor: "#FFCC00", darkBgColor: "dark:bg-brandRed", darkTextColor: "dark:text-brandYellow", darkAccentColor: "dark:bg-brandYellow/10" },
+  { bgColor: "bg-brandBlue", textColor: "text-white", accentColor: "bg-white/10", shadowColor: "#FFCC00", darkBgColor: "dark:bg-brandBlue", darkTextColor: "dark:text-white", darkAccentColor: "dark:bg-white/10" },
+  { bgColor: "bg-white", textColor: "text-brandBlue", accentColor: "bg-brandBlue/10", shadowColor: "#010066", darkBgColor: "dark:bg-white", darkTextColor: "dark:text-brandBlue", darkAccentColor: "dark:bg-brandBlue/10" },
+  { bgColor: "bg-brandYellow", textColor: "text-brandRed", accentColor: "bg-brandRed/10", shadowColor: "#CC0001", darkBgColor: "dark:bg-brandYellow", darkTextColor: "dark:text-brandRed", darkAccentColor: "dark:bg-brandRed/10" },
 ];
 
 function shuffle<T>(array: T[]): T[] {
@@ -45,12 +45,12 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onSelectMode = (_mode)
   const shuffledPalettes = useMemo(() => shuffle(PALETTES), []);
 
   const allCardConfigs = useMemo(() => [
-    { title: "Vector", subtitle: "Geometric synth", Icon: VectorIcon, mode: PanelMode.VECTOR },
-    { title: "Extract", subtitle: "Style thief", Icon: ExtractorIcon, mode: PanelMode.EXTRACTOR },
-    { title: "Mono", subtitle: "Visual core", Icon: MonogramIcon, mode: PanelMode.MONOGRAM },
-    { title: "Filter", subtitle: "Spectral unit", Icon: FilterIcon, mode: PanelMode.FILTERS },
-    { title: "Typo", subtitle: "Kinetic engine", Icon: TypographyIcon, mode: PanelMode.TYPOGRAPHY },
-    { title: "Audit", subtitle: "Compliance", Icon: PulseIcon, mode: PanelMode.AUDIT }
+    { title: "Vector", subtitle: "Geometric synth", Icon: VectorIcon, mode: PanelMode.VECTOR, borderColor: 'border-brandYellow', darkBorderColor: 'dark:border-brandYellow' },
+    { title: "Extract", subtitle: "Style thief", Icon: ExtractorIcon, mode: PanelMode.EXTRACTOR, borderColor: 'border-brandBlue', darkBorderColor: 'dark:border-brandBlue' },
+    { title: "Mono", subtitle: "Visual core", Icon: MonogramIcon, mode: PanelMode.MONOGRAM, borderColor: 'border-brandYellow', darkBorderColor: 'dark:border-brandYellow' },
+    { title: "Filter", subtitle: "Spectral unit", Icon: FilterIcon, mode: PanelMode.FILTERS, borderColor: 'border-brandRed', darkBorderColor: 'dark:border-brandRed' },
+    { title: "Typo", subtitle: "Kinetic engine", Icon: TypographyIcon, mode: PanelMode.TYPOGRAPHY, borderColor: 'border-brandBlue', darkBorderColor: 'dark:border-brandBlue' },
+    { title: "Audit", subtitle: "Compliance", Icon: PulseIcon, mode: PanelMode.AUDIT, borderColor: 'border-brandRed', darkBorderColor: 'dark:border-brandRed' }
   ], []);
 
   const visibleCardConfigs = useMemo(() => {
@@ -90,6 +90,8 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onSelectMode = (_mode)
               subtitle={config.subtitle} 
               Icon={config.Icon} 
               onClick={() => onSelectMode(config.mode)}
+              borderColor={config.borderColor}
+              darkBorderColor={config.darkBorderColor}
               {...shuffledPalettes[index % shuffledPalettes.length]}
             />
           ))}
@@ -99,30 +101,49 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onSelectMode = (_mode)
   );
 };
 
-const ModeCard = ({ title, subtitle, onClick, Icon, bgColor, textColor, accentColor, shadowColor, darkBgColor, darkTextColor, darkAccentColor }: any) => (
-  <button 
-    onClick={onClick} 
-    className={`relative group p-3 md:p-8 flex flex-col justify-between text-left transition-all duration-500 border-2 md:border-4 rounded-sm h-32 md:h-64 overflow-hidden
-      ${bgColor} ${textColor} ${darkBgColor || 'dark:bg-zinc-900'} ${darkTextColor || 'dark:text-white'} 
-      border-brandBlue dark:border-white/10 hover:-translate-x-1 hover:-translate-y-1 md:hover:-translate-x-1.5 md:hover:-translate-y-1.5 active:translate-x-0 active:translate-y-0 active:shadow-none
-      dark:hover:shadow-[0_0_30px_rgba(204,0,1,0.2)]`}
-    style={{ 
-      boxShadow: `4px 4px 0px 0px ${shadowColor}`,
-    }}
-  >
-    <div className={`absolute top-0 right-0 w-16 h-16 md:w-32 md:h-32 -mr-6 -mt-6 md:-mr-12 md:-mt-12 rounded-full blur-2xl md:blur-3xl opacity-50 group-hover:scale-150 transition-transform duration-1000
-      ${accentColor} ${darkAccentColor || 'dark:bg-brandRed/5'}
-    `}></div>
-    
-    <div className="absolute top-2 right-2 md:top-6 md:right-6 transition-all duration-500 transform group-hover:scale-110 group-hover:rotate-12 opacity-30">
-      <Icon className={`w-6 h-6 md:w-14 md:h-14 ${textColor} ${darkTextColor || 'dark:text-white'}`} />
-    </div>
+const ModeCard = ({ title, subtitle, onClick, Icon, bgColor, textColor, accentColor, shadowColor, darkBgColor, darkTextColor, darkAccentColor, borderColor, darkBorderColor }: any) => {
+  const shadowClasses = useMemo(() => {
+    let base = '';
+    let neon = '';
+    switch (shadowColor) {
+      case '#CC0001':
+        base = 'shadow-[4px_4px_0px_0px_#CC0001]';
+        neon = 'dark:shadow-neon-red-soft';
+        break;
+      case '#FFCC00':
+        base = 'shadow-[4px_4px_0px_0px_#FFCC00]';
+        neon = 'dark:shadow-neon-yellow-soft';
+        break;
+      case '#010066':
+        base = 'shadow-[4px_4px_0px_0px_#010066]';
+        neon = 'dark:shadow-neon-blue-soft';
+        break;
+    }
+    return `${base} ${neon}`;
+  }, [shadowColor]);
 
-    <div className="relative z-10 space-y-1 md:space-y-3">
-      <h3 className={`text-xl md:text-4xl font-black uppercase italic tracking-tighter leading-none ${textColor} ${darkTextColor || 'dark:text-white'}`}>{title}</h3>
-      <div className={`h-1 md:h-1.5 w-6 md:w-12 bg-current group-hover:w-full transition-all duration-500`} />
-    </div>
-    
-    <p className={`relative z-10 text-[7px] md:text-[10px] font-black uppercase tracking-[0.1em] md:tracking-[0.25em] opacity-80 leading-tight pr-2 md:pr-10 ${textColor} ${darkTextColor || 'dark:text-white/80'}`}>{subtitle}</p>
-  </button>
-);
+  return (
+    <button 
+      onClick={onClick} 
+      className={`relative group p-3 md:p-8 flex flex-col justify-between text-left transition-all duration-500 border-2 md:border-4 rounded-sm h-32 md:h-64 overflow-hidden
+        ${bgColor} ${textColor} ${darkBgColor || 'dark:bg-zinc-900'} ${darkTextColor || 'dark:text-white'} 
+        ${borderColor} ${darkBorderColor} hover:-translate-x-1 hover:-translate-y-1 md:hover:-translate-x-1.5 md:hover:-translate-y-1.5 active:translate-x-0 active:translate-y-0 active:shadow-none
+        ${shadowClasses}`}
+    >
+      <div className={`absolute top-0 right-0 w-16 h-16 md:w-32 md:h-32 -mr-6 -mt-6 md:-mr-12 md:-mt-12 rounded-full blur-2xl md:blur-3xl opacity-50 group-hover:scale-150 transition-transform duration-1000
+        ${accentColor} ${darkAccentColor || 'dark:bg-brandRed/5'}
+      `}></div>
+      
+      <div className="absolute top-2 right-2 md:top-6 md:right-6 transition-all duration-500 transform group-hover:scale-110 group-hover:rotate-12 opacity-30">
+        <Icon className={`w-6 h-6 md:w-14 md:h-14 ${textColor} ${darkTextColor || 'dark:text-white'}`} />
+      </div>
+
+      <div className="relative z-10 space-y-1 md:space-y-3">
+        <h3 className={`text-xl md:text-4xl font-black uppercase italic tracking-tighter leading-none ${textColor} ${darkTextColor || 'dark:text-white'}`}>{title}</h3>
+        <div className={`h-1 md:h-1.5 w-6 md:w-12 bg-current group-hover:w-full transition-all duration-500`} />
+      </div>
+      
+      <p className={`relative z-10 text-[7px] md:text-[10px] font-black uppercase tracking-[0.1em] md:tracking-[0.25em] opacity-80 leading-tight pr-2 md:pr-10 ${textColor} ${darkTextColor || 'dark:text-white/80'}`}>{subtitle}</p>
+    </button>
+  );
+};

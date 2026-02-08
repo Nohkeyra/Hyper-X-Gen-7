@@ -1,5 +1,4 @@
 
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -33,11 +32,11 @@
 }
 
 .dark {
-  --color-primary-bg: #080a18;
-  --color-secondary-bg: #080a18;
-  --color-text-primary: #e0e0e0;
-  --color-text-secondary: rgba(224, 224, 224, 0.7);
-  --color-text-soft: rgba(224, 224, 224, 0.5);
+  --color-primary-bg: #0D0D0D;      /* Neutral dark charcoal for main background */
+  --color-secondary-bg: #141419;    /* Dark slate for panels and layers */
+  --color-text-primary: #F0F0F0;    /* Off-white for primary text to reduce harshness */
+  --color-text-secondary: #A0A0A0;  /* Opaque medium gray for secondary text, passes AAA */
+  --color-text-soft: #888888;       /* Opaque lighter gray for soft text, passes AA */
   
   --glitch-color: rgba(204, 0, 1, 0.1);
 }
@@ -152,4 +151,29 @@ body {
 /* Text Mask for Right Fade (Carousel) */
 .mask-gradient-right {
   mask-image: linear-gradient(to right, black 85%, transparent 100%);
+}
+
+/* Added for neon glow effects in dark mode */
+.dark .panel-header-with-glow::after {
+  content: '';
+  position: absolute;
+  bottom: -2px; /* header is at top, so this applies to its bottom edge */
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #CC0001;
+  box-shadow: 0 0 8px #CC0001, 0 0 15px #CC0001;
+  opacity: 0.7;
+}
+
+.dark .app-controls-bar-with-glow::before {
+  content: '';
+  position: absolute;
+  top: -2px; /* controls bar is at bottom, so this applies to its top edge */
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #FFCC00;
+  box-shadow: 0 0 8px #FFCC00, 0 0 15px #FFCC00;
+  opacity: 0.7;
 }

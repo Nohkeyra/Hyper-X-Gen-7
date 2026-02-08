@@ -45,7 +45,6 @@ export const ReconHUD: React.FC<{ reconStatus: string; authenticityScore?: numbe
   </div>
 );
 
-// Fix: Add FilterHUD component and export it
 export const FilterHUD: React.FC<{ filterStatus: string }> = ({ filterStatus }) => (
   <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 px-8 py-2.5 bg-brandCharcoal/80 rounded-full backdrop-blur-md border border-brandRed/40 shadow-[0_0_20px_rgba(253,30,74,0.4)]">
     <div className="text-[10px] font-black uppercase text-brandRed tracking-[0.5em] animate-pulse drop-shadow-[0_0_8px_rgba(253,30,74,0.8)]">

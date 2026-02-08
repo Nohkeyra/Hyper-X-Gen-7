@@ -129,6 +129,67 @@ Built with React, TypeScript, and wrapped for Android using Capacitor.
 4. Sync to Android: `npx cap sync android`
 5. Rebuild APK
 
+### 💻 API Usage Example
+
+Here's an example of how to programmatically generate a monogram using a preset and custom initials. This code would typically reside within a component or service file.
+
+```typescript
+import { monogramPresets, MonogramPreset } from './presets/enginePrompts.ts';
+import { synthesizeMonogramStyle } from './services/geminiService.ts';
+import { KernelConfig } from './types.ts';
+
+// Assume you have a base64 encoded image string for reference (optional)
+const uploadedImageBase64 = 'data:image/png;base64,iVBORw0KGgo...'; 
+const kernelConfig: KernelConfig = {
+  thinkingBudget: 0,
+  temperature: 0.1,
+  model: 'gemini-3-flash-preview',
+  deviceContext: 'MAXIMUM_ARCHITECTURE_OMEGA_V5'
+};
+
+const selectedPresetName = 'Radial Fusion';
+const preset: MonogramPreset | undefined = monogramPresets.find(p => p.name === selectedPresetName);
+
+if (!preset) {
+  throw new Error('Preset not found');
+}
+
+const userInitials = 'HXG';
+
+// Combine the preset's prompt with the user's input
+const textPrompt = `${preset.prompt}. The monogram should incorporate the initials: ${userInitials}.`;
+
+// Construct the directives string from the preset parameters
+const extraDirectives = `
+  ${preset.directives}
+  LAYOUT_MODE: ${preset.layoutMode.toUpperCase()}
+  CHARACTER_COUNT: ${preset.initialCount}
+  ORIENTATION: ${preset.orientation.toUpperCase()}
+  INTERSECTION_GAP: ${preset.intersectionGap}%
+  AUTO_WEAVE: ${preset.autoWeave ? 'ENABLED' : 'DISABLED'}
+  STROKE_WEIGHT: ${preset.strokeWeight.toUpperCase()}
+  TERMINAL_SHAPE: ${preset.terminalShape.toUpperCase()}
+  CORNER_RADIUS: ${preset.cornerRadius}%
+  ASPECT_RATIO: ${preset.aspectRatio.toUpperCase()}
+  GEOMETRIC_FRAME: ${preset.geoFrame.toUpperCase()}
+  OPTICAL_KERNING: ${preset.opticalKerning ? 'ENABLED' : 'DISABLED'}
+`.trim();
+
+
+// Call the synthesis function
+synthesizeMonogramStyle(
+  textPrompt,
+  uploadedImageBase64,
+  kernelConfig,
+  undefined, // No DNA provided in this example
+  extraDirectives
+).then(generatedImage => {
+  console.log('Generated Monogram Image URL:', generatedImage);
+}).catch(error => {
+  console.error('Monogram synthesis failed:', error);
+});
+```
+
 ### Update Android Configuration
 - **App Name:** Edit `android/app/src/main/res/values/strings.xml`
 - **Package Name:** Edit `android/app/build.gradle` and `AndroidManifest.xml`

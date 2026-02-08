@@ -28,6 +28,19 @@ module.exports = {
         '56px': '56px',
         '64px': '64px',
       },
+      boxShadow: {
+        'neon-red': '0 0 5px rgba(204,0,1,0.7), 0 0 10px rgba(204,0,1,0.7), 0 0 20px rgba(204,0,1,0.7)',
+        'neon-yellow': '0 0 5px rgba(255,204,0,0.7), 0 0 10px rgba(255,204,0,0.7), 0 0 20px rgba(255,204,0,0.7)',
+        'neon-blue': '0 0 5px rgba(1,0,102,0.7), 0 0 10px rgba(1,0,102,0.7), 0 0 20px rgba(1,0,102,0.7)',
+        'neon-red-soft': '0 0 8px rgba(204,0,1,0.5), 0 0 15px rgba(204,0,1,0.4)',
+        'neon-yellow-soft': '0 0 8px rgba(255,204,0,0.5), 0 0 15px rgba(255,204,0,0.4)',
+        'neon-blue-soft': '0 0 8px rgba(1,0,102,0.5), 0 0 15px rgba(1,0,102,0.4)',
+      },
+      dropShadow: {
+        'neon-red': '0 0 8px rgba(204, 0, 1, 0.9)',
+        'neon-yellow': '0 0 8px rgba(255, 204, 0, 0.9)',
+        'neon-blue': '0 0 8px rgba(1, 0, 102, 0.9)',
+      },
       keyframes: {
         'fade-in': { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
         'slide-in-up': { '0%': { transform: 'translateY(10px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },

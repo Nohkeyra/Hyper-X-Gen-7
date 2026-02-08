@@ -1,6 +1,5 @@
-
 import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react';
-import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, LogEntry } from '../types.ts';
+import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, TypographyPreset } from '../types.ts';
 import { PRESET_REGISTRY } from '../presets/index.ts';
 import { synthesizeTypoStyle, refineTextPrompt } from '../services/geminiService.ts';
 import { useDevourer } from '../hooks/useDevourer.ts';
@@ -20,9 +19,7 @@ interface TypographyPanelProps {
   uiRefined?: boolean;
   onSaveToHistory: (work: any) => void;
   onModeSwitch: (mode: PanelMode, data?: any) => void;
-  onSetGlobalDna?: (dna: ExtractionResult | null) => void;
   savedPresets: any[];
-  globalDna?: ExtractionResult | null;
   onStateUpdate?: (state: any) => void;
   addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
 }
@@ -39,16 +36,12 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
   uiRefined,
   onSaveToHistory,
   onModeSwitch,
-  onSetGlobalDna,
   savedPresets = [],
-  globalDna,
   onStateUpdate,
   addLog
 }) => {
   const PRESETS = useMemo(() => {
-    let presetsToRender: PresetCategory[] = [
-      ...PRESET_REGISTRY.TYPOGRAPHY.libraries
-    ];
+    let presetsToRender: PresetCategory[] = [...PRESET_REGISTRY.TYPOGRAPHY.libraries];
 
     if (Array.isArray(savedPresets)) {
       const userPresets = savedPresets.filter(p => p && (p.type === PanelMode.TYPOGRAPHY || p.mode === PanelMode.TYPOGRAPHY));
@@ -73,7 +66,7 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
     return presetsToRender;
   }, [savedPresets]);
 
-  const { status, isProcessing, transition } = useDevourer(initialData?.dna || globalDna ? 'DNA_LINKED' : 'STARVING');
+  const { status, isProcessing, transition } = useDevourer(initialData?.dna ? 'DNA_LINKED' : 'STARVING');
   
   // --- Architecture States ---
   const [capHeight, setCapHeight] = useState<number>(100);
@@ -81,8 +74,8 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
   const [terminalLogic, setTerminalLogic] = useState<TerminalLogic>('clipped');
   const [fontWeight, setFontWeight] = useState<FontWeight>('regular');
   const [splicingIntensity, setSplicingIntensity] = useState<number>(20);
-  const [interlockGutter, setInterlockGutter] = useState<number>(2);
-  const [xHeightBias, setXHeightBias] = useState<number>(50);
+  const [interlockGutter, setInterlockGutter] = useState<number>(10);
+  const [xHeightBias, setXHeightBias] = useState<number>(100);
   const [ligatureLogic, setLigatureLogic] = useState<LigatureLogic>('auto');
 
   const [activePresetId, setActivePresetId] = useState<string | null>(initialData?.id || null);
@@ -91,7 +84,7 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
   const [prompt, setPrompt] = useState(''); 
   const [isRefining, setIsRefining] = useState(false);
   const [generatedOutput, setGeneratedOutput] = useState<string | null>(initialData?.generatedOutput || null);
-  const [dna, setDna] = useState<ExtractionResult | null>(initialData?.dna || globalDna || null);
+  const [dna, setDna] = useState<ExtractionResult | null>(initialData?.dna || null);
   const [isValidationError, setIsValidationError] = useState(false);
   const processingRef = useRef(false);
 
@@ -103,42 +96,54 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
       uploadedImage,
       dna,
       name: prompt || "Typography Synthesis",
-      settings: {
-        capHeight, strokeContrast, terminalLogic, fontWeight, splicingIntensity, interlockGutter, xHeightBias, ligatureLogic,
-      }
+      settings: { capHeight, strokeContrast, terminalLogic, fontWeight, splicingIntensity, interlockGutter, xHeightBias, ligatureLogic }
     });
-  }, [
-    onStateUpdate, prompt, generatedOutput, uploadedImage, dna,
-    capHeight, strokeContrast, terminalLogic, fontWeight, splicingIntensity, interlockGutter, xHeightBias, ligatureLogic
-  ]);
-
-  useEffect(() => {
-    if (globalDna && dna?.name !== globalDna.name) { 
-      setDna(globalDna); 
-      transition("DNA_LINKED"); 
-    }
-  }, [globalDna, dna, transition]);
+  }, [onStateUpdate, prompt, generatedOutput, uploadedImage, dna, capHeight, strokeContrast, terminalLogic, fontWeight, splicingIntensity, interlockGutter, xHeightBias, ligatureLogic]);
 
   const handleSelectPreset = useCallback((id: string) => {
     if (isProcessing) return;
+
     if (activePresetId === id) {
       setActivePresetId(null);
       setActivePreset(null);
-      onSetGlobalDna?.(null); // Clear anchor on deselect
+      setPrompt(''); // Clear prompt
+      setDna(null);
       return;
     }
+
     setActivePresetId(id);
     const item = PRESETS.flatMap(c => c.items).find(i => i.id === id);
-    if (item) {
-      setActivePreset(item);
-      if (item.dna) { 
-        setDna(item.dna); 
-        transition("DNA_LINKED"); 
-        onSetGlobalDna?.(item.dna); // Auto-anchor DNA
-      }
-      if ((item as any).imageUrl) setUploadedImage((item as any).imageUrl);
+    if (!item) return;
+
+    setActivePreset(item);
+
+    // Apply preset parameters
+    if (item.parameters) {
+      const presetParams = item.parameters as unknown as TypographyPreset;
+      setFontWeight(presetParams.weight.toLowerCase() as FontWeight);
+      setTerminalLogic(presetParams.terminals.toLowerCase() as TerminalLogic);
+      setCapHeight(presetParams.capHeight);
+      setStrokeContrast(presetParams.strokeContrast);
+      setSplicingIntensity(presetParams.splicingIntensity);
+      setInterlockGutter(presetParams.interlockGutter);
+      setXHeightBias(presetParams.xHeightBias);
+      setLigatureLogic(presetParams.ligatureThreshold.toLowerCase() as LigatureLogic);
     }
-  }, [PRESETS, isProcessing, transition, activePresetId, onSetGlobalDna]);
+
+    // Inject DNA if exists
+    if (item.dna) {
+      setDna(item.dna);
+      transition("DNA_LINKED");
+    }
+
+    // Inject preset description into prompt
+    if (item.description) {
+      const personalityPrompt = `${item.description}. Render in a dynamic, aggressive, graffiti-inspired typographic style.`;
+      setPrompt(personalityPrompt);
+    }
+
+    if ((item as any).imageUrl) setUploadedImage((item as any).imageUrl);
+  }, [PRESETS, isProcessing, transition, activePresetId]);
 
   const handleRefine = async () => {
     if (!prompt.trim() || isRefining) return;
@@ -146,8 +151,7 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
     try {
       const refined = await refineTextPrompt(prompt, PanelMode.TYPOGRAPHY, kernelConfig, dna || undefined);
       setPrompt(refined);
-    } catch (e) {
-      console.error("Refinement failed");
+    } catch {
       addLog("PROMPT_REFINE_FAILED", 'error');
     } finally {
       setIsRefining(false);
@@ -157,140 +161,111 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
   const handleGenerate = async () => {
     if (processingRef.current) return;
     const effectivePrompt = prompt.trim() || "HYPER";
-    
-    // Construct extra architectural directives string
     const extraDirectives = `
-      CAP_HEIGHT: ${capHeight}%
-      STROKE_CONTRAST: ${strokeContrast}%
-      TERMINAL_LOGIC: ${terminalLogic.toUpperCase()}
-      FONT_WEIGHT: ${fontWeight.toUpperCase()}
-      SPLICING_INTENSITY: ${splicingIntensity}%
-      INTERLOCK_GUTTER: ${interlockGutter}%
-      X_HEIGHT_BIAS: ${xHeightBias}%
-      LIGATURE_LOGIC: ${ligatureLogic.toUpperCase()}
-    `.trim();
+CAP_HEIGHT: ${capHeight}%
+STROKE_CONTRAST: ${strokeContrast}%
+TERMINAL_LOGIC: ${terminalLogic.toUpperCase()}
+FONT_WEIGHT: ${fontWeight.toUpperCase()}
+SPLICING_INTENSITY: ${splicingIntensity}%
+INTERLOCK_GUTTER: ${interlockGutter}px
+X_HEIGHT_BIAS: ${xHeightBias}%
+LIGATURE_LOGIC: ${ligatureLogic.toUpperCase()}
+`.trim();
 
     processingRef.current = true;
-    transition(dna ? "DNA_STYLIZE_ACTIVE" as any : "DEVOURING_BUFFER", true);
+    transition("DEVOURING_BUFFER", true);
     setIsValidationError(false);
-    
+
     try {
       const result = await synthesizeTypoStyle(effectivePrompt, uploadedImage || undefined, kernelConfig, dna || undefined, extraDirectives);
       setGeneratedOutput(result);
       transition("LATTICE_ACTIVE");
-      onSaveToHistory({
-        id: `typo-${Date.now()}`,
-        name: effectivePrompt.slice(0, 15),
-        description: `Typographic wordmark [${terminalLogic} terminals]`,
-        type: PanelMode.TYPOGRAPHY,
-        generatedOutput: result,
-        dna: dna || undefined,
-        imageUrl: uploadedImage,
-        timestamp: new Date().toLocaleTimeString()
-      });
-    } catch (e: any) {
-      const errorMessage = e?.message || 'Synthesis failed due to an unknown error.';
-      console.error(e);
-      addLog(`SYNTHESIS_ERROR: ${errorMessage}`, 'error');
+      onSaveToHistory({ id: `typo-${Date.now()}`, name: effectivePrompt.slice(0,15), description: 'Typography synthesis', type: PanelMode.TYPOGRAPHY, prompt: effectivePrompt, settings: { capHeight, strokeContrast, terminalLogic, fontWeight, splicingIntensity, interlockGutter, xHeightBias, ligatureLogic }, dna, imageUrl: uploadedImage, timestamp: new Date().toLocaleTimeString() });
+    } catch {
+      addLog("SYNTHESIS_ERROR: Generation failed", 'error');
       transition("LATTICE_FAIL");
       setIsValidationError(true);
-    } finally { 
-      processingRef.current = false;
-    }
+    } finally { processingRef.current = false; }
   };
 
+  // Fix: Implemented a full sidebar with controls and preset list.
   const SidebarContent = (
     <>
-      <SidebarHeader 
-        moduleNumber="Module_02" 
-        title="Typo_Splicer" 
-        version="Neural Glyph Engine v3.4"
-        colorClass="text-brandYellow"
-        borderColorClass="border-brandYellow"
-      />
-      
-      {/* --- ARCHITECT_CONTROLS --- */}
+      <SidebarHeader moduleNumber="Module_02" title="Typographic Architect" version="v5.2" colorClass="text-brandRed" borderColorClass="border-brandRed" />
       <div className="space-y-10 mb-12">
-        {/* 1. Anatomical Logic */}
         <section>
-          <h4 className="text-[10px] font-black uppercase text-brandCharcoal/40 dark:text-white/30 tracking-widest mb-4 border-b border-brandCharcoal/10 dark:border-white/5 pb-2">Anatomical Logic</h4>
+          <h4 className="text-[10px] font-black uppercase text-brandCharcoal/40 dark:text-white/30 tracking-widest mb-4 border-b border-brandCharcoal/10 dark:border-white/5 pb-2">Primary Form</h4>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-[8px] font-black uppercase text-brandCharcoalMuted dark:text-white/40 mb-1.5 block">Weight</label>
-                <select value={fontWeight} onChange={e => setFontWeight(e.target.value as any)} className="w-full bg-transparent border-2 border-brandCharcoal/10 dark:border-white/5 text-[8px] font-black uppercase px-2 py-1.5 rounded-sm outline-none">
-                  <option value="light">Light</option>
-                  <option value="regular">Regular</option>
-                  <option value="bold">Bold</option>
-                  <option value="ultra">Ultra</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[8px] font-black uppercase text-brandCharcoalMuted dark:text-white/40 mb-1.5 block">Terminals</label>
-                <select value={terminalLogic} onChange={e => setTerminalLogic(e.target.value as any)} className="w-full bg-transparent border-2 border-brandCharcoal/10 dark:border-white/5 text-[8px] font-black uppercase px-2 py-1.5 rounded-sm outline-none">
-                  <option value="clipped">Clipped</option>
-                  <option value="flare">Flare</option>
-                  <option value="rounded">Rounded</option>
-                  <option value="spike">Spike</option>
-                </select>
+            <div>
+              <label className="text-[8px] font-black uppercase text-brandCharcoalMuted dark:text-white/40 mb-1.5 block">Font Weight</label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {(['light', 'regular', 'bold', 'ultra'] as FontWeight[]).map(m => (
+                  <button key={m} onClick={() => setFontWeight(m)} className={`py-2 text-[8px] font-black uppercase tracking-widest border-2 transition-all rounded-sm ${fontWeight === m ? 'bg-brandCharcoal text-white border-brandCharcoal dark:bg-brandRed dark:border-brandRed' : 'border-brandCharcoal/10 text-brandCharcoal/40 dark:border-white/5 dark:text-white/40 hover:border-brandCharcoal dark:hover:border-white/20'}`}>{m}</button>
+                ))}
               </div>
             </div>
             <div>
+              <label className="text-[8px] font-black uppercase text-brandCharcoalMuted dark:text-white/40 mb-1.5 block">Terminal Logic</label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {(['clipped', 'flare', 'rounded', 'spike'] as TerminalLogic[]).map(m => (
+                  <button key={m} onClick={() => setTerminalLogic(m)} className={`py-2 text-[8px] font-black uppercase tracking-widest border-2 transition-all rounded-sm ${terminalLogic === m ? 'bg-brandCharcoal text-white border-brandCharcoal dark:bg-brandRed dark:border-brandRed' : 'border-brandCharcoal/10 text-brandCharcoal/40 dark:border-white/5 dark:text-white/40 hover:border-brandCharcoal dark:hover:border-white/20'}`}>{m}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h4 className="text-[10px] font-black uppercase text-brandCharcoal/40 dark:text-white/30 tracking-widest mb-4 border-b border-brandCharcoal/10 dark:border-white/5 pb-2">Glyph Metrics</h4>
+          <div className="space-y-4">
+            <div>
               <div className="flex justify-between items-center mb-1.5">
                 <label className="text-[8px] font-black uppercase text-brandCharcoalMuted dark:text-white/40">Cap Height</label>
-                <span className="text-[8px] font-black text-brandYellow">{capHeight}%</span>
+                <span className="text-[8px] font-black text-brandRed">{capHeight}%</span>
               </div>
-              <input type="range" min="50" max="150" value={capHeight} onChange={e => setCapHeight(parseInt(e.target.value))} className="w-full h-1.5 bg-brandCharcoal/5 dark:bg-white/5 appearance-none rounded-full accent-brandYellow" />
+              <input type="range" min="80" max="120" value={capHeight} onChange={e => setCapHeight(parseInt(e.target.value))} className="w-full h-1.5 bg-brandCharcoal/5 dark:bg-white/5 appearance-none rounded-full accent-brandRed" />
             </div>
             <div>
               <div className="flex justify-between items-center mb-1.5">
                 <label className="text-[8px] font-black uppercase text-brandCharcoalMuted dark:text-white/40">Stroke Contrast</label>
-                <span className="text-[8px] font-black text-brandYellow">{strokeContrast}%</span>
+                <span className="text-[8px] font-black text-brandRed">{strokeContrast}%</span>
               </div>
-              <input type="range" min="0" max="100" value={strokeContrast} onChange={e => setStrokeContrast(parseInt(e.target.value))} className="w-full h-1.5 bg-brandCharcoal/5 dark:bg-white/5 appearance-none rounded-full accent-brandYellow" />
+              <input type="range" min="0" max="100" value={strokeContrast} onChange={e => setStrokeContrast(parseInt(e.target.value))} className="w-full h-1.5 bg-brandCharcoal/5 dark:bg-white/5 appearance-none rounded-full accent-brandRed" />
+            </div>
+            <div>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="text-[8px] font-black uppercase text-brandCharcoalMuted dark:text-white/40">X-Height Bias</label>
+                <span className="text-[8px] font-black text-brandRed">{xHeightBias}%</span>
+              </div>
+              <input type="range" min="80" max="120" value={xHeightBias} onChange={e => setXHeightBias(parseInt(e.target.value))} className="w-full h-1.5 bg-brandCharcoal/5 dark:bg-white/5 appearance-none rounded-full accent-brandRed" />
             </div>
           </div>
         </section>
 
-        {/* 2. Structural Splicing */}
         <section>
-          <h4 className="text-[10px] font-black uppercase text-brandCharcoal/40 dark:text-white/30 tracking-widest mb-4 border-b border-brandCharcoal/10 dark:border-white/5 pb-2">Splicing Module</h4>
+          <h4 className="text-[10px] font-black uppercase text-brandCharcoal/40 dark:text-white/30 tracking-widest mb-4 border-b border-brandCharcoal/10 dark:border-white/5 pb-2">Interaction & Effects</h4>
           <div className="space-y-4">
-            <div>
+             <div>
               <div className="flex justify-between items-center mb-1.5">
                 <label className="text-[8px] font-black uppercase text-brandCharcoalMuted dark:text-white/40">Splicing Intensity</label>
-                <span className="text-[8px] font-black text-brandYellow">{splicingIntensity}%</span>
+                <span className="text-[8px] font-black text-brandRed">{splicingIntensity}%</span>
               </div>
-              <input type="range" min="0" max="100" value={splicingIntensity} onChange={e => setSplicingIntensity(parseInt(e.target.value))} className="w-full h-1.5 bg-brandCharcoal/5 dark:bg-white/5 appearance-none rounded-full accent-brandYellow" />
+              <input type="range" min="0" max="100" value={splicingIntensity} onChange={e => setSplicingIntensity(parseInt(e.target.value))} className="w-full h-1.5 bg-brandCharcoal/5 dark:bg-white/5 appearance-none rounded-full accent-brandRed" />
             </div>
             <div>
               <div className="flex justify-between items-center mb-1.5">
                 <label className="text-[8px] font-black uppercase text-brandCharcoalMuted dark:text-white/40">Interlock Gutter</label>
-                <span className="text-[8px] font-black text-brandYellow">{interlockGutter}%</span>
+                <span className="text-[8px] font-black text-brandRed">{interlockGutter}px</span>
               </div>
-              <input type="range" min="1" max="5" step="0.5" value={interlockGutter} onChange={e => setInterlockGutter(parseFloat(e.target.value))} className="w-full h-1.5 bg-brandCharcoal/5 dark:bg-white/5 appearance-none rounded-full accent-brandYellow" />
-            </div>
-          </div>
-        </section>
-
-        {/* 3. Optical Settings */}
-        <section>
-          <h4 className="text-[10px] font-black uppercase text-brandCharcoal/40 dark:text-white/30 tracking-widest mb-4 border-b border-brandCharcoal/10 dark:border-white/5 pb-2">Optical Settings</h4>
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between items-center mb-1.5">
-                <label className="text-[8px] font-black uppercase text-brandCharcoalMuted dark:text-white/40">X-Height Bias</label>
-                <span className="text-[8px] font-black text-brandYellow">{xHeightBias}%</span>
-              </div>
-              <input type="range" min="20" max="80" value={xHeightBias} onChange={e => setXHeightBias(parseInt(e.target.value))} className="w-full h-1.5 bg-brandCharcoal/5 dark:bg-white/5 appearance-none rounded-full accent-brandYellow" />
+              <input type="range" min="0" max="20" value={interlockGutter} onChange={e => setInterlockGutter(parseInt(e.target.value))} className="w-full h-1.5 bg-brandCharcoal/5 dark:bg-white/5 appearance-none rounded-full accent-brandRed" />
             </div>
             <div>
-              <label className="text-[8px] font-black uppercase text-brandCharcoalMuted dark:text-white/40 mb-1.5 block">Ligature Threshold</label>
-              <div className="flex gap-1.5">
-                {(['manual', 'auto', 'aggressive'] as LigatureLogic[]).map(l => (
-                  <button key={l} onClick={() => setLigatureLogic(l)} className={`flex-1 py-1.5 text-[7px] font-black uppercase border-2 rounded-sm ${ligatureLogic === l ? 'bg-brandYellow text-brandCharcoal border-brandYellow' : 'border-brandCharcoal/10 text-brandCharcoal/40 dark:border-white/5 dark:text-white/40'}`}>{l}</button>
-                ))}
-              </div>
+              <label className="text-[8px] font-black uppercase text-brandCharcoalMuted dark:text-white/40 mb-1.5 block">Ligature Logic</label>
+              <select value={ligatureLogic} onChange={e => setLigatureLogic(e.target.value as any)} className="w-full bg-transparent border-2 border-brandCharcoal/10 dark:border-white/5 text-[8px] font-black uppercase px-2 py-1.5 rounded-sm outline-none focus:border-brandRed">
+                <option value="manual">Manual</option>
+                <option value="auto">Auto</option>
+                <option value="aggressive">Aggressive</option>
+              </select>
             </div>
           </div>
         </section>
@@ -300,7 +275,7 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
         {PRESETS.map((cat, i) => (
           <div key={i} className="animate-in fade-in slide-in-left duration-500" style={{ animationDelay: `${i * 100}ms` }}>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-1 h-3 bg-brandYellow rounded-full" />
+              <div className="w-1 h-3 bg-brandCharcoal dark:bg-white/40 rounded-full" />
               <h3 className="text-[9px] font-black uppercase text-brandCharcoal dark:text-white tracking-[0.25em]">{cat.title}</h3>
             </div>
             <div className="space-y-3">
@@ -321,28 +296,9 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
     </>
   );
 
-  const isAnchored = dna && globalDna?.name === dna.name;
-
   return (
     <PanelLayout sidebar={SidebarContent}>
-      <CanvasStage
-        uploadedImage={uploadedImage}
-        generatedOutput={generatedOutput}
-        isProcessing={isProcessing}
-        hudContent={<DevourerHUD devourerStatus={isAnchored ? `DNA_LOCKED: ${dna?.name.toUpperCase()}` : dna?.name ? `DNA_LINKED: ${dna.name.toUpperCase()}` : status} />}
-        isValidationError={isValidationError}
-        uiRefined={uiRefined}
-        refinementLevel={refinementLevel}
-        onClear={() => { setUploadedImage(null); setGeneratedOutput(null); setDna(null); setActivePresetId(null); setActivePreset(null); setPrompt(''); transition("STARVING"); onSetGlobalDna?.(null); }}
-        onGenerate={handleGenerate}
-        onFileUpload={(file) => {
-            const reader = new FileReader();
-            reader.onload = e => { setUploadedImage(e.target?.result as string); transition("BUFFER_LOADED"); };
-            reader.readAsDataURL(file);
-        }}
-        downloadFilename={`hyperxgen_typo_${Date.now()}.png`}
-      />
-      
+      <CanvasStage uploadedImage={uploadedImage} generatedOutput={generatedOutput} isProcessing={isProcessing} hudContent={<DevourerHUD devourerStatus={dna?.name || status} />} isValidationError={isValidationError} uiRefined={uiRefined} refinementLevel={refinementLevel} onClear={() => { setUploadedImage(null); setGeneratedOutput(null); setDna(null); setActivePresetId(null); setActivePreset(null); setPrompt(''); transition("STARVING"); }} onGenerate={handleGenerate} onFileUpload={(file) => { const reader = new FileReader(); reader.onload = e => setUploadedImage(e.target?.result as string); reader.readAsDataURL(file); }} downloadFilename={`hyperxgen_typo_${Date.now()}.png`} />
       <div className="flex flex-col gap-6">
         <GenerationBar 
           prompt={prompt} 
@@ -350,7 +306,6 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
           onGenerate={handleGenerate} 
           isProcessing={isProcessing} 
           activePresetName={activePreset?.name || dna?.name}
-          placeholder="Enter wordmark characters (e.g. 'HYPER')..." 
           refineButton={
             <button 
               onClick={handleRefine}
@@ -360,9 +315,8 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
             >
               <SparkleIcon className={`w-4 h-4 ${isRefining ? 'animate-spin' : 'group-hover:scale-110'}`} />
             </button>
-          }
+          } 
         />
-
         <PresetCarousel presets={PRESETS as any} activeId={activePresetId} onSelect={handleSelectPreset} />
       </div>
     </PanelLayout>

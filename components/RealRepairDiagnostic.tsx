@@ -105,13 +105,13 @@ export const RealRepairDiagnostic: React.FC<RealRepairDiagnosticProps> = ({ onCo
     return (
       <div className="fixed inset-0 z-[600] bg-brandDeep flex flex-col items-center justify-center font-mono">
         <div className="relative w-24 h-24 mb-8">
-          <div className="absolute inset-0 border-2 border-brandRed/20 rounded-full" />
-          <div className="absolute inset-0 border-t-2 border-brandRed rounded-full animate-spin" />
+          <div className="absolute inset-0 border-2 border-brandRed/20 rounded-full dark:drop-shadow-neon-red" />
+          <div className="absolute inset-0 border-t-2 border-brandRed rounded-full animate-spin dark:drop-shadow-neon-red" />
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-1 h-1 bg-brandRed rounded-full animate-ping" />
           </div>
         </div>
-        <div className="text-brandRed text-[10px] font-black uppercase tracking-[0.5em] animate-pulse italic">
+        <div className="text-brandRed text-[10px] font-black uppercase tracking-[0.5em] animate-pulse italic dark:drop-shadow-neon-red">
           Engaging_Forensic_Lattice_Scan...
         </div>
       </div>

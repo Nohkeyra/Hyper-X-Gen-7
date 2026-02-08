@@ -45,7 +45,7 @@ export const GenerationBar: React.FC<GenerationBarProps> = ({
   };
 
   return (
-    <div className={`w-full border-t-2 transition-colors duration-500 border-brandRed bg-brandNeutral dark:bg-brandDeep shadow-[0_-10px_30px_rgba(0,0,0,0.5)] z-50 rounded-sm py-2 px-3 md:py-4 md:px-6`}>
+    <div className={`w-full border-t-2 transition-colors duration-500 border-brandRed bg-brandNeutral dark:bg-brandDeep shadow-[0_-10px_30px_rgba(0,0,0,0.5)] dark:shadow-neon-red-soft z-50 rounded-sm py-2 px-3 md:py-4 md:px-6`}>
       <div className={`max-w-screen-2xl mx-auto flex flex-col md:flex-row items-stretch gap-0 border-2 transition-all duration-500 border-brandCharcoal dark:border-white/20 shadow-[2px_2px_0px_0px_#CC0001] md:shadow-[4px_4px_0px_0px_#CC0001] bg-white dark:bg-black/60 overflow-hidden`}>
         
         {/* Left Side: Additional Controls */}
@@ -90,7 +90,7 @@ export const GenerationBar: React.FC<GenerationBarProps> = ({
           className={`flex-none px-6 py-3 md:px-10 md:py-4 font-black uppercase text-[10px] md:text-[11px] italic tracking-[0.15em] md:tracking-[0.25em] transition-all flex items-center justify-center border-l border-brandCharcoal/10 dark:border-white/10
             ${isProcessing 
               ? 'bg-black text-brandYellow animate-pulse cursor-wait' 
-              : 'bg-brandRed text-white hover:bg-brandYellow hover:text-brandBlue active:translate-x-0.5 active:translate-y-0.5'
+              : 'bg-brandRed text-white hover:bg-brandYellow hover:text-brandBlue active:translate-x-0.5 active:translate-y-0.5 dark:shadow-neon-red-soft dark:hover:shadow-neon-yellow-soft'
             }
           `}
         >

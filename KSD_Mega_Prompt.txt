@@ -1,3 +1,4 @@
+
 HYPERXGEN Engine Protocol v5.3
 Deterministic Synthesis and Forensic Design Extraction Specification
 
@@ -126,55 +127,52 @@ Presets are immutable once generated.
 
 ---
 
-3. Deterministic Synthesis Protocols
+3. Deterministic Synthesis Directives
 Global Enforcement Locks
 
-These protocols are injected into every synthesis request.
+These directives are injected into every synthesis request.
 They override user prompts without exception.
 
 ---
 
-3.1 GEOMETRIC_PRECISION_V5
+3.1 DIRECTIVE: GEOMETRIC_PRECISION_V5
 Vector Synthesis Lock
 
 Rules:
-- Use atomic primitives only
-- Circles, triangles, rectangles
-- Uniform stroke weight across all paths
-- Flat solid fills only
-- Gradients forbidden
-- Subject isolated on white or transparent background
-- Enforced bilateral or radial symmetry
+- Use atomic primitives only (circles, triangles, rectangles).
+- Uniform stroke weight across all paths (no tapering).
+- Flat solid fills only (gradients forbidden).
+- Subject isolated on white or transparent background.
+- Enforced bilateral or radial symmetry.
+- NEGATIVE CONSTRAINT: Output must be a pure image. Do not render any text, labels, or metadata.
 
 Violation results in synthesis rejection.
 
 ---
 
-3.2 GLYPH_SYNTAX_DECONSTRUCTION_URBAN_KINETIC
+3.2 DIRECTIVE: GLYPH_SYNTAX_DECONSTRUCTION_URBAN_KINETIC
 Typography Synthesis Lock
 
 Rules:
-- Preserve kinetic flow
-- Allow controlled stroke weight variation
-- Permit aggressive terminals
-- Negative space treated as solid void
-- Optional edge abrasion or spray artifacts
-- Final output must maximize visual impact density
+- Preserve kinetic flow and gestural movement.
+- Allow controlled stroke weight variation and aggressive terminals.
+- Negative space treated as solid void.
+- Optional edge abrasion or spray artifacts.
+- Final output must maximize visual impact density.
 
-Legibility is secondary to energy.
-Structural coherence is mandatory.
+Legibility is secondary to energy. Structural coherence is mandatory.
 
 ---
 
-3.3 SEAL_SYNTHESIS_RADIAL
+3.3 DIRECTIVE: SEAL_SYNTHESIS_RADIAL
 Monogram Synthesis Lock
 
 Rules:
-- Characters must interlock or share geometry
-- Composition constrained to a primary container:
-  Circle, Hexagon, or Square
-- Enforced radial symmetry across 2, 4, or 8 axes
-- Stroke-to-negative-space ratio locked at 1:1
+- Use characters as structural guides only. Fuse their geometry into an abstract shape.
+- Composition constrained to a primary container: Circle, Hexagon, or Square.
+- Enforced radial symmetry across 2, 4, or 8 axes.
+- Stroke-to-negative-space ratio locked at 1:1.
+- NEGATIVE CONSTRAINT: Output must contain ZERO text characters. The result is a pure geometric seal.
 
 Any symmetry violation invalidates output.
 
