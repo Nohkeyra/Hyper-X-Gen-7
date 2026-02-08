@@ -1,0 +1,25 @@
+{
+  "name": "hyperxgen",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "fullbuild": "npm install && vite build",
+    "preview": "vite preview",
+    "lint:css": "stylelint \"**/*.css\"",
+    "audit:a11y": "axe-core index.html",
+    "analyze": "webpack-bundle-analyzer dist/stats.json"
+  },
+  "dependencies": {
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "@google/genai": "^1.39.0"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.2",
+    "ts-node": "^11.6.1",
+    "@types/node": "^22.14.0"
+  }
+}
