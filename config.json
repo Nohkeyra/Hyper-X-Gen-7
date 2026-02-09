@@ -1,4 +1,3 @@
-
 {
   "system_instruction": {
     "parts": [
@@ -19,7 +18,7 @@
     "audit": "gemini-3-flash-preview",
     "telemetry": "gemini-3-flash-preview",
     "synthesis": "gemini-3-flash-preview",
-    "image": "gemini-2.5-flash-image"
+    "image": "gemini-3-flash-preview"
   },
 
   "panels": {
@@ -79,7 +78,7 @@
     "cacheUISnapshot": false,
     "prefetchModels": [
       "gemini-3-flash-preview",
-      "gemini-2.5-flash-image"
+      "gemini-3-flash-preview"
     ]
   },
 

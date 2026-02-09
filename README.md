@@ -134,9 +134,9 @@ Built with React, TypeScript, and wrapped for Android using Capacitor.
 Here's an example of how to programmatically generate a monogram using a preset and custom initials. This code would typically reside within a component or service file.
 
 ```typescript
-import { monogramPresets, MonogramPreset } from './presets/enginePrompts.ts';
+import { MONOGRAM_PRESETS } from './presets/enginePrompts.ts';
+import { MonogramPreset, KernelConfig } from './types.ts';
 import { synthesizeMonogramStyle } from './services/geminiService.ts';
-import { KernelConfig } from './types.ts';
 
 // Assume you have a base64 encoded image string for reference (optional)
 const uploadedImageBase64 = 'data:image/png;base64,iVBORw0KGgo...'; 
@@ -147,8 +147,8 @@ const kernelConfig: KernelConfig = {
   deviceContext: 'MAXIMUM_ARCHITECTURE_OMEGA_V5'
 };
 
-const selectedPresetName = 'Radial Fusion';
-const preset: MonogramPreset | undefined = monogramPresets.find(p => p.name === selectedPresetName);
+const selectedPresetId = 'mono-royal-seal';
+const preset: MonogramPreset | undefined = MONOGRAM_PRESETS.find(p => p.id === selectedPresetId);
 
 if (!preset) {
   throw new Error('Preset not found');
@@ -160,20 +160,13 @@ const userInitials = 'HXG';
 const textPrompt = `${preset.prompt}. The monogram should incorporate the initials: ${userInitials}.`;
 
 // Construct the directives string from the preset parameters
-const extraDirectives = `
-  ${preset.directives}
-  LAYOUT_MODE: ${preset.layoutMode.toUpperCase()}
-  CHARACTER_COUNT: ${preset.initialCount}
-  ORIENTATION: ${preset.orientation.toUpperCase()}
-  INTERSECTION_GAP: ${preset.intersectionGap}%
-  AUTO_WEAVE: ${preset.autoWeave ? 'ENABLED' : 'DISABLED'}
-  STROKE_WEIGHT: ${preset.strokeWeight.toUpperCase()}
-  TERMINAL_SHAPE: ${preset.terminalShape.toUpperCase()}
-  CORNER_RADIUS: ${preset.cornerRadius}%
-  ASPECT_RATIO: ${preset.aspectRatio.toUpperCase()}
-  GEOMETRIC_FRAME: ${preset.geoFrame.toUpperCase()}
-  OPTICAL_KERNING: ${preset.opticalKerning ? 'ENABLED' : 'DISABLED'}
-`.trim();
+const extraDirectives = Object.entries(preset.parameters)
+  .map(([key, value]) => {
+    // Convert camelCase to SNAKE_CASE_UPPER
+    const snakeKey = key.replace(/([A-Z])/g, '_$1').toUpperCase();
+    return `${snakeKey}: ${String(value).toUpperCase()}`;
+  })
+  .join('\n');
 
 
 // Call the synthesis function

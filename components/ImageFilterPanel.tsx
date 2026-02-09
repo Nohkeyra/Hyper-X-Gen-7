@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { PanelMode, KernelConfig } from '../types.ts';
-import { PRESET_REGISTRY } from '../presets/index.ts';
+import { PRESET_REGISTRY } from '../presets/enginePrompts.ts';
 import { GenerationBar } from './GenerationBar.tsx';
 import { PresetCarousel } from './PresetCarousel.tsx';
 import { CanvasStage } from './CanvasStage.tsx';

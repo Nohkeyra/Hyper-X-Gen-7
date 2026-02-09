@@ -19,6 +19,7 @@ export interface KernelConfig {
 export interface PresetItem {
   id: string;
   name: string;
+  category: string;
   description: string;
   type?: string;
   parameters?: Record<string, any>;
@@ -29,36 +30,53 @@ export interface PresetItem {
   prompt?: string;
 }
 
-export interface TypographyPreset {
+export type TypographyPreset = {
+  id: string;
   name: string;
-  prompt: string;
+  category: string;
   description: string;
-  weight: "light" | "regular" | "bold" | "ultra";
-  terminals: "clipped" | "flare" | "rounded" | "spike" | "blunt";
-  capHeight: number;
-  strokeContrast: number;
-  splicingIntensity: number;
-  interlockGutter: number;
-  xHeightBias: number;
-  ligatureThreshold: "manual" | "auto" | "aggressive";
-}
+  prompt: string;
+  parameters: {
+    weight: 'light' | 'regular' | 'bold' | 'ultra';
+    terminals: 'clipped' | 'flare' | 'rounded' | 'spike';
+    capHeight: number;
+    strokeContrast: number;
+    splicingIntensity: number;
+    interlockGutter: number;
+    xHeightBias: number;
+    ligatureThreshold: 'manual' | 'auto' | 'aggressive';
+  };
+};
 
-export interface MonogramPreset {
+export type VectorPreset = {
+  id: string;
   name: string;
-  prompt: string;
+  category: string;
   description: string;
-  layoutMode: 'interlocked' | 'stacked' | 'block' | 'mirrored';
-  initialCount: 1 | 2 | 3 | 4;
-  orientation: 'horizontal' | 'vertical' | 'diagonal';
-  intersectionGap: number;
-  autoWeave: boolean;
-  strokeWeight: 'hairline' | 'regular' | 'bold' | 'ultra';
-  terminalShape: 'sheared' | 'rounded' | 'blunt' | 'tapered';
-  cornerRadius: number;
-  aspectRatio: 'condensed' | 'normal' | 'expanded';
-  geoFrame: 'circle' | 'hexagon' | 'shield' | 'none';
-  opticalKerning: boolean;
-}
+  prompt: string;
+};
+
+export type MonogramPreset = {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  prompt: string;
+  parameters: {
+    layoutMode: 'interlocked' | 'stacked' | 'block' | 'mirrored';
+    initialCount: number;
+    orientation: 'horizontal' | 'vertical' | 'diagonal';
+    intersectionGap: number;
+    autoWeave: boolean;
+    strokeWeight: 'hairline' | 'regular' | 'bold' | 'ultra';
+    terminalShape: 'sheared' | 'rounded' | 'blunt' | 'tapered';
+    cornerRadius: number;
+    aspectRatio: 'condensed' | 'normal' | 'expanded';
+    geoFrame: 'circle' | 'hexagon' | 'shield' | 'none';
+    opticalKerning: boolean;
+  };
+};
+
 
 export interface PresetCategory {
   title: string;

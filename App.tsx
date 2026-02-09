@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { PanelMode, KernelConfig, CloudArchiveEntry, LogEntry } from './types.ts';
 import { BootScreen } from './components/BootScreen.tsx';
@@ -30,6 +29,7 @@ interface AppConfig {
 
 export const App: React.FC = () => {
   const [isBooting, setIsBooting] = useState(true);
+  const [apiKeyReady, setApiKeyReady] = useState(false);
   const [currentPanel, setCurrentPanel] = useState<PanelMode>(PanelMode.START);
   const [transferData, setTransferData] = useState<any>(null);
   const [isRepairing, setIsRepairing] = useState(false);
@@ -67,6 +67,11 @@ export const App: React.FC = () => {
       return [newLogEntry, ...prev].slice(0, 50);
     });
   }, []);
+
+  const handleApiKeyError = useCallback(() => {
+    addLog("API_KEY_INVALID: Resetting key selection.", 'error');
+    setApiKeyReady(false);
+  }, [addLog]);
 
   useEffect(() => {
     const storedTheme = localStorage.getItem(LS_KEYS.THEME);
@@ -134,6 +139,33 @@ export const App: React.FC = () => {
       boot();
     }
   }, [addLog, isBooting, hasInitialized]);
+  
+  useEffect(() => {
+    const checkApiKey = async () => {
+        if (!isBooting && hasInitialized) {
+            if (apiKeyReady) return; // Don't re-check if already marked as ready
+            
+            if ((window as any).aistudio && typeof (window as any).aistudio.hasSelectedApiKey === 'function') {
+                try {
+                    const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+                    setApiKeyReady(hasKey);
+                    if (!hasKey) {
+                        addLog("API_KEY_MISSING: User selection required.", 'warning');
+                    } else {
+                        addLog("API_KEY_VALIDATED: System ready.", 'success');
+                    }
+                } catch (e: any) {
+                    addLog(`API_KEY_CHECK_FAILED: ${e.message}`, 'error');
+                    setApiKeyReady(true); // Failsafe to prevent getting stuck
+                }
+            } else {
+                addLog("Running outside AI Studio, assuming API key is set.", 'info');
+                setApiKeyReady(true);
+            }
+        }
+    };
+    checkApiKey();
+  }, [isBooting, hasInitialized, addLog, apiKeyReady]);
 
   useEffect(() => {
     if (hasInitialized) {
@@ -177,32 +209,94 @@ export const App: React.FC = () => {
   const handleLoadItem = useCallback((item: any) => { if (item.type && item.type !== PanelMode.START) handleModeSwitch(item.type, item); addLog("ITEM_LOADED", 'info'); }, [handleModeSwitch, addLog]);
   const handleBootComplete = useCallback(() => { setIsBooting(false); }, []);
 
-  if (isBooting) return <BootScreen onBootComplete={handleBootComplete} isDarkMode={isDarkMode} />;
-
-  const renderPanel = () => {
-    if (!hasInitialized) return null;
-    const commonProps = { initialData: transferData, kernelConfig, integrity: systemIntegrity, refinementLevel: uiRefinementLevel, onSaveToHistory: (w: any) => { setRecentWorks(p => [w, ...p]); }, onModeSwitch: handleModeSwitch, savedPresets, addLog };
-    
-    switch (currentPanel) {
-      case PanelMode.START: return <StartScreen recentCount={recentWorks.length} onSelectMode={handleModeSwitch} enabledModes={enabledModes} />;
-      case PanelMode.VECTOR: return <VectorPanel {...commonProps} onStateUpdate={setCurrentPanelState} />;
-      case PanelMode.TYPOGRAPHY: return <TypographyPanel {...commonProps} onStateUpdate={setCurrentPanelState} />;
-      case PanelMode.MONOGRAM: return <MonogramPanel {...commonProps} onStateUpdate={setCurrentPanelState} />;
-      case PanelMode.EXTRACTOR: return <StyleExtractorPanel {...commonProps} onSaveToPresets={(p) => { setSavedPresets(prev => [p, ...prev]); addLog(`DNA_VAULT: FRAGMENT_STORED`, 'success'); }} onDeletePreset={(id) => { setSavedPresets(prev => prev.filter(p => p.id !== id)); addLog("VAULT_PURGED: FRAGMENT_REMOVED", 'warning'); }} onSaveFeedback={() => addLog("COMMIT_SUCCESS: BUFFER_LOCKED", 'success')} />;
-      case PanelMode.FILTERS: return <ImageFilterPanel {...commonProps} onStateUpdate={setCurrentPanelState} />;
-      case PanelMode.AUDIT: return <SystemAuditPanel />;
-      default: return null;
+  const handleSelectKey = async () => {
+    if ((window as any).aistudio && typeof (window as any).aistudio.openSelectKey === 'function') {
+      try {
+        await (window as any).aistudio.openSelectKey();
+        // As per guidelines, assume success to avoid race conditions.
+        setApiKeyReady(true);
+        addLog("API_KEY_SELECTED: Resuming operations.", 'success');
+      } catch(e: any) {
+        addLog(`API_KEY_SELECTION_ERROR: ${e.message}`, 'error');
+      }
     }
   };
 
+  if (isBooting) return <BootScreen onBootComplete={handleBootComplete} isDarkMode={isDarkMode} />;
+
+  if (hasInitialized && !apiKeyReady) {
+    return (
+        <div className="fixed inset-0 z-[1000] flex flex-col items-center justify-center bg-brandNeutral dark:bg-brandDeep p-8 text-center animate-in fade-in duration-500">
+            <div className="w-24 h-24 mb-8 border-4 border-brandRed rounded-full flex items-center justify-center shadow-lg dark:shadow-neon-red-soft">
+                <svg className="w-12 h-12 text-brandRed" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <h1 className="text-2xl font-black text-brandCharcoal dark:text-white uppercase italic tracking-tighter mb-4">API Key Required</h1>
+            <p className="max-w-md text-sm text-brandCharcoalMuted dark:text-white/70 mb-8">
+                This application requires a Gemini API key to function. Please select a key from a Google Cloud project with billing enabled to proceed.
+            </p>
+            <button
+                onClick={handleSelectKey}
+                className="px-8 py-3 bg-brandRed text-white text-sm font-black uppercase tracking-widest hover:bg-opacity-90 transition-all rounded-sm shadow-[4px_4px_0px_0px_rgba(204,0,1,0.3)]"
+            >
+                Select API Key
+            </button>
+            <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="mt-6 text-xs text-brandCharcoalMuted dark:text-white/50 underline hover:text-brandRed transition-colors">
+                Learn more about billing
+            </a>
+        </div>
+    );
+  }
+
+  if (isRepairing) return <RealRepairDiagnostic onComplete={(summary) => { addLog(`REPAIR_SUMMARY: ${summary.repairedNodes}/${summary.totalNodes} nodes restored.`, 'success'); setSystemIntegrity(summary.systemStabilityScore); setIsRepairing(false); }} />;
+  if (isRefining) return <RealRefineDiagnostic onComplete={(summary) => { addLog(`REFINE_SUMMARY: ${summary.resolvedIssues}/${summary.totalIssues} issues resolved.`, 'success'); setUiRefinementLevel(prev => prev + summary.resolvedIssues); setIsRefining(false); }} />;
+
+  const commonProps = {
+    kernelConfig,
+    integrity: systemIntegrity,
+    uiRefined: uiRefinementLevel > 0,
+    refinementLevel: uiRefinementLevel,
+    onSaveToHistory: (work: any) => setRecentWorks(prev => [work, ...prev]),
+    onModeSwitch: handleModeSwitch,
+    savedPresets,
+    onStateUpdate: setCurrentPanelState,
+    addLog,
+    onApiKeyError: handleApiKeyError,
+  };
+  
   return (
-    <div className="app-shell relative">
-      <div className="fixed inset-0 pointer-events-none z-[200] opacity-[0.03] bg-grid-pattern"></div>
-      {isRepairing && <RealRepairDiagnostic onComplete={(r) => { setIsRepairing(false); setSystemIntegrity(r.systemStabilityScore); addLog(`FORENSIC_SYNC: SUBSYSTEMS_RECONSTRUCTED`, 'success'); }} />}
-      {isRefining && <RealRefineDiagnostic onComplete={(r) => { setIsRefining(false); setUiRefinementLevel(r.visualScore); addLog(`REFINE_REPORT: AESTHETIC_${r.visualScore}%`, 'success'); }} />}
-      <PanelHeader title="HYPERXGEN" integrity={systemIntegrity} onBack={() => handleModeSwitch(PanelMode.START)} isDarkMode={isDarkMode} onToggleTheme={toggleTheme} onStartRepair={() => { setIsRepairing(true); addLog("DIAGNOSTIC: FORENSIC_KERNEL_AUDIT", 'info'); }} onStartRefine={() => { setIsRefining(true); addLog("DIAGNOSTIC: UI_REFINE_INITIATED", 'info'); }} onToggleLogViewer={() => setShowLogViewer(prev => !prev)} />
-      <div className="app-main"><div className="app-main-content-area custom-scrollbar"><Suspense fallback={<LoadingSpinner />}>{renderPanel()}</Suspense></div></div>
-      <AppControlsBar activeMode={currentPanel} recentWorks={recentWorks} savedPresets={savedPresets} cloudArchives={cloudArchives} onSwitchMode={handleModeSwitch} onForceSave={handleCommitToVault} onLoadHistoryItem={handleLoadItem} onClearRecentWorks={handleClearRecentWorks} onClearSavedPresets={handleClearSavedPresets} enabledModes={enabledModes} />
+    <div className="flex flex-col h-full overflow-hidden">
+      <PanelHeader 
+        onBack={() => setCurrentPanel(PanelMode.START)} 
+        title={currentPanel.replace('_', ' ')}
+        onStartRepair={() => setIsRepairing(true)}
+        onStartRefine={() => setIsRefining(true)}
+        integrity={systemIntegrity}
+        isDarkMode={isDarkMode}
+        onToggleTheme={toggleTheme}
+        onToggleLogViewer={() => setShowLogViewer(p => !p)}
+      />
+      <main className="flex-1 overflow-hidden" style={{ paddingTop: 'var(--header-h)', paddingBottom: 'var(--app-controls-bar-h)' }}>
+        <Suspense fallback={<LoadingSpinner />}>
+          {currentPanel === PanelMode.START && <StartScreen onSelectMode={handleModeSwitch} recentCount={recentWorks.length} enabledModes={enabledModes} />}
+          {currentPanel === PanelMode.VECTOR && <VectorPanel {...commonProps} initialData={transferData} />}
+          {currentPanel === PanelMode.TYPOGRAPHY && <TypographyPanel {...commonProps} initialData={transferData} />}
+          {currentPanel === PanelMode.MONOGRAM && <MonogramPanel {...commonProps} initialData={transferData} />}
+          {currentPanel === PanelMode.EXTRACTOR && <StyleExtractorPanel kernelConfig={kernelConfig} savedPresets={savedPresets} onSaveToPresets={(p) => setSavedPresets(prev => [p, ...prev])} onDeletePreset={(id) => setSavedPresets(prev => prev.filter(p => p.id !== id))} addLog={addLog} onApiKeyError={handleApiKeyError} />}
+          {currentPanel === PanelMode.FILTERS && <ImageFilterPanel onSaveToHistory={(w) => setRecentWorks(p => [w, ...p])} kernelConfig={kernelConfig} onModeSwitch={handleModeSwitch} onStateUpdate={setCurrentPanelState} />}
+          {currentPanel === PanelMode.AUDIT && <SystemAuditPanel />}
+        </Suspense>
+      </main>
+      <AppControlsBar 
+        activeMode={currentPanel} 
+        onSwitchMode={handleModeSwitch} 
+        recentWorks={recentWorks} 
+        savedPresets={savedPresets}
+        onLoadHistoryItem={handleLoadItem}
+        onClearRecentWorks={handleClearRecentWorks}
+        onClearSavedPresets={handleClearSavedPresets}
+        onForceSave={handleCommitToVault}
+        enabledModes={enabledModes}
+      />
       <LogViewer logs={logs} onClear={() => setLogs([])} isOpen={showLogViewer} onClose={() => setShowLogViewer(false)} />
     </div>
   );

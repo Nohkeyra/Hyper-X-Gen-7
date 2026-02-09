@@ -1,16 +1,10 @@
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
-// FIX: MonogramPreset is defined in types.ts and should be imported from there.
-import { ExtractionResult, KernelConfig, PanelMode, RealIssue, TypographyPreset, MonogramPreset } from "../types.ts";
+import { ExtractionResult, KernelConfig, PanelMode, RealIssue, TypographyPreset, VectorPreset, MonogramPreset } from "../types.ts";
 import { injectAntiCensor } from '../utils/antiCensor.ts';
-import { 
-    GLOBAL_VECTOR_LOCK, 
-    GLOBAL_TYPO_LOCK, 
-    GLOBAL_MONO_LOCK,
-    monogramPresets,
-    typographyPresets,
-    ENGINE_PROMPTS,
-    GLOBAL_STYLE_EXTRACTOR_LOCK,
-    injectPresetTokens
+import {
+    TYPOGRAPHY_PRESETS,
+    VECTOR_PRESETS,
+    MONOGRAM_PRESETS
 } from '../presets/enginePrompts.ts';
 
 // Helper function to extract pure base64 data from a data URL
@@ -26,13 +20,9 @@ function getPureBase64Data(dataUrl: string | null | undefined): string | null {
 const DEFAULT_CONFIG: KernelConfig = {
   thinkingBudget: 0,
   temperature: 0.1,
-  model: 'gemini-3-flash-preview',
+  model: 'gemini-3-flash-preview', // Default model for text-focused tasks or multimodal fallback
   deviceContext: 'MAXIMUM_ARCHITECTURE_OMEGA_V5'
 };
-
-const BASE_SYSTEM_DIRECTIVE = `You are a high-density computation and design analysis engine. 
-All operations must be geometric, precise, and deterministic. 
-Maintain absolute architectural consistency across the lattice.`;
 
 const IMAGE_GEN_SYSTEM_DIRECTIVE = `You are a specialized image generation engine focused on geometric purity and industrial precision. Your output must be abstract, safe-for-work, and adhere to strict design principles.
 1. STRICT VISUAL ONLY: Render only the visual geometry described.
@@ -40,6 +30,9 @@ const IMAGE_GEN_SYSTEM_DIRECTIVE = `You are a specialized image generation engin
 3. HIGH CONTRAST & PRECISION: Prioritize sharp edges, mathematical accuracy, and clean vector aesthetics.
 4. CONTENT SAFETY LOCK: Generate only abstract geometric patterns, logos, typographic art, or technical illustrations. Strictly avoid generating photorealistic images, people, faces, or any potentially sensitive or controversial content. Adherence to this rule is mandatory.
 `;
+
+// @FIX: Defined the missing BASE_SYSTEM_DIRECTIVE for style extraction.
+const STYLE_EXTRACTOR_SYSTEM_DIRECTIVE = `You are an AUTONOMOUS_FORENSIC_AUTHENTICATOR. Your role is to analyze images to extract their core geometric and visual DNA. Focus on identifying clean shapes, vector readiness, symmetry, and high contrast. Your output must be minimal but precise, and always adhere to the specified JSON response schema.`;
 
 const FALLBACK_NAME_PARTS = {
   adj: ['Zenith', 'Vector', 'Neural', 'Cyber', 'Void', 'Omega', 'Lattice', 'Prism', 'Aero', 'Core', 'Hyper', 'Nova', 'Flux', 'Static', 'Quantum'],
@@ -61,7 +54,8 @@ async function reliableRequest<T>(requestFn: () => Promise<T>, retries = 5): Pro
     const message = error?.message || "";
     const status = error?.status || error?.code || 0;
     const errorStr = `${message} ${status} ${JSON.stringify(error)}`.toLowerCase();
-    
+
+    // Quota Error Check with Exponential Backoff
     const isQuota = errorStr.includes("429") || errorStr.includes("quota") || errorStr.includes("resource_exhausted") || status === 429;
     
     if (isQuota && retries > 0) {
@@ -72,32 +66,22 @@ async function reliableRequest<T>(requestFn: () => Promise<T>, retries = 5): Pro
       return reliableRequest(requestFn, retries - 1);
     }
     
-    const isKeyError = errorStr.includes("requested entity was not found") || errorStr.includes("api_key_invalid");
-    if (isKeyError) {
-      if ((window as any).aistudio && typeof (window as any).aistudio.openSelectKey === 'function') {
-        await (window as any).aistudio.openSelectKey();
-        return await requestFn();
-      }
-    }
-    
+    // For all other errors (including API key errors), propagate them to the caller.
+    // The UI layer is responsible for catching key errors and triggering re-authentication.
     throw error;
   }
 }
 
 function compileVisualPrompt(subject: string, mode: 'vector' | 'typo' | 'monogram', dna?: ExtractionResult, extraParams?: string, hasImage = false): string {
-  let globalLock = "";
   let workflowDirective = "";
 
   if (mode === 'vector') {
-    globalLock = GLOBAL_VECTOR_LOCK;
     workflowDirective = hasImage 
       ? "[JOB: VECTORIZE_SOURCE] -> Render SOURCE_BUFFER as clean geometric vector lattice. Maintain silhouette integrity."
       : "[JOB: VECTOR_SYNTHESIS] -> Synthesize new geometric subject from prompt.";
   } else if (mode === 'typo') {
-    globalLock = GLOBAL_TYPO_LOCK;
     workflowDirective = `[JOB: TYPOGRAPHIC_STYLE_TRANSFER] -> Content: "${subject}". Apply DNA Skeleton/Skin logic.`;
   } else {
-    globalLock = GLOBAL_MONO_LOCK;
     workflowDirective = `[JOB: SEAL_ARCHITECT] -> Construct monogram: "${subject}". Radial symmetry required.`;
   }
 
@@ -115,7 +99,6 @@ function compileVisualPrompt(subject: string, mode: 'vector' | 'typo' | 'monogra
   }
   
   const combined = `
-    ${globalLock}
     ${workflowDirective}
     ${dnaContext}
     ${extraParams ? `[ARCHITECT_DIRECTIVES]: ${extraParams}\n` : ''}
@@ -135,7 +118,8 @@ export async function extractStyleFromImage(
     const dataOnly = getPureBase64Data(base64Image);
     if (!dataOnly) throw new Error("Empty buffer.");
     
-    const systemInstruction = `${BASE_SYSTEM_DIRECTIVE}\nROLE: AUTONOMOUS_FORENSIC_AUTHENTICATOR.`;
+    // @FIX: Replaced undefined BASE_SYSTEM_DIRECTIVE with STYLE_EXTRACTOR_SYSTEM_DIRECTIVE.
+    const systemInstruction = `${STYLE_EXTRACTOR_SYSTEM_DIRECTIVE}`;
     
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -211,7 +195,7 @@ export async function refineVectorComposition(
 [OUTPUT]: High-fidelity raster image of the refined vector composition.`;
 
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
+      model: 'gemini-3-flash-preview', // Changed from gemini-2.5-flash-image
       contents: {
         parts: [
           { inlineData: { mimeType: 'image/jpeg', data: pureBase64Data } },
@@ -248,7 +232,7 @@ export async function synthesizeVectorStyle(
     if (pureBase64Data) contents.parts.unshift({ inlineData: { mimeType: 'image/jpeg', data: pureBase64Data } });
 
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
+      model: 'gemini-3-flash-preview', // Changed from gemini-2.5-flash-image
       contents,
       config: { systemInstruction: IMAGE_GEN_SYSTEM_DIRECTIVE, temperature: 0.1 }
     });
@@ -277,7 +261,7 @@ export async function synthesizeTypoStyle(
     if (pureBase64Data) contents.parts.unshift({ inlineData: { mimeType: 'image/jpeg', data: pureBase64Data } });
 
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
+      model: 'gemini-3-flash-preview', // Changed from gemini-2.5-flash-image
       contents,
       config: { systemInstruction: IMAGE_GEN_SYSTEM_DIRECTIVE, temperature: 0.1 }
     });
@@ -306,14 +290,14 @@ export async function synthesizeMonogramStyle(
     if (pureBase64Data) contents.parts.unshift({ inlineData: { mimeType: 'image/jpeg', data: pureBase64Data } });
 
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
+      model: 'gemini-3-flash-preview', // Changed from gemini-2.5-flash-image
       contents,
       config: { systemInstruction: IMAGE_GEN_SYSTEM_DIRECTIVE, temperature: 0.1 }
     });
     
     for (const candidate of response.candidates || []) {
       for (const part of candidate.content?.parts || []) {
-        if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
+        if (part.inlineData) return `data:image/png;base66,${part.inlineData.data}`;
       }
     }
     throw new Error("Monogram synthesis failed. The model may have refused the prompt due to safety filters.");
@@ -414,8 +398,6 @@ export async function analyzeCodeForRefinements(code: string): Promise<RealIssue
  * =================================================================================
  */
 
-// --- SHARED CONFIGURATION ---
-
 const KERNEL_CONFIG: KernelConfig = {
     thinkingBudget: 0,
     temperature: 0.1,
@@ -423,27 +405,25 @@ const KERNEL_CONFIG: KernelConfig = {
     deviceContext: 'MAXIMUM_ARCHITECTURE_OMEGA_V5'
 };
 
-// A placeholder 1x1 black pixel PNG for image-based examples
 const PLACEHOLDER_IMAGE_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
-
-// --- EXAMPLE: MONOGRAM PANEL ---
 
 async function runMonogramSynthesisExample() {
     console.log("\n--- [1/4] Starting Monogram Synthesis Example ---");
-    const selectedPresetName = 'Radial Fusion';
+    const selectedPresetId = 'mono-royal-seal';
     const userInitials = 'HXG';
-    const preset = monogramPresets.find(p => p.name === selectedPresetName);
+    const preset = MONOGRAM_PRESETS.find(p => p.id === selectedPresetId);
 
     if (!preset) {
-        console.error(`Error: Monogram Preset "${selectedPresetName}" not found.`);
+        console.error(`Error: Monogram Preset "${selectedPresetId}" not found.`);
         return;
     }
 
     const textPrompt = `${preset.prompt}. The monogram should fuse the initials: ${userInitials}.`;
-    const extraDirectives = Object.entries(preset)
-        .filter(([key]) => !['name', 'prompt', 'directives'].includes(key))
-        .map(([key, value]) => `${key.replace(/([A-Z])/g, '_$1').toUpperCase()}: ${String(value).toUpperCase()}`)
-        .join('\n');
+    const extraDirectives = Object.entries(preset.parameters)
+      .map(([key, value]) => {
+        const snakeKey = key.replace(/([A-Z])/g, '_$1').toUpperCase();
+        return `${snakeKey}: ${String(value).toUpperCase()}`;
+      }).join('\n');
 
     try {
         console.log(`Requesting monogram with preset: ${preset.name}`);
@@ -454,25 +434,21 @@ async function runMonogramSynthesisExample() {
     }
 }
 
-// --- EXAMPLE: VECTOR PANEL ---
-
 async function runVectorSynthesisExample() {
     console.log("\n--- [2/4] Starting Vector Synthesis Example ---");
-    const preset = ENGINE_PROMPTS.find(p => p.id === 'sig-vec-01'); // Omega Lattice Alpha
+    const presetId = 'vec-geometric-core';
+    const preset = VECTOR_PRESETS.find(p => p.id === presetId);
     if (!preset) {
-        console.error('Error: Vector Preset "sig-vec-01" not found.');
+        console.error(`Error: Vector Preset "${presetId}" not found.`);
         return;
     }
 
     const textPrompt = `A complex, symmetrical logo for a quantum computing company. ${preset.prompt}`;
     const extraDirectives = `
       GEOMETRY_ENGINE: PRIMITIVES
-      PRIMITIVE_LOCK: ALL
       NODE_COMPLEXITY: 8/10
       STROKE_PARITY: MONOWEIGHT_ENFORCED
-      CORNER_RADIUS: 5%
       ALIGNMENT_GRID: ISOMETRIC
-      NEGATIVE_SPACE_RATIO: 15%
     `.trim();
     
     try {
@@ -484,29 +460,22 @@ async function runVectorSynthesisExample() {
     }
 }
 
-// --- EXAMPLE: TYPOGRAPHY PANEL ---
-
 async function runTypoSynthesisExample() {
     console.log("\n--- [3/4] Starting Typography Synthesis Example ---");
-    const presetName = "Urban Graffiti";
-    const preset = typographyPresets.find(p => p.name === presetName);
+    const presetId = "typo-urban-fracture";
+    const preset = TYPOGRAPHY_PRESETS.find(p => p.id === presetId);
     
     if (!preset) {
-        console.error(`Error: Typography Preset "${presetName}" not found.`);
+        console.error(`Error: Typography Preset "${presetId}" not found.`);
         return;
     }
     
-    const textPrompt = `The word 'HYPERX' rendered in a ${injectPresetTokens(preset.prompt)}`;
-    const extraDirectives = `
-      CAP_HEIGHT: ${preset.capHeight}%
-      STROKE_CONTRAST: ${preset.strokeContrast}%
-      TERMINAL_LOGIC: ${preset.terminals.toUpperCase()}
-      FONT_WEIGHT: ${preset.weight.toUpperCase()}
-      SPLICING_INTENSITY: ${preset.splicingIntensity}%
-      INTERLOCK_GUTTER: ${preset.interlockGutter}px
-      X_HEIGHT_BIAS: ${preset.xHeightBias}%
-      LIGATURE_LOGIC: ${preset.ligatureThreshold.toUpperCase()}
-    `.trim();
+    const textPrompt = `The word 'HYPERX' rendered in a style described as: ${preset.prompt}`;
+    const extraDirectives = Object.entries(preset.parameters)
+        .map(([key, value]) => {
+            const snakeKey = key.replace(/([A-Z])/g, '_$1').toUpperCase();
+            return `${snakeKey}: ${String(value).toUpperCase()}`;
+        }).join('\n');
 
     try {
         console.log(`Requesting typography with preset: ${preset.name}`);
@@ -517,21 +486,18 @@ async function runTypoSynthesisExample() {
     }
 }
 
-// --- EXAMPLE: STYLE EXTRACTOR PANEL ---
-
 async function runStyleExtractionExample() {
     console.log("\n--- [4/4] Starting Style Extractor Example ---");
+    const extractionPrompt = "[STYLE_EXTRACTOR_LOCK] Preserve visual fidelity";
     try {
         console.log("Requesting style extraction from a placeholder image...");
-        const result = await extractStyleFromImage(PLACEHOLDER_IMAGE_BASE64, KERNEL_CONFIG, GLOBAL_STYLE_EXTRACTOR_LOCK);
+        const result = await extractStyleFromImage(PLACEHOLDER_IMAGE_BASE64, KERNEL_CONFIG, extractionPrompt);
         console.log('✅ Style Extraction successful!');
         console.log('Extracted DNA:', JSON.stringify(result, null, 2));
     } catch (error) {
         console.error('❌ Style Extraction failed:', error);
     }
 }
-
-// --- MAIN EXECUTION ---
 
 async function runAllExamples() {
     console.log("=================================================");
@@ -546,14 +512,12 @@ async function runAllExamples() {
     console.log("\n--- All examples finished ---");
 }
 
-// Fix: Commented out Node.js-specific CLI execution logic that causes build errors in a browser environment.
-// This block is intended for backend/CLI testing only and is not part of the main application bundle.
+// Commented out Node.js-specific CLI execution logic that causes build errors in a browser environment.
 /*
 if (typeof process !== 'undefined' && process.env.GEMINI_API_KEY) {
     if (process.env.GEMINI_API_KEY === 'PLACEHOLDER_API_KEY') {
         console.error("\nERROR: GEMINI_API_KEY is a placeholder. Please create a .env file and set your API key.");
     } else {
-       // Check if being run directly from node
        if (typeof require !== 'undefined' && require.main === module) {
           runAllExamples();
        }

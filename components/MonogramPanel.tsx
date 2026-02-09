@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useCallback, useState, useRef } from 'react';
 // FIX: MonogramPreset is defined in types.ts and should be imported from there.
 import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, LogEntry, MonogramPreset } from '../types.ts';
-import { PRESET_REGISTRY } from '../presets/index.ts';
+import { PRESET_REGISTRY, injectPresetTokens } from '../presets/enginePrompts.ts';
 import { synthesizeMonogramStyle, refineTextPrompt } from '../services/geminiService.ts';
 import { useDevourer } from '../hooks/useDevourer.ts';
 import { PresetCard } from './PresetCard.tsx';
@@ -23,6 +23,7 @@ interface MonogramPanelProps {
   savedPresets: any[];
   onStateUpdate?: (state: any) => void;
   addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
+  onApiKeyError: () => void;
 }
 
 type LayoutMode = 'interlocked' | 'stacked' | 'block' | 'mirrored';
@@ -42,7 +43,8 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
   onModeSwitch,
   savedPresets = [],
   onStateUpdate,
-  addLog
+  addLog,
+  onApiKeyError,
 }) => {
   const PRESETS = useMemo(() => {
     let presetsToRender: PresetCategory[] = [...PRESET_REGISTRY.MONOGRAM.libraries];
@@ -54,10 +56,12 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
         userPresets.forEach(p => {
           const catName = p.category || p.dna?.category || "VAULT_ARCHIVES";
           if (!grouped[catName]) grouped[catName] = [];
+// @FIX: Added missing 'category' property to conform to PresetItem type.
           grouped[catName].push({
             id: p.id || Math.random().toString(),
             name: p.name || p.dna?.name || "UNNAMED_DNA",
             type: p.type as any || PanelMode.MONOGRAM,
+            category: catName,
             description: p.description || p.dna?.description || "Extracted Style DNA",
             dna: p.dna,
             prompt: p.prompt
@@ -109,6 +113,16 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
     });
   }, [onStateUpdate, prompt, generatedOutput, uploadedImage, dna, layoutMode, initialCount, orientation, intersectionGap, autoWeave, strokeWeight, terminalShape, cornerRadius, aspectRatio, geoFrame, opticalKerning]);
 
+  const handleApiError = useCallback((e: any) => {
+    const errorStr = (e?.message || '').toLowerCase();
+    if (errorStr.includes('requested entity was not found')) {
+      addLog('API Key error detected. Please select a valid key.', 'error');
+      onApiKeyError();
+      return true;
+    }
+    return false;
+  }, [addLog, onApiKeyError]);
+
   const handleSelectPreset = useCallback((id: string) => {
     if (isProcessing) return;
 
@@ -125,10 +139,11 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
     if (!item) return;
 
     setActivePreset(item);
+    setPrompt('');
 
     // Apply preset parameters
     if (item.parameters) {
-      const params = item.parameters as unknown as MonogramPreset;
+      const params = item.parameters as MonogramPreset['parameters'];
       setLayoutMode(params.layoutMode);
       setInitialCount(params.initialCount);
       setOrientation(params.orientation);
@@ -148,12 +163,6 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
       transition("DNA_LINKED");
     }
 
-    // Inject preset description into prompt
-    if (item.description) {
-      const personalityPrompt = `${item.description}. Construct a monogram emphasizing radial symmetry, geometric purity, and high-contrast minimalism.`;
-      setPrompt(personalityPrompt);
-    }
-
     if ((item as any).imageUrl) setUploadedImage((item as any).imageUrl);
   }, [PRESETS, isProcessing, transition, activePresetId]);
 
@@ -163,7 +172,8 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
     try {
       const refined = await refineTextPrompt(prompt, PanelMode.MONOGRAM, kernelConfig, dna || undefined);
       setPrompt(refined);
-    } catch (e) {
+    } catch (e: any) {
+      if (handleApiError(e)) return;
       console.error("Refinement failed", e);
       addLog("PROMPT_REFINE_FAILED", 'error');
     } finally {
@@ -174,7 +184,8 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
   const handleGenerate = async () => {
     if (processingRef.current) return;
     const effectivePrompt = prompt.trim() || "X";
-    const combinedPrompt = [activePreset?.prompt, effectivePrompt].filter(Boolean).join('. ');
+    const basePrompt = [activePreset?.prompt, effectivePrompt].filter(Boolean).join('. ');
+    const finalPrompt = injectPresetTokens(basePrompt, PanelMode.MONOGRAM);
 
     const extraDirectives = `
       LAYOUT_MODE: ${layoutMode.toUpperCase()}
@@ -195,7 +206,7 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
     setIsValidationError(false);
 
     try {
-      const result = await synthesizeMonogramStyle(combinedPrompt, uploadedImage || undefined, kernelConfig, dna || undefined, extraDirectives);
+      const result = await synthesizeMonogramStyle(finalPrompt, uploadedImage || undefined, kernelConfig, dna || undefined, extraDirectives);
       setGeneratedOutput(result);
       transition("LATTICE_ACTIVE");
       onSaveToHistory({
@@ -203,13 +214,17 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
         name: effectivePrompt,
         description: `Monogram ${effectivePrompt} in ${layoutMode} style`,
         type: PanelMode.MONOGRAM,
-        prompt: effectivePrompt,
+        prompt: finalPrompt,
         settings: { layoutMode, initialCount, orientation, intersectionGap, autoWeave, strokeWeight, terminalShape, cornerRadius, aspectRatio, geoFrame, opticalKerning },
         dna: dna || undefined,
         imageUrl: uploadedImage,
         timestamp: new Date().toLocaleTimeString()
       });
     } catch (e: any) {
+      if (handleApiError(e)) {
+        transition("LATTICE_FAIL");
+        return;
+      }
       console.error(e);
       addLog(`SYNTHESIS_ERROR: ${e?.message || 'Unknown error'}`, 'error');
       transition("LATTICE_FAIL");

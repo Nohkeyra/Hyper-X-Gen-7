@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react';
 import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, LogEntry } from '../types.ts';
-import { PRESET_REGISTRY } from '../presets/index.ts';
+import { PRESET_REGISTRY, injectPresetTokens } from '../presets/enginePrompts.ts';
 import { synthesizeVectorStyle, refineTextPrompt, refineVectorComposition } from '../services/geminiService.ts';
 import { useDevourer } from '../hooks/useDevourer.ts';
 import { PresetCard } from './PresetCard.tsx';
@@ -22,6 +22,7 @@ interface VectorPanelProps {
   savedPresets: any[];
   onStateUpdate?: (state: any) => void;
   addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
+  onApiKeyError: () => void;
 }
 
 type GeometryEngine = 'primitives' | 'parametric' | 'organic' | 'hybrid';
@@ -38,7 +39,8 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
   onModeSwitch,
   savedPresets = [],
   onStateUpdate,
-  addLog
+  addLog,
+  onApiKeyError,
 }) => {
   const PRESETS = useMemo(() => {
     let presetsToRender: PresetCategory[] = [...PRESET_REGISTRY.VECTOR.libraries];
@@ -49,10 +51,12 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
         userPresets.forEach(p => {
           const catName = p.category || p.dna?.category || "VAULT_ARCHIVES";
           if (!grouped[catName]) grouped[catName] = [];
+// @FIX: Added missing 'category' property to conform to PresetItem type.
           grouped[catName].push({
             id: p.id || Math.random().toString(),
             name: p.name || p.dna?.name || "UNNAMED_DNA",
             type: p.type as any || PanelMode.VECTOR,
+            category: catName,
             description: p.description || p.dna?.description || "Extracted Style DNA",
             dna: p.dna,
             prompt: p.prompt
@@ -98,6 +102,16 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
       settings: { engine, primLock, nodeComplexity, strokeParity, cornerRadius, grid, negativeSpace }
     });
   }, [onStateUpdate, prompt, generatedOutput, uploadedImage, dna, engine, primLock, nodeComplexity, strokeParity, cornerRadius, grid, negativeSpace]);
+  
+  const handleApiError = useCallback((e: any) => {
+    const errorStr = (e?.message || '').toLowerCase();
+    if (errorStr.includes('requested entity was not found')) {
+      addLog('API Key error detected. Please select a valid key.', 'error');
+      onApiKeyError();
+      return true;
+    }
+    return false;
+  }, [addLog, onApiKeyError]);
 
   const handleSelectPreset = useCallback((id: string) => {
     if (isProcessing) return;
@@ -115,17 +129,12 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
     if (!item) return;
 
     setActivePreset(item);
+    setPrompt('');
 
     // Inject DNA
     if (item.dna) {
       setDna(item.dna);
       transition("DNA_LINKED");
-    }
-
-    // Inject preset description into prompt
-    if (item.description) {
-      const personalityPrompt = `${item.description}. Generate clean geometric vectors, emphasizing symmetry, precision, and industrial aesthetic.`;
-      setPrompt(personalityPrompt);
     }
 
     if ((item as any).imageUrl) setUploadedImage((item as any).imageUrl);
@@ -137,7 +146,8 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
     try {
       const refined = await refineTextPrompt(prompt, PanelMode.VECTOR, kernelConfig, dna || undefined);
       setPrompt(refined);
-    } catch (e) {
+    } catch (e: any) {
+      if (handleApiError(e)) return;
       console.error("Refinement failed");
       addLog("PROMPT_REFINE_FAILED", 'error');
     } finally {
@@ -164,6 +174,10 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
         timestamp: new Date().toLocaleTimeString()
       });
     } catch(e: any) {
+      if (handleApiError(e)) {
+        transition("LATTICE_FAIL");
+        return;
+      }
       console.error("Composition refinement failed:", e);
       addLog(`COMPOSITION_REFINE_ERROR: ${e.message}`, 'error');
       transition("LATTICE_FAIL");
@@ -175,7 +189,9 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
   const handleGenerate = async () => {
     if (processingRef.current) return;
     const effectivePrompt = prompt.trim() || (uploadedImage ? "Refine silhouette into geometric paths." : "Abstract geometric synthesis.");
-    const combinedPrompt = [activePreset?.prompt, effectivePrompt].filter(Boolean).join('. ');
+    
+    const basePrompt = [activePreset?.prompt, effectivePrompt].filter(Boolean).join('. ');
+    const finalPrompt = injectPresetTokens(basePrompt, PanelMode.VECTOR);
 
     const extraDirectives = `GEOMETRY_ENGINE: ${engine.toUpperCase()} PRIMITIVE_LOCK: ${primLock.toUpperCase()} NODE_COMPLEXITY: ${nodeComplexity} STROKE_PARITY: ${strokeParity ? 'MONOWEIGHT' : 'VARYING'} CORNER_RADIUS: ${cornerRadius}% ALIGNMENT_GRID: ${grid.toUpperCase()} NEGATIVE_SPACE: ${negativeSpace}%`.trim();
 
@@ -184,7 +200,7 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
     setIsValidationError(false);
 
     try {
-      const result = await synthesizeVectorStyle(combinedPrompt, uploadedImage || undefined, kernelConfig, dna || undefined, extraDirectives);
+      const result = await synthesizeVectorStyle(finalPrompt, uploadedImage || undefined, kernelConfig, dna || undefined, extraDirectives);
       setGeneratedOutput(result);
       transition("LATTICE_ACTIVE");
       onSaveToHistory({
@@ -192,13 +208,17 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
         name: effectivePrompt.slice(0, 15),
         description: uploadedImage ? `Vectorized image using ${engine} engine` : `Vector synthesis using ${engine} engine`,
         type: PanelMode.VECTOR,
-        prompt: combinedPrompt,
+        prompt: finalPrompt,
         settings: { engine, primLock, nodeComplexity, strokeParity, cornerRadius, grid, negativeSpace },
         dna: dna || undefined,
         imageUrl: uploadedImage,
         timestamp: new Date().toLocaleTimeString()
       });
     } catch (e: any) {
+      if (handleApiError(e)) {
+        transition("LATTICE_FAIL");
+        return;
+      }
       console.error(e);
       addLog(`SYNTHESIS_ERROR: ${e?.message || 'Unknown error'}`, 'error');
       transition("LATTICE_FAIL");

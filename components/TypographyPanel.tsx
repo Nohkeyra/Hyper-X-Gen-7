@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react';
 import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, TypographyPreset } from '../types.ts';
-import { PRESET_REGISTRY } from '../presets/index.ts';
+import { PRESET_REGISTRY, injectPresetTokens } from '../presets/enginePrompts.ts';
 import { synthesizeTypoStyle, refineTextPrompt } from '../services/geminiService.ts';
 import { useDevourer } from '../hooks/useDevourer.ts';
 import { PresetCard } from './PresetCard.tsx';
@@ -22,6 +22,7 @@ interface TypographyPanelProps {
   savedPresets: any[];
   onStateUpdate?: (state: any) => void;
   addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
+  onApiKeyError: () => void;
 }
 
 type TerminalLogic = 'clipped' | 'flare' | 'rounded' | 'spike';
@@ -38,7 +39,8 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
   onModeSwitch,
   savedPresets = [],
   onStateUpdate,
-  addLog
+  addLog,
+  onApiKeyError,
 }) => {
   const PRESETS = useMemo(() => {
     let presetsToRender: PresetCategory[] = [...PRESET_REGISTRY.TYPOGRAPHY.libraries];
@@ -50,10 +52,12 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
         userPresets.forEach(p => {
           const catName = p.category || p.dna?.category || "VAULT_ARCHIVES";
           if (!grouped[catName]) grouped[catName] = [];
+// @FIX: Added missing 'category' property to conform to PresetItem type.
           grouped[catName].push({
             id: p.id || Math.random().toString(),
             name: p.name || p.dna?.name || "UNNAMED_DNA",
             type: p.type as any || PanelMode.TYPOGRAPHY,
+            category: catName,
             description: p.description || p.dna?.description || "Extracted Style DNA",
             dna: p.dna,
             prompt: p.prompt
@@ -100,6 +104,16 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
     });
   }, [onStateUpdate, prompt, generatedOutput, uploadedImage, dna, capHeight, strokeContrast, terminalLogic, fontWeight, splicingIntensity, interlockGutter, xHeightBias, ligatureLogic]);
 
+  const handleApiError = useCallback((e: any) => {
+    const errorStr = (e?.message || '').toLowerCase();
+    if (errorStr.includes('requested entity was not found')) {
+      addLog('API Key error detected. Please select a valid key.', 'error');
+      onApiKeyError();
+      return true;
+    }
+    return false;
+  }, [addLog, onApiKeyError]);
+
   const handleSelectPreset = useCallback((id: string) => {
     if (isProcessing) return;
 
@@ -116,30 +130,25 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
     if (!item) return;
 
     setActivePreset(item);
+    setPrompt('');
 
     // Apply preset parameters
     if (item.parameters) {
-      const presetParams = item.parameters as unknown as TypographyPreset;
-      setFontWeight(presetParams.weight.toLowerCase() as FontWeight);
-      setTerminalLogic(presetParams.terminals.toLowerCase() as TerminalLogic);
+      const presetParams = item.parameters as TypographyPreset['parameters'];
+      setFontWeight(presetParams.weight);
+      setTerminalLogic(presetParams.terminals);
       setCapHeight(presetParams.capHeight);
       setStrokeContrast(presetParams.strokeContrast);
       setSplicingIntensity(presetParams.splicingIntensity);
       setInterlockGutter(presetParams.interlockGutter);
       setXHeightBias(presetParams.xHeightBias);
-      setLigatureLogic(presetParams.ligatureThreshold.toLowerCase() as LigatureLogic);
+      setLigatureLogic(presetParams.ligatureThreshold);
     }
 
     // Inject DNA if exists
     if (item.dna) {
       setDna(item.dna);
       transition("DNA_LINKED");
-    }
-
-    // Inject preset description into prompt
-    if (item.description) {
-      const personalityPrompt = `${item.description}. Render in a dynamic, aggressive, graffiti-inspired typographic style.`;
-      setPrompt(personalityPrompt);
     }
 
     if ((item as any).imageUrl) setUploadedImage((item as any).imageUrl);
@@ -151,7 +160,8 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
     try {
       const refined = await refineTextPrompt(prompt, PanelMode.TYPOGRAPHY, kernelConfig, dna || undefined);
       setPrompt(refined);
-    } catch {
+    } catch (e: any) {
+      if (handleApiError(e)) return;
       addLog("PROMPT_REFINE_FAILED", 'error');
     } finally {
       setIsRefining(false);
@@ -161,6 +171,10 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
   const handleGenerate = async () => {
     if (processingRef.current) return;
     const effectivePrompt = prompt.trim() || "HYPER";
+    
+    const basePrompt = [activePreset?.prompt, effectivePrompt].filter(Boolean).join('. ');
+    const finalPrompt = injectPresetTokens(basePrompt, PanelMode.TYPOGRAPHY);
+
     const extraDirectives = `
 CAP_HEIGHT: ${capHeight}%
 STROKE_CONTRAST: ${strokeContrast}%
@@ -173,19 +187,35 @@ LIGATURE_LOGIC: ${ligatureLogic.toUpperCase()}
 `.trim();
 
     processingRef.current = true;
-    transition("DEVOURING_BUFFER", true);
+    transition(dna ? "DNA_STYLIZE_ACTIVE" as any : "DEVOURING_BUFFER", true);
     setIsValidationError(false);
 
     try {
-      const result = await synthesizeTypoStyle(effectivePrompt, uploadedImage || undefined, kernelConfig, dna || undefined, extraDirectives);
+      const result = await synthesizeTypoStyle(finalPrompt, uploadedImage || undefined, kernelConfig, dna || undefined, extraDirectives);
       setGeneratedOutput(result);
       transition("LATTICE_ACTIVE");
-      onSaveToHistory({ id: `typo-${Date.now()}`, name: effectivePrompt.slice(0,15), description: 'Typography synthesis', type: PanelMode.TYPOGRAPHY, prompt: effectivePrompt, settings: { capHeight, strokeContrast, terminalLogic, fontWeight, splicingIntensity, interlockGutter, xHeightBias, ligatureLogic }, dna, imageUrl: uploadedImage, timestamp: new Date().toLocaleTimeString() });
-    } catch {
+      onSaveToHistory({ 
+        id: `typo-${Date.now()}`, 
+        name: effectivePrompt.slice(0,15), 
+        description: 'Typography synthesis', 
+        type: PanelMode.TYPOGRAPHY, 
+        prompt: finalPrompt, 
+        settings: { capHeight, strokeContrast, terminalLogic, fontWeight, splicingIntensity, interlockGutter, xHeightBias, ligatureLogic }, 
+        dna, 
+        imageUrl: uploadedImage, 
+        timestamp: new Date().toLocaleTimeString() 
+      });
+    } catch (e: any) {
+      if (handleApiError(e)) {
+        transition("LATTICE_FAIL");
+        return;
+      }
       addLog("SYNTHESIS_ERROR: Generation failed", 'error');
       transition("LATTICE_FAIL");
       setIsValidationError(true);
-    } finally { processingRef.current = false; }
+    } finally { 
+      processingRef.current = false; 
+    }
   };
 
   // Fix: Implemented a full sidebar with controls and preset list.
