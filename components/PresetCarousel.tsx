@@ -1,14 +1,15 @@
 
+
 import React from 'react';
 import { PanelMode, PresetCategory, PresetItem } from '../types';
 
 interface PresetCarouselProps {
-  presets: PresetCategory[];
+  categories: PresetCategory[];
   activeId: string | null;
   onSelect: (id: string) => void;
 }
 
-export const PresetCarousel: React.FC<PresetCarouselProps> = ({ presets, activeId, onSelect }) => {
+export const PresetCarousel: React.FC<PresetCarouselProps> = ({ categories, activeId, onSelect }) => {
   const getIconChar = (item: PresetItem) => {
     if (item.type) return item.type[0].toUpperCase();
     return '•';
@@ -26,7 +27,7 @@ export const PresetCarousel: React.FC<PresetCarouselProps> = ({ presets, activeI
   return (
     <div className="md:hidden w-full overflow-x-auto no-scrollbar py-2 bg-brandNeutral dark:bg-brandDeep border-y border-brandCharcoal/5 dark:border-white/5">
       <div className="flex gap-6 px-4">
-        {presets.map((category) => (
+        {categories.map((category) => (
           <div key={category.title} className="flex-none flex flex-col gap-2">
             <div className="flex items-center gap-2 px-1">
               <div className="w-1 h-2 bg-brandRed rounded-full" />

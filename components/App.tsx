@@ -1,23 +1,24 @@
+
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
-import { PanelMode, KernelConfig, CloudArchiveEntry, LogEntry, ExtractionResult } from './types.ts';
-import { BootScreen } from './components/BootScreen.tsx';
-import { RealRefineDiagnostic } from './components/RealRefineDiagnostic.tsx';
-import { RealRepairDiagnostic } from './components/RealRepairDiagnostic.tsx';
-import { useDeviceDetection } from './components/DeviceDetector.tsx';
-import { StartScreen } from './components/StartScreen.tsx';
-import { PanelHeader } from './components/PanelHeader.tsx';
-import { AppControlsBar } from './components/AppControlsBar.tsx';
-import { LogViewer } from './components/LogViewer.tsx';
-import { LoadingSpinner } from './components/Loading.tsx';
-import { LS_KEYS } from './constants.ts';
+import { PanelMode, KernelConfig, CloudArchiveEntry, LogEntry, ExtractionResult } from '../types.ts';
+import { BootScreen } from './BootScreen.tsx';
+import { RealRefineDiagnostic } from './RealRefineDiagnostic.tsx';
+import { RealRepairDiagnostic } from './RealRepairDiagnostic.tsx';
+import { useDeviceDetection } from './DeviceDetector.tsx';
+import { StartScreen } from './StartScreen.tsx';
+import { PanelHeader } from './PanelHeader.tsx';
+import { AppControlsBar } from './AppControlsBar.tsx';
+import { LogViewer } from './LogViewer.tsx';
+import { LoadingSpinner } from './Loading.tsx';
+import { LS_KEYS } from '../constants.ts';
 
 // Lazy-load panel components
-const VectorPanel = lazy(() => import('./components/VectorPanel.tsx').then(m => ({ default: m.VectorPanel })));
-const TypographyPanel = lazy(() => import('./components/TypographyPanel.tsx').then(m => ({ default: m.TypographyPanel })));
-const MonogramPanel = lazy(() => import('./components/MonogramPanel.tsx').then(m => ({ default: m.MonogramPanel })));
-const StyleExtractorPanel = lazy(() => import('./components/StyleExtractorPanel.tsx').then(m => ({ default: m.StyleExtractorPanel })));
-const ImageFilterPanel = lazy(() => import('./components/ImageFilterPanel.tsx').then(m => ({ default: m.ImageFilterPanel })));
-const SystemAuditPanel = lazy(() => import('./components/SystemAuditPanel.tsx').then(m => ({ default: m.SystemAuditPanel })));
+const VectorPanel = lazy(() => import('./VectorPanel.tsx').then(m => ({ default: m.VectorPanel })));
+const TypographyPanel = lazy(() => import('./TypographyPanel.tsx').then(m => ({ default: m.TypographyPanel })));
+const MonogramPanel = lazy(() => import('./MonogramPanel.tsx').then(m => ({ default: m.MonogramPanel })));
+const StyleExtractorPanel = lazy(() => import('./StyleExtractorPanel.tsx').then(m => ({ default: m.StyleExtractorPanel })));
+const ImageFilterPanel = lazy(() => import('./ImageFilterPanel.tsx').then(m => ({ default: m.ImageFilterPanel })));
+const SystemAuditPanel = lazy(() => import('./SystemAuditPanel.tsx').then(m => ({ default: m.SystemAuditPanel })));
 
 interface AppConfig {
   panels: {
@@ -29,6 +30,7 @@ interface AppConfig {
 
 export const App: React.FC = () => {
   const [isBooting, setIsBooting] = useState(true);
+  const [apiKeyReady, setApiKeyReady] = useState(true); // Always ready for free mode
   const [currentPanel, setCurrentPanel] = useState<PanelMode>(PanelMode.START);
   const [transferData, setTransferData] = useState<any>(null);
   const [isRepairing, setIsRepairing] = useState(false);
@@ -68,17 +70,16 @@ export const App: React.FC = () => {
     });
   }, []);
 
-  /**
-   * MEMOIZED UTILITY: safeParse
-   * Moved outside hooks to ensure stable reference and prevent recreation on render.
-   */
+  const handleApiKeyError = useCallback(() => {
+    addLog("API_KEY_INVALID: Detected. (Free mode enabled, this should not occur).", 'error');
+  }, [addLog]);
+
+  // FIX: Move safeParse outside useEffect and wrap in useCallback
   const safeParse = useCallback((key: string, fallback: any) => {
     try {
       const item = localStorage.getItem(key);
-      if (!item) return fallback;
-      return JSON.parse(item);
-    } catch (e) {
-      console.error(`Storage Error [${key}]:`, e);
+      return item ? JSON.parse(item) : fallback;
+    } catch {
       localStorage.removeItem(key);
       return fallback;
     }
@@ -131,7 +132,7 @@ export const App: React.FC = () => {
           }).filter(mode => mode !== PanelMode.START);
           setEnabledModes(configuredModes);
 
-          // Use memoized safeParse with stable dependencies
+          // FIX: Use memoized safeParse
           setSavedPresets(safeParse(LS_KEYS.PRESETS, []));
           setRecentWorks(safeParse(LS_KEYS.RECENT, []));
           setCloudArchives(safeParse(LS_KEYS.ARCHIVES, []));
@@ -145,7 +146,7 @@ export const App: React.FC = () => {
       };
       boot();
     }
-  }, [addLog, isBooting, hasInitialized, safeParse]);
+  }, [addLog, isBooting, hasInitialized, safeParse]); // Added safeParse to dependencies
 
   useEffect(() => {
     if (hasInitialized) {
@@ -157,21 +158,26 @@ export const App: React.FC = () => {
         localStorage.setItem(LS_KEYS.LOGS, JSON.stringify(logs));
       } catch (e) {
         console.error("Failed to write to localStorage:", e);
-        addLog("STORAGE_ERROR: Could not persist session.", 'error');
+        addLog("STORAGE_ERROR: Could not persist session. Storage may be full.", 'error');
       }
     }
   }, [savedPresets, recentWorks, cloudArchives, kernelConfig, logs, hasInitialized, addLog]);
 
   const handleCommitToVault = useCallback(() => {
-    if (!currentPanelState) { addLog("COMMIT_FAIL: NO_ACTIVE_LATTICE", 'error'); return; }
+    if (!currentPanelState) { addLog("COMMIT_FAIL: NO_ACTIVE_LATTICE_TO_BUFFER", 'error'); return; }
     
     const name = currentPanelState.prompt ? `Commit: ${currentPanelState.prompt.substring(0, 15)}` : currentPanelState.name || `Commit: ${currentPanelState.type}`;
     const { generatedOutput, ...restOfState } = currentPanelState;
-    const newPreset = { id: `preset-${Date.now()}`, name, type: currentPanelState.type, ...restOfState, imageUrl: currentPanelState.uploadedImage, timestamp: new Date().toLocaleTimeString() };
+    const newPreset = { id: `preset-${Date.now()}`, name, type: currentPanelState.type, description: `Committed on ${new Date().toLocaleDateString()}`, ...restOfState, imageUrl: currentPanelState.uploadedImage, timestamp: new Date().toLocaleTimeString() };
+    
+    if (savedPresets.some(p => p.name === newPreset.name && p.type === newPreset.type && p.prompt === newPreset.prompt)) {
+      addLog("COMMIT_INFO: IDENTICAL_PRESET_IN_VAULT", 'info');
+      return;
+    }
     
     setSavedPresets(prev => [newPreset, ...prev]);
-    addLog("COMMIT_SUCCESS: VAULT_UPDATED", 'success');
-  }, [currentPanelState, addLog]);
+    addLog("COMMIT_SUCCESS: PRESET_BUFFERED_TO_VAULT", 'success');
+  }, [currentPanelState, addLog, savedPresets]);
 
   const handleModeSwitch = useCallback((mode: PanelMode, data?: any) => {
     setCurrentPanel(mode);
@@ -179,25 +185,21 @@ export const App: React.FC = () => {
     addLog(`OMEGA_PIVOT: ${mode.toUpperCase()}_ENGAGED`, 'info');
   }, [addLog]);
 
-  // FIX: Added handleLoadItem to fix "Cannot find name 'handleLoadItem'" error.
-  const handleLoadItem = useCallback((item: any) => {
-    if (item.type && item.type !== PanelMode.START) {
-      handleModeSwitch(item.type, item);
-    }
-    addLog("ITEM_LOADED", 'info');
-  }, [handleModeSwitch, addLog]);
-
+  const handleClearRecentWorks = useCallback(() => { setRecentWorks([]); addLog("BUFFER_PURGED: SESSION_HISTORY_CLEARED", 'warning'); }, [addLog]);
+  const handleClearSavedPresets = useCallback(() => { setSavedPresets([]); addLog("VAULT_PURGED: ALL_PRESETS_REMOVED", 'warning'); }, [addLog]);
+  const handleLoadItem = useCallback((item: any) => { if (item.type && item.type !== PanelMode.START) handleModeSwitch(item.type, item); addLog("ITEM_LOADED", 'info'); }, [handleModeSwitch, addLog]);
   const handleBootComplete = useCallback(() => { setIsBooting(false); }, []);
 
   if (isBooting) return <BootScreen onBootComplete={handleBootComplete} isDarkMode={isDarkMode} />;
 
-  if (isRepairing) return <RealRepairDiagnostic onComplete={(summary) => { addLog(`REPAIR_COMPLETE: ${summary.repairedNodes} nodes restored.`, 'success'); setSystemIntegrity(summary.systemStabilityScore); setIsRepairing(false); }} />;
-  if (isRefining) return <RealRefineDiagnostic onComplete={(summary) => { addLog(`REFINE_COMPLETE: ${summary.resolvedIssues} issues resolved.`, 'success'); setUiRefinementLevel(prev => prev + summary.resolvedIssues); setIsRefining(false); }} />;
+  if (isRepairing) return <RealRepairDiagnostic onComplete={(summary) => { addLog(`REPAIR_SUMMARY: ${summary.repairedNodes}/${summary.totalNodes} nodes restored.`, 'success'); setSystemIntegrity(summary.systemStabilityScore); setIsRepairing(false); }} />;
+  if (isRefining) return <RealRefineDiagnostic onComplete={(summary) => { addLog(`REFINE_SUMMARY: ${summary.resolvedIssues}/${summary.totalIssues} issues resolved.`, 'success'); setUiRefinementLevel(prev => prev + summary.resolvedIssues); setIsRefining(false); }} />;
 
   const commonProps = {
     kernelConfig,
     integrity: systemIntegrity,
     uiRefined: uiRefinementLevel > 0,
+    refinementLevel: uiRefinementLevel,
     onSaveToHistory: (work: any) => setRecentWorks(prev => [work, ...prev]),
     onModeSwitch: handleModeSwitch,
     savedPresets,
@@ -225,7 +227,7 @@ export const App: React.FC = () => {
           {currentPanel === PanelMode.VECTOR && <VectorPanel {...commonProps} initialData={transferData} />}
           {currentPanel === PanelMode.TYPOGRAPHY && <TypographyPanel {...commonProps} initialData={transferData} />}
           {currentPanel === PanelMode.MONOGRAM && <MonogramPanel {...commonProps} initialData={transferData} />}
-          {currentPanel === PanelMode.EXTRACTOR && <StyleExtractorPanel kernelConfig={kernelConfig} savedPresets={savedPresets} onSaveToPresets={(p) => setSavedPresets(prev => [p, ...prev])} onDeletePreset={(id) => setSavedPresets(prev => prev.filter(p => p.id !== id))} addLog={addLog} onApiKeyError={() => {}} onModeSwitch={handleModeSwitch} />}
+          {currentPanel === PanelMode.EXTRACTOR && <StyleExtractorPanel kernelConfig={kernelConfig} savedPresets={savedPresets} onSaveToPresets={(p) => setSavedPresets(prev => [p, ...prev])} onDeletePreset={(id) => setSavedPresets(prev => prev.filter(p => p.id !== id))} addLog={addLog} onApiKeyError={handleApiKeyError} onModeSwitch={handleModeSwitch} />}
           {currentPanel === PanelMode.FILTERS && <ImageFilterPanel onSaveToHistory={(w) => setRecentWorks(p => [w, ...p])} kernelConfig={kernelConfig} onModeSwitch={handleModeSwitch} onStateUpdate={setCurrentPanelState} />}
           {currentPanel === PanelMode.AUDIT && <SystemAuditPanel />}
         </Suspense>
@@ -236,12 +238,9 @@ export const App: React.FC = () => {
         recentWorks={recentWorks} 
         savedPresets={savedPresets}
         onLoadHistoryItem={handleLoadItem}
-        onClearRecentWorks={() => setRecentWorks([])}
-        onClearSavedPresets={() => setSavedPresets([])}
+        onClearRecentWorks={handleClearRecentWorks}
+        onClearSavedPresets={handleClearSavedPresets}
         onForceSave={handleCommitToVault}
         enabledModes={enabledModes}
       />
-      <LogViewer logs={logs} onClear={() => setLogs([])} isOpen={showLogViewer} onClose={() => setShowLogViewer(false)} />
-    </div>
-  );
-};
+      <LogViewer logs={logs}

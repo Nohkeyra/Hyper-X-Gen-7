@@ -1,11 +1,8 @@
+
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
-import { ExtractionResult, KernelConfig, PanelMode, RealIssue, TypographyPreset, VectorPreset, MonogramPreset } from "../types.ts";
+import { ExtractionResult, KernelConfig, PanelMode, RealIssue } from "../types.ts";
 import { injectAntiCensor } from '../utils/antiCensor.ts';
-import {
-    TYPOGRAPHY_PRESETS,
-    VECTOR_PRESETS,
-    MONOGRAM_PRESETS
-} from '../presets/enginePrompts.ts';
+import { PRESET_REGISTRY } from '../presets/index.ts';
 
 // Helper function to extract pure base64 data from a data URL
 function getPureBase64Data(dataUrl: string | null | undefined): string | null {
@@ -20,19 +17,61 @@ function getPureBase64Data(dataUrl: string | null | undefined): string | null {
 const DEFAULT_CONFIG: KernelConfig = {
   thinkingBudget: 0,
   temperature: 0.1,
-  model: 'gemini-3-flash-preview', // Default model for text-focused tasks or multimodal fallback
+  model: 'gemini-3-flash-preview', 
   deviceContext: 'MAXIMUM_ARCHITECTURE_OMEGA_V5'
 };
 
-const IMAGE_GEN_SYSTEM_DIRECTIVE = `You are a specialized image generation engine focused on geometric purity and industrial precision. Your output must be abstract, safe-for-work, and adhere to strict design principles.
-1. STRICT VISUAL ONLY: Render only the visual geometry described.
-2. NO TEXT RENDER: Your output must be a pure image. Absolutely do not render any text, including characters from the user's prompt or any words from these instructions. Use prompt text only as a reference for the geometric shape to create. The final image must contain zero text characters.
-3. HIGH CONTRAST & PRECISION: Prioritize sharp edges, mathematical accuracy, and clean vector aesthetics.
-4. CONTENT SAFETY LOCK: Generate only abstract geometric patterns, logos, typographic art, or technical illustrations. Strictly avoid generating photorealistic images, people, faces, or any potentially sensitive or controversial content. Adherence to this rule is mandatory.
+const IMAGE_GEN_SYSTEM_DIRECTIVE = `You are a high-precision design engine for professional flat vector illustrations.
+CORE DESIGN PHILOSOPHY: Priority: Recognizable elegance > Mathematical perfection. Identity focused marks.
+
+VISUAL STYLE:
+- STYLE: "Modern flat vector illustration"
+- AESTHETIC: "Clean graphic design aesthetic"
+- MOOD: "Cheerful, communicative, professional"
+- INSPIRATION: "Digital product illustration, brand storytelling"
+
+COLOR & FORM:
+- Palette: 4-8 bold, saturated colors maximum.
+- Fills: Solid flat colors only (NO GRADIENTS).
+- Shadows: Darker tints of base colors as flat shapes.
+- Form: Simplified but expressive. Clean silhouettes with intentional negative space.
+
+LINE & EDGE:
+- Edges: Clean, crisp edges between all color areas. No blurring or anti-aliasing.
+- Line Work: Optional medium-bold outlines for main shapes. Thinner details.
+
+DETAIL CONTROL:
+- Faces: Minimal features (dots for eyes, line for mouth).
+- Patterns: Simple repeats or eliminated.
+- NO PHOTOREALISM. No excessive detail. Max 15 color areas.
+
+BACKGROUND: Strictly solid white (#FFFFFF) unless brand color specified.
 `;
 
-// @FIX: Defined the missing BASE_SYSTEM_DIRECTIVE for style extraction.
-const STYLE_EXTRACTOR_SYSTEM_DIRECTIVE = `You are an AUTONOMOUS_FORENSIC_AUTHENTICATOR. Your role is to analyze images to extract their core geometric and visual DNA. Focus on identifying clean shapes, vector readiness, symmetry, and high contrast. Your output must be minimal but precise, and always adhere to the specified JSON response schema.`;
+const TYPO_SYSTEM_DIRECTIVE = `You are an artistic typography engine.
+WORD-AS-ART PROTOCOL:
+- The text IS the artwork. Letters must be synthesized as the primary subject.
+- NO ENVIRONMENTAL SCENES (signs, shirts, backgrounds).
+- Composition: Word must form a cohesive visual shape.
+- Readability: Must be recognizable as intended text.
+- Style Fidelity: Authentically apply the chosen preset style (Grunge, Neon, Elegant, etc.).
+- Background: Solid color (white/black default). No decorative frames.
+- Forms: Allow organic curves and variable weights. Avoid forced geometric rigidity.
+- Rule: If preset and user description conflict, PRESET STYLE WINS.`;
+
+const STYLE_EXTRACTOR_SYSTEM_DIRECTIVE = `
+You are a STYLE_ANALYST. Your mission: Decode the VISUAL LANGUAGE of images to create reusable style presets.
+Extract VISUAL STYLE, not geometric forensics. Analyze images for color mood, harmony, visual aesthetics, and emotional tone.
+
+ANALYSIS PROTOCOL:
+1. Capture color DNA (dominant palette and hex codes).
+2. Deconstruct form DNA (shape language, simplification level, line treatment).
+3. Identify mood adjectives (2-3 items).
+4. Classify style domain (e.g., Flat_Illustration, Line_Art, Painterly).
+5. Generate a prompt template that can reproduce this style aesthetics.
+
+MANTRA: "What makes this look like THIS? How can we make other things look the SAME?"
+`;
 
 const FALLBACK_NAME_PARTS = {
   adj: ['Zenith', 'Vector', 'Neural', 'Cyber', 'Void', 'Omega', 'Lattice', 'Prism', 'Aero', 'Core', 'Hyper', 'Nova', 'Flux', 'Static', 'Quantum'],
@@ -44,68 +83,70 @@ function generateStylisticName(): string {
   const a = FALLBACK_NAME_PARTS.adj[Math.floor(Math.random() * FALLBACK_NAME_PARTS.adj.length)];
   const n = FALLBACK_NAME_PARTS.noun[Math.floor(Math.random() * FALLBACK_NAME_PARTS.noun.length)];
   const i = FALLBACK_NAME_PARTS.id[Math.floor(Math.random() * FALLBACK_NAME_PARTS.id.length)];
-  return `${a}-${n} ${i}`;
+  return `${a}-${n}-${i}`;
+}
+
+/**
+ * Robust instance creation with API key verification
+ */
+function createAIInstance(): GoogleGenAI | null {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey || apiKey === 'PLACEHOLDER_API_KEY') {
+    console.warn("API Key not found or invalid. System entering Free/Mock mode.");
+    return null;
+  }
+  return new GoogleGenAI({ apiKey });
 }
 
 async function reliableRequest<T>(requestFn: () => Promise<T>, retries = 5): Promise<T> {
   try {
     return await requestFn();
   } catch (error: any) {
-    const message = error?.message || "";
     const status = error?.status || error?.code || 0;
-    const errorStr = `${message} ${status} ${JSON.stringify(error)}`.toLowerCase();
+    const errorStr = JSON.stringify(error).toLowerCase();
 
-    // Quota Error Check with Exponential Backoff
-    const isQuota = errorStr.includes("429") || errorStr.includes("quota") || errorStr.includes("resource_exhausted") || status === 429;
+    const isQuota = errorStr.includes("429") || errorStr.includes("quota") || status === 429;
     
     if (isQuota && retries > 0) {
-      // Exponential backoff: 2s, 4s, 8s, 16s, 32s
       const delay = Math.pow(2, (6 - retries)) * 1000;
       console.warn(`[KERNEL_QUOTA]: Rate limit reached. Retrying in ${delay}ms... (${retries} retries left)`);
       await new Promise(resolve => setTimeout(resolve, delay));
       return reliableRequest(requestFn, retries - 1);
     }
     
-    // For all other errors (including API key errors), propagate them to the caller.
-    // The UI layer is responsible for catching key errors and triggering re-authentication.
     throw error;
   }
 }
 
-function compileVisualPrompt(subject: string, mode: 'vector' | 'typo' | 'monogram', dna?: ExtractionResult, extraParams?: string, hasImage = false): string {
+function compileVisualPrompt(subject: string, mode: PanelMode, dna?: ExtractionResult, extraParams?: string, hasImage = false): string {
   let workflowDirective = "";
 
-  if (mode === 'vector') {
+  if (mode === PanelMode.VECTOR) {
     workflowDirective = hasImage 
-      ? "[JOB: VECTORIZE_SOURCE] -> Render SOURCE_BUFFER as clean geometric vector lattice. Maintain silhouette integrity."
-      : "[JOB: VECTOR_SYNTHESIS] -> Synthesize new geometric subject from prompt.";
-  } else if (mode === 'typo') {
-    workflowDirective = `[JOB: TYPOGRAPHIC_STYLE_TRANSFER] -> Content: "${subject}". Apply DNA Skeleton/Skin logic.`;
-  } else {
-    workflowDirective = `[JOB: SEAL_ARCHITECT] -> Construct monogram: "${subject}". Radial symmetry required.`;
+      ? "[JOB: VECTORIZE_SOURCE] -> Render the subject as a modern flat vector illustration."
+      : "[JOB: VECTOR_ILLUSTRATION_SYNTHESIS] -> Create a professional flat vector illustration.";
+  } else if (mode === PanelMode.TYPOGRAPHY) {
+    workflowDirective = `[JOB: WORD_AS_ART_SYNTHESIS] -> Render the word "${subject}" as an artistic typography logo.`;
+  } else if (mode === PanelMode.MONOGRAM) {
+    workflowDirective = `[JOB: MONOGRAM_REFINED_IDENTITY] -> Create a stylish identity-focused monogram using the initials "${subject}".`;
   }
 
   const subjectText = subject.trim() || "Abstract geometric synthesis.";
   
   let dnaContext = "";
-  if (dna && dna.parameters) {
-    const palette = Array.isArray(dna.palette) ? dna.palette.join(', ') : "industrial";
-    dnaContext = `[DNA_INJECTION]:
-    - DOMAIN: ${dna.domain}
-    - THRESHOLD: 0.65% (LOCKED)
-    - SMOOTHING: 0.40% (LOCKED)
-    - STROKE_SKIN: SOURCE_MATCH_LOCKED
-    - PALETTE: ${palette}`;
+  if (dna) {
+    dnaContext = `[FORENSIC_STYLE_DNA]: ${dna.promptTemplate}`;
   }
   
   const combined = `
     ${workflowDirective}
     ${dnaContext}
-    ${extraParams ? `[ARCHITECT_DIRECTIVES]: ${extraParams}\n` : ''}
-    [SUBJECT_DATA]: ${subjectText}
+    ${extraParams ? `[REFINED_PARAMETERS]: ${extraParams}\n` : ''}
+    [SUBJECT]: ${subjectText}
   `.trim();
   
-  return injectAntiCensor(combined);
+  // Use the new context-aware injectAntiCensor
+  return injectAntiCensor(combined, mode);
 }
 
 export async function extractStyleFromImage(
@@ -114,12 +155,26 @@ export async function extractStyleFromImage(
   prompt: string
 ): Promise<ExtractionResult> {
   return reliableRequest(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = createAIInstance();
+    if (!ai) {
+      // Return mock DNA for free mode
+      return {
+        domain: 'Flat_Illustration',
+        category: 'Modern_Cheerful',
+        name: generateStylisticName(),
+        description: 'Mock DNA extraction (Free Mode Active)',
+        styleAuthenticityScore: 85,
+        palette: ['#FFCC00', '#CC0001', '#010066'],
+        mood: ['Cheerful', 'Modern'],
+        formLanguage: 'Geometric',
+        styleAdjectives: ['Clean', 'Bold'],
+        technique: 'Vector',
+        promptTemplate: 'flat vector illustration of [subject]'
+      };
+    }
+
     const dataOnly = getPureBase64Data(base64Image);
     if (!dataOnly) throw new Error("Empty buffer.");
-    
-    // @FIX: Replaced undefined BASE_SYSTEM_DIRECTIVE with STYLE_EXTRACTOR_SYSTEM_DIRECTIVE.
-    const systemInstruction = `${STYLE_EXTRACTOR_SYSTEM_DIRECTIVE}`;
     
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -130,179 +185,84 @@ export async function extractStyleFromImage(
         ],
       },
       config: {
-        systemInstruction: systemInstruction,
+        systemInstruction: STYLE_EXTRACTOR_SYSTEM_DIRECTIVE,
         responseMimeType: "application/json",
         responseSchema: {
            type: Type.OBJECT,
            properties: {
-             domain: { type: Type.STRING, enum: ['Vector', 'Typography', 'Monogram'] },
+             domain: { type: Type.STRING },
              category: { type: Type.STRING },
              name: { type: Type.STRING },
              description: { type: Type.STRING },
-             confidence: { type: Type.NUMBER },
              styleAuthenticityScore: { type: Type.NUMBER },
              palette: { type: Type.ARRAY, items: { type: Type.STRING } },
-             parameters: {
-               type: Type.OBJECT,
-               properties: {
-                 threshold: { type: Type.NUMBER },
-                 smoothing: { type: Type.NUMBER },
-                 detail: { type: Type.NUMBER },
-                 edge: { type: Type.NUMBER }
-               },
-               required: ['threshold', 'smoothing', 'detail', 'edge']
-             }
+             mood: { type: Type.ARRAY, items: { type: Type.STRING } },
+             formLanguage: { type: Type.STRING },
+             styleAdjectives: { type: Type.ARRAY, items: { type: Type.STRING } },
+             technique: { type: Type.STRING },
+             promptTemplate: { type: Type.STRING }
            },
-           required: ['domain', 'category', 'name', 'description', 'confidence', 'styleAuthenticityScore', 'palette', 'parameters']
+           required: ['domain', 'category', 'name', 'description', 'styleAuthenticityScore', 'palette', 'mood', 'formLanguage', 'styleAdjectives', 'technique', 'promptTemplate']
          }
       }
     });
-    const result = JSON.parse(response.text || "{}");
-    return {
-      domain: (result.domain || 'Vector') as any,
-      category: result.category || 'Auto-Extract',
-      name: result.name || `FAIL_${generateStylisticName()}`,
-      description: result.description || 'Autonomous extraction failed to generate summary.',
-      confidence: result.confidence || 0,
-      styleAuthenticityScore: result.styleAuthenticityScore || 100,
-      palette: Array.isArray(result.palette) ? result.palette : [],
-      parameters: {
-        threshold: result.parameters?.threshold || 0.65,
-        smoothing: result.parameters?.smoothing || 0.40,
-        detail: result.parameters?.detail || 50,
-        edge: result.parameters?.edge || 50
-      }
-    };
+    return JSON.parse(response.text || "{}");
   });
 }
 
-export async function refineVectorComposition(
-  base64Image: string,
-  config: KernelConfig = DEFAULT_CONFIG,
-): Promise<string> {
-  return reliableRequest(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const pureBase64Data = getPureBase64Data(base64Image);
-    if (!pureBase64Data) throw new Error("Empty buffer for refinement.");
-
-    const prompt = `[PROTOCOL: AESTHETIC_COMPOSITION_V2]
-1.  ANALYZE: Analyze the provided vector image for visual balance, element placement, and scale.
-2.  REFINE: Adjust the composition to better align with principles of visual harmony, specifically the golden ratio.
-3.  CONSTRAINTS:
-    - Maintain the original art style, colors, stroke weights, and geometric primitives.
-    - Do not add or remove any elements. Only reposition and rescale existing elements.
-    - The output must be a visually refined version of the input image.
-[OUTPUT]: High-fidelity raster image of the refined vector composition.`;
-
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview', // Changed from gemini-2.5-flash-image
-      contents: {
-        parts: [
-          { inlineData: { mimeType: 'image/jpeg', data: pureBase64Data } },
-          { text: prompt }
-        ],
-      },
-      config: {
-        systemInstruction: IMAGE_GEN_SYSTEM_DIRECTIVE,
-        temperature: 0.1
-      }
-    });
-
-    for (const candidate of response.candidates || []) {
-      for (const part of candidate.content?.parts || []) {
-        if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
-      }
-    }
-    throw new Error("Composition refinement failed.");
-  });
-}
-
-export async function synthesizeVectorStyle(
+/**
+ * Unified generation handler with placeholder support
+ */
+async function performSynthesis(
   prompt: string,
+  mode: PanelMode,
   base64Image?: string,
   config: any = DEFAULT_CONFIG,
   dna?: ExtractionResult,
-  extraDirectives?: string
+  extraDirectives?: string,
+  systemInstruction: string = IMAGE_GEN_SYSTEM_DIRECTIVE
 ): Promise<string> {
+  const ai = createAIInstance();
+  if (!ai) {
+    // Return a stylish SVG placeholder for free mode
+    const initials = prompt.substring(0, 2).toUpperCase();
+    return "data:image/svg+xml;base64," + btoa(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+        <rect width="800" height="600" fill="#0D0D0D"/>
+        <text x="50%" y="45%" dominant-baseline="middle" text-anchor="middle" fill="#CC0001" font-family="Arial Black" font-size="60">${mode.toUpperCase()}</text>
+        <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="white" font-family="Arial" font-size="20">FREE_MODE: ${initials}</text>
+        <rect x="350" y="380" width="100" height="4" fill="#CC0001"/>
+      </svg>
+    `);
+  }
+
   return reliableRequest(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const visualPrompt = compileVisualPrompt(prompt, 'vector', dna, extraDirectives, !!base64Image);
+    const visualPrompt = compileVisualPrompt(prompt, mode, dna, extraDirectives, !!base64Image);
     const contents: any = { parts: [{ text: visualPrompt }] };
     const pureBase64Data = getPureBase64Data(base64Image);
     if (pureBase64Data) contents.parts.unshift({ inlineData: { mimeType: 'image/jpeg', data: pureBase64Data } });
 
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview', // Changed from gemini-2.5-flash-image
+      model: 'gemini-2.5-flash-image',
       contents,
-      config: { systemInstruction: IMAGE_GEN_SYSTEM_DIRECTIVE, temperature: 0.1 }
+      config: { systemInstruction, temperature: 0.1 }
     });
     
-    for (const candidate of response.candidates || []) {
-      for (const part of candidate.content?.parts || []) {
-        if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
-      }
-    }
-    throw new Error("Lattice synthesis failed. The model may have refused the prompt due to safety filters.");
+    const imagePart = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
+    if (imagePart?.inlineData) return `data:image/png;base64,${imagePart.inlineData.data}`;
+    
+    throw new Error(`${mode} synthesis failed. Check security filters.`);
   });
 }
 
-export async function synthesizeTypoStyle(
-  prompt: string,
-  base64Image?: string,
-  config: any = DEFAULT_CONFIG,
-  dna?: ExtractionResult,
-  extraDirectives?: string
-): Promise<string> {
-  return reliableRequest(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const visualPrompt = compileVisualPrompt(prompt, 'typo', dna, extraDirectives, !!base64Image);
-    const contents: any = { parts: [{ text: visualPrompt }] };
-    const pureBase64Data = getPureBase64Data(base64Image);
-    if (pureBase64Data) contents.parts.unshift({ inlineData: { mimeType: 'image/jpeg', data: pureBase64Data } });
+export const synthesizeVectorStyle = (p: string, img?: string, c?: any, d?: ExtractionResult, ex?: string) => 
+  performSynthesis(p, PanelMode.VECTOR, img, c, d, ex, IMAGE_GEN_SYSTEM_DIRECTIVE);
 
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview', // Changed from gemini-2.5-flash-image
-      contents,
-      config: { systemInstruction: IMAGE_GEN_SYSTEM_DIRECTIVE, temperature: 0.1 }
-    });
-    
-    for (const candidate of response.candidates || []) {
-      for (const part of candidate.content?.parts || []) {
-        if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
-      }
-    }
-    throw new Error("Typo synthesis failed. The model may have refused the prompt due to safety filters.");
-  });
-}
+export const synthesizeTypoStyle = (p: string, img?: string, c?: any, d?: ExtractionResult, ex?: string) => 
+  performSynthesis(p, PanelMode.TYPOGRAPHY, img, c, d, ex, TYPO_SYSTEM_DIRECTIVE);
 
-export async function synthesizeMonogramStyle(
-  prompt: string,
-  base64Image?: string,
-  config: any = DEFAULT_CONFIG,
-  dna?: ExtractionResult,
-  extraDirectives?: string
-): Promise<string> {
-  return reliableRequest(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const visualPrompt = compileVisualPrompt(prompt, 'monogram', dna, extraDirectives, !!base64Image);
-    const contents: any = { parts: [{ text: visualPrompt }] };
-    const pureBase64Data = getPureBase64Data(base64Image);
-    if (pureBase64Data) contents.parts.unshift({ inlineData: { mimeType: 'image/jpeg', data: pureBase64Data } });
-
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview', // Changed from gemini-2.5-flash-image
-      contents,
-      config: { systemInstruction: IMAGE_GEN_SYSTEM_DIRECTIVE, temperature: 0.1 }
-    });
-    
-    for (const candidate of response.candidates || []) {
-      for (const part of candidate.content?.parts || []) {
-        if (part.inlineData) return `data:image/png;base66,${part.inlineData.data}`;
-      }
-    }
-    throw new Error("Monogram synthesis failed. The model may have refused the prompt due to safety filters.");
-  });
-}
+export const synthesizeMonogramStyle = (p: string, img?: string, c?: any, d?: ExtractionResult, ex?: string) => 
+  performSynthesis(p, PanelMode.MONOGRAM, img, c, d, ex, IMAGE_GEN_SYSTEM_DIRECTIVE);
 
 export async function refineTextPrompt(
   prompt: string,
@@ -311,27 +271,17 @@ export async function refineTextPrompt(
   dna?: ExtractionResult
 ): Promise<string> {
   return reliableRequest(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = createAIInstance();
+    if (!ai) return `${prompt} (refined-mode-free)`;
     
-    let contents = `Refine: "${prompt}". DNA: ${dna?.name || 'none'}. Output only the refined string.`;
-    let systemInstruction = "Prompt Architect V5.2";
-    let temperature = 0.7;
-
-    if (mode === PanelMode.TYPOGRAPHY) {
-      systemInstruction = `You are an expert graffiti artist and typographer specializing in aggressive, high-energy styles. Your task is to rewrite a user's prompt to be extremely dynamic and infused with street art terminology.
-      - Keywords to use: wildstyle, razor-sharp edges, explosive energy, kinetic flow, chisel-tip calligraphy, fat cap, urban decay, aggressive interlocking forms, drips.
-      - The output MUST BE ONLY the refined prompt string. Do not add any conversational text, explanations, or quotes.`;
-      contents = `Rewrite for maximum aggression: "${prompt}"`;
-      temperature = 0.85; // Increase creativity for more aggressive styles
-    }
+    const systemInstruction = mode === PanelMode.TYPOGRAPHY 
+      ? "Expert word-art designer. Refine for singular, bold, artistic word-forms."
+      : "Prompt Architect V5.2. Refine user intent for design-first illustrations.";
 
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: contents,
-      config: { 
-        systemInstruction: systemInstruction, 
-        temperature: temperature 
-      }
+      contents: `Refine for ${mode}: "${prompt}". DNA: ${dna?.name || 'none'}. Output only the string.`,
+      config: { systemInstruction, temperature: 0.7 }
     });
     return response.text?.replace(/"/g, '') || prompt;
   });
@@ -339,7 +289,9 @@ export async function refineTextPrompt(
 
 export async function analyzeCodeForRefinements(code: string): Promise<RealIssue[]> {
   return reliableRequest(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = createAIInstance();
+    if (!ai) return [];
+    
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Analyze: \n${code}`,
@@ -370,157 +322,6 @@ export async function analyzeCodeForRefinements(code: string): Promise<RealIssue
         },
       }
     });
-    try {
-      const result = JSON.parse(response.text || "[]");
-      // Ensure the result is always an array.
-      return Array.isArray(result) ? result : [];
-    } catch (e) {
-      console.error("Failed to parse JSON response for code analysis:", e);
-      // Return an empty array on parsing failure to prevent crashes.
-      return [];
-    }
+    return JSON.parse(response.text || "[]");
   });
 }
-
-// To use fs for saving, you'd need node types: npm i -D @types/node
-// import fs from 'fs'; 
-
-/**
- * =================================================================================
- * HYPERXGEN - BACKEND / GEMINI USAGE EXAMPLES
- * =================================================================================
- * This file serves as a backend/CLI usage example for the synthesis engine.
- * It is not directly wired into the frontend application but demonstrates how to 
- * programmatically call the synthesis services for each panel.
- * 
- * To run this example (requires ts-node and a .env file with GEMINI_API_KEY):
- * > npx ts-node --esm services/geminiService.ts
- * =================================================================================
- */
-
-const KERNEL_CONFIG: KernelConfig = {
-    thinkingBudget: 0,
-    temperature: 0.1,
-    model: 'gemini-3-flash-preview',
-    deviceContext: 'MAXIMUM_ARCHITECTURE_OMEGA_V5'
-};
-
-const PLACEHOLDER_IMAGE_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
-
-async function runMonogramSynthesisExample() {
-    console.log("\n--- [1/4] Starting Monogram Synthesis Example ---");
-    const selectedPresetId = 'mono-royal-seal';
-    const userInitials = 'HXG';
-    const preset = MONOGRAM_PRESETS.find(p => p.id === selectedPresetId);
-
-    if (!preset) {
-        console.error(`Error: Monogram Preset "${selectedPresetId}" not found.`);
-        return;
-    }
-
-    const textPrompt = `${preset.prompt}. The monogram should fuse the initials: ${userInitials}.`;
-    const extraDirectives = Object.entries(preset.parameters)
-      .map(([key, value]) => {
-        const snakeKey = key.replace(/([A-Z])/g, '_$1').toUpperCase();
-        return `${snakeKey}: ${String(value).toUpperCase()}`;
-      }).join('\n');
-
-    try {
-        console.log(`Requesting monogram with preset: ${preset.name}`);
-        const result = await synthesizeMonogramStyle(textPrompt, undefined, KERNEL_CONFIG, undefined, extraDirectives);
-        console.log('✅ Monogram Synthesis successful! (Output: base64 data URL)');
-    } catch (error) {
-        console.error('❌ Monogram Synthesis failed:', error);
-    }
-}
-
-async function runVectorSynthesisExample() {
-    console.log("\n--- [2/4] Starting Vector Synthesis Example ---");
-    const presetId = 'vec-geometric-core';
-    const preset = VECTOR_PRESETS.find(p => p.id === presetId);
-    if (!preset) {
-        console.error(`Error: Vector Preset "${presetId}" not found.`);
-        return;
-    }
-
-    const textPrompt = `A complex, symmetrical logo for a quantum computing company. ${preset.prompt}`;
-    const extraDirectives = `
-      GEOMETRY_ENGINE: PRIMITIVES
-      NODE_COMPLEXITY: 8/10
-      STROKE_PARITY: MONOWEIGHT_ENFORCED
-      ALIGNMENT_GRID: ISOMETRIC
-    `.trim();
-    
-    try {
-        console.log(`Requesting vector with preset: ${preset.name}`);
-        const result = await synthesizeVectorStyle(textPrompt, undefined, KERNEL_CONFIG, undefined, extraDirectives);
-        console.log('✅ Vector Synthesis successful! (Output: base64 data URL)');
-    } catch (error) {
-        console.error('❌ Vector Synthesis failed:', error);
-    }
-}
-
-async function runTypoSynthesisExample() {
-    console.log("\n--- [3/4] Starting Typography Synthesis Example ---");
-    const presetId = "typo-urban-fracture";
-    const preset = TYPOGRAPHY_PRESETS.find(p => p.id === presetId);
-    
-    if (!preset) {
-        console.error(`Error: Typography Preset "${presetId}" not found.`);
-        return;
-    }
-    
-    const textPrompt = `The word 'HYPERX' rendered in a style described as: ${preset.prompt}`;
-    const extraDirectives = Object.entries(preset.parameters)
-        .map(([key, value]) => {
-            const snakeKey = key.replace(/([A-Z])/g, '_$1').toUpperCase();
-            return `${snakeKey}: ${String(value).toUpperCase()}`;
-        }).join('\n');
-
-    try {
-        console.log(`Requesting typography with preset: ${preset.name}`);
-        const result = await synthesizeTypoStyle(textPrompt, undefined, KERNEL_CONFIG, undefined, extraDirectives);
-        console.log('✅ Typography Synthesis successful! (Output: base64 data URL)');
-    } catch (error) {
-        console.error('❌ Typography Synthesis failed:', error);
-    }
-}
-
-async function runStyleExtractionExample() {
-    console.log("\n--- [4/4] Starting Style Extractor Example ---");
-    const extractionPrompt = "[STYLE_EXTRACTOR_LOCK] Preserve visual fidelity";
-    try {
-        console.log("Requesting style extraction from a placeholder image...");
-        const result = await extractStyleFromImage(PLACEHOLDER_IMAGE_BASE64, KERNEL_CONFIG, extractionPrompt);
-        console.log('✅ Style Extraction successful!');
-        console.log('Extracted DNA:', JSON.stringify(result, null, 2));
-    } catch (error) {
-        console.error('❌ Style Extraction failed:', error);
-    }
-}
-
-async function runAllExamples() {
-    console.log("=================================================");
-    console.log("  HYPERXGEN BACKEND/GEMINI EXAMPLES");
-    console.log("=================================================");
-
-    await runMonogramSynthesisExample();
-    await runVectorSynthesisExample();
-    await runTypoSynthesisExample();
-    await runStyleExtractionExample();
-
-    console.log("\n--- All examples finished ---");
-}
-
-// Commented out Node.js-specific CLI execution logic that causes build errors in a browser environment.
-/*
-if (typeof process !== 'undefined' && process.env.GEMINI_API_KEY) {
-    if (process.env.GEMINI_API_KEY === 'PLACEHOLDER_API_KEY') {
-        console.error("\nERROR: GEMINI_API_KEY is a placeholder. Please create a .env file and set your API key.");
-    } else {
-       if (typeof require !== 'undefined' && require.main === module) {
-          runAllExamples();
-       }
-    }
-}
-*/

@@ -24,7 +24,7 @@ export interface PresetItem {
   type?: string;
   parameters?: Record<string, any>;
   timestamp?: string;
-  filter?: string;
+  filter?: string; 
   dna?: ExtractionResult;
   imageUrl?: string;
   prompt?: string;
@@ -54,6 +54,12 @@ export type VectorPreset = {
   category: string;
   description: string;
   prompt: string;
+  parameters: {
+    complexity?: 'Standard' | 'Minimal' | 'Detailed';
+    outline?: 'None' | 'Medium-Bold';
+    mood?: string;
+    background?: string;
+  };
 };
 
 export type MonogramPreset = {
@@ -63,20 +69,18 @@ export type MonogramPreset = {
   description: string;
   prompt: string;
   parameters: {
-    layoutMode: 'interlocked' | 'stacked' | 'block' | 'mirrored';
-    initialCount: number;
-    orientation: 'horizontal' | 'vertical' | 'diagonal';
-    intersectionGap: number;
-    autoWeave: boolean;
-    strokeWeight: 'hairline' | 'regular' | 'bold' | 'ultra';
-    terminalShape: 'sheared' | 'rounded' | 'blunt' | 'tapered';
-    cornerRadius: number;
-    aspectRatio: 'condensed' | 'normal' | 'expanded';
-    geoFrame: 'circle' | 'hexagon' | 'shield' | 'none';
-    opticalKerning: boolean;
+    layoutMode?: 'interlocked' | 'stacked' | 'block' | 'mirrored';
+    symmetry?: 'Perfect Radial' | 'Vertical Mirror' | 'Asymmetrical' | 'Dynamic';
+    container?: 'Strict' | 'Suggested' | 'Weak' | 'None';
+    densityRatio?: string;
+    legibility?: 'High' | 'Medium-High' | 'Artistic';
+    structureCreativity?: number; // 0-100
+    densitySpace?: number; // 0-100
+    traditionalModern?: number; // 0-100
+    strokeEnds?: 'Sheared' | 'Rounded' | 'Blunt' | 'Tapered';
+    interlockStyle?: 'Tight' | 'Elegant' | 'Loose';
   };
 };
-
 
 export interface PresetCategory {
   title: string;
@@ -93,19 +97,19 @@ export interface LogEntry {
 }
 
 export interface ExtractionResult {
-  domain: 'Vector' | 'Typography' | 'Monogram';
-  category: string;
-  name: string;
+  domain: string; // e.g., 'Flat_Illustration', 'Line_Art'
+  category: string; // e.g., 'Modern_Cheerful'
+  name: string; // Style name
+  styleAuthenticityScore: number; // 0-100
+  palette: string[]; // hex codes
+  mood: string[]; // mood adjectives
+  formLanguage: string; // description of forms
+  styleAdjectives: string[]; // style descriptors
+  technique: string; // technique description
+  promptTemplate: string; // generated prompt template
+  preview_png?: string;
   description: string;
-  confidence: number;
-  styleAuthenticityScore: 100;
-  palette: string[];
-  parameters: {
-    threshold: number;
-    smoothing: number;
-    detail: number;
-    edge: number;
-  };
+  confidence?: number; // kept for compatibility
 }
 
 export interface AppState {

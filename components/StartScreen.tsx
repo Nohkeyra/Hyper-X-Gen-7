@@ -1,5 +1,6 @@
 
 
+
 import React, { useMemo } from 'react';
 import { PanelMode } from '../types';
 import { VectorIcon, TypographyIcon, MonogramIcon, ExtractorIcon, FilterIcon, PulseIcon, BoxIcon } from './Icons'; 

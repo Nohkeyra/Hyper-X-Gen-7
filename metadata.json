@@ -1,7 +1,5 @@
 {
   "name": "HYPERXGEN 7",
   "description": "A high-precision synthesis engine for vector graphics and typographic art powered by Gemini.",
-  "requestFramePermissions": [
-    "camera"
-  ]
+  "requestFramePermissions": []
 }

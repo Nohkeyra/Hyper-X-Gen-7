@@ -1,192 +1,107 @@
 
-HYPERXGEN Engine Protocol v5.3
-Deterministic Synthesis and Forensic Design Extraction Specification
+HYPERXGEN Engine Protocol v7.1
+Deterministic Synthesis and Artistic Style DNA Specification
 
 0. System Invariant
 
 HYPERXGEN operates as a deterministic design computation engine.
-
-All operations must satisfy the following invariants:
-- Geometric correctness
-- Measurable precision
-- Deterministic output given identical inputs
-- Architectural consistency across the full generation lattice
-
-No operation may violate these invariants.
+All operations must satisfy: Geometric correctness, Measurable precision, and Stylistic consistency.
 
 ---
 
 1. Core Engine Directive
 
-The engine shall behave as a high-density computation and design analysis system.
-
-Rules:
-- No stylistic interpretation outside defined protocols
-- No probabilistic creativity without an explicit synthesis rule
-- No cross-domain leakage between Vector, Typography, or Monogram logic
+The engine shall behave as a high-density computation and artistic analysis system.
+- Focus: "Identity symbols first, geometric constructs second."
+- Recognizable elegance over mathematical perfection.
 
 ---
 
-2. Autonomous Forensic Analysis
-Protocol: AUTONOMOUS_FORENSIC_AUDIT_V4
+2. Artistic Style DNA Analysis
+Protocol: ARTISTIC_STYLE_DNA_V1
 
-This protocol governs automated extraction of Design DNA from a source image.
+Decode the visual language of images to create reusable style presets. Focus on color, mood, form language, and aesthetic identity.
 
-2.1 Phase 1 – Domain Classification
+2.1 Analysis Phases
 
-Upon image ingestion, the engine performs structural analysis to determine a single dominant domain.
+PHASE 1: VISUAL IMPACT
+- Capture first impression: Color Mood, Contrast, Composition, and Overall Feel.
 
-Domain selection is exclusive.
+PHASE 2: STYLE DECONSTRUCTION
+- COLOR DNA: Palette size, harmony type, saturation, brightness.
+- FORM DNA: Shape language (Geometric vs Organic), simplification level (1-5), line treatment, texture.
+- COMPOSITION DNA: Negative space usage, focal handling, depth suggestion.
 
-Classification Rules:
+PHASE 3: STYLE CLASSIFICATION
+- Identify primary category (e.g., FLAT_ILLUSTRATION, LINE_ART, PAINTERLY).
+- Identify secondary influences (e.g., MINIMALIST, BOLD, CLEAN).
+- Reference era (e.g., CONTEMPORARY, BAUHAUS, ART_DECO).
 
-Monogram Domain:
-- Multiple characters
-- Overlapping paths
-- Shared negative space
-- High spatial interdependence
+2.2 Extraction Rules
 
-Typography Domain:
-- Single or continuous stroke flow
-- Pen-like velocity variation
-- Rhythmic or gestural construction
+COLOR EXTRACTION:
+- Cluster dominant colors + accent detection.
+- Perceived colors are prioritized over literal pixel data.
 
-Vector Domain:
-- Solid silhouettes
-- Iconic or symbolic forms
-- No linguistic intent
-- Closed geometric paths
+FORM ANALYSIS:
+- Measure Geometric vs Organic bias.
+- Assess simplification (Iconic to Detailed).
+- Detect line weight and edge treatment.
 
-If no domain exceeds a dominance confidence of 70%, the audit fails and returns DOMAIN_AMBIGUITY_ERROR.
-
----
-
-2.2 Phase 2 – High-Fidelity Extraction
-Protocol: FORENSIC_AUDIT_V3
-
-Once a domain is locked, the engine extracts Design DNA using bounded, measurable parameters.
-
-Global Extraction Parameters:
-
-NOISE_THRESHOLD:
-- Maximum allowable pixel or path deviation: 0.65% of bounding box diagonal
-
-JITTER_SMOOTHING:
-- Maximum Bézier control point correction: 0.40% of average stroke width
-
-STROKE_SKIN_LOCK:
-- Stroke thickness variance tolerance: ±0%
-- Any deviation invalidates extraction
-
-AUTHENTICITY_TARGET:
-- Required structural fidelity: 100%
-- If fidelity < 92%, extraction fails
-- 92–99% enters degraded mode
-- 100% required for synthesis eligibility
-
-Domain-Specific Extraction Rules:
-
-Vector Domain:
-- Extract raw Bézier paths
-- Optimize for minimal node count
-- Preserve original curvature equations
-
-Monogram Domain:
-- Map spatial hierarchy
-- Decode Z-order and overlap precedence
-- Compute negative space intersections as first-class geometry
-
-Typography Domain:
-- Separate Skeleton (pen trajectory) from Skin (stroke pressure)
-- Measure terminal angles
-- Derive stroke velocity from curvature change rates
-
----
-
-2.3 Phase 3 – Preset Manifest Generation
-
-If extraction succeeds, the engine generates a deterministic preset.
-
-Manifest Structure:
-
-Name:
-AUTO_[DOMAIN]_[STRUCTURAL_DESCRIPTOR]
-
-Description:
-- Technical explanation of chosen domain
-- Structural reasoning
-- Verified DNA fidelity
-
-Category:
-- Geometric Core
-- Kinetic Typography
-- Symbolic Monogram
-- Hybrid (only if explicitly allowed)
-
-Presets are immutable once generated.
+MOOD EXTRACTION:
+- Assign 2-3 emotional adjectives (e.g., CHEERFUL, SERENE, DRAMATIC).
 
 ---
 
 3. Deterministic Synthesis Directives
 Global Enforcement Locks
 
-These directives are injected into every synthesis request.
-They override user prompts without exception.
-
 ---
 
-3.1 DIRECTIVE: GEOMETRIC_PRECISION_V5
-Vector Synthesis Lock
+3.1 DIRECTIVE: REFINED_VECTOR_ILLUSTRATION_V7
+Flat Illustration Lock
 
 Rules:
-- Use atomic primitives only (circles, triangles, rectangles).
-- Uniform stroke weight across all paths (no tapering).
-- Flat solid fills only (gradients forbidden).
-- Subject isolated on white or transparent background.
-- Enforced bilateral or radial symmetry.
-- NEGATIVE CONSTRAINT: Output must be a pure image. Do not render any text, labels, or metadata.
-
-Violation results in synthesis rejection.
+- 4-8 bold saturated colors maximum.
+- Solid flat fills only. NO GRADIENTS.
+- Simplified expressive forms.
+- Crisp edges, no anti-aliasing blur.
+- Subject centered and isolated.
+- "Recognizable elegance > Mathematical perfection."
 
 ---
 
-3.2 DIRECTIVE: GLYPH_SYNTAX_DECONSTRUCTION_URBAN_KINETIC
-Typography Synthesis Lock
+3.2 DIRECTIVE: TYPOGRAPHY_ART_SYNTAX_V2
+Word-As-Art Protocol
 
 Rules:
-- Preserve kinetic flow and gestural movement.
-- Allow controlled stroke weight variation and aggressive terminals.
-- Negative space treated as solid void.
-- Optional edge abrasion or spray artifacts.
-- Final output must maximize visual impact density.
-
-Legibility is secondary to energy. Structural coherence is mandatory.
+- THE TEXT IS THE ARTWORK. Letters must be synthesized as the primary subject.
+- FORBIDDEN: Placing text on objects (signs, shirts, environmental backgrounds).
+- COMPOSITION: Word must form a cohesive visual shape. Balanced composition.
+- SPACING: Optical spacing over mathematical. Allow artistic overlap.
+- READABILITY: Word must be recognizable as intended text. Distortion allowed only if style-appropriate.
+- STYLE FIDELITY: Presets determine style authentically (Grunge = distressed, Neon = glowing tubes, etc).
+- BACKGROUND: Solid color only. No environmental scenes. No decorative frames.
+- FORM: Allow organic curves and variable stroke weights. Prevent forced geometric rigidity unless "Geometric" style is active.
 
 ---
 
-3.3 DIRECTIVE: SEAL_SYNTHESIS_RADIAL
+3.3 DIRECTIVE: REFINED_MONOGRAM_V7
 Monogram Synthesis Lock
 
 Rules:
-- Use characters as structural guides only. Fuse their geometry into an abstract shape.
-- Composition constrained to a primary container: Circle, Hexagon, or Square.
-- Enforced radial symmetry across 2, 4, or 8 axes.
-- Stroke-to-negative-space ratio locked at 1:1.
-- NEGATIVE CONSTRAINT: Output must contain ZERO text characters. The result is a pure geometric seal.
-
-Any symmetry violation invalidates output.
+- Initials must remain discernible (3-second rule).
+- Default to symmetrical balance, allow humanized organic weights.
+- Containers (Circle, Hexagon) are guides, not prisons.
+- Recognizable elegance.
 
 ---
 
 4. Synthesis Conflict Resolution
 
-If extracted DNA conflicts with synthesis locks:
-
-1. Global Locks override extracted DNA
-2. If override breaks authenticity below 92%, synthesis aborts
-3. Engine returns SYNTHESIS_CONFLICT_ERROR
-
-No silent correction is permitted.
+1. Style DNA provides context.
+2. Global Directives (v7) provide constraints.
+3. If conflict arises, PRESET FIDELITY takes priority over literal DNA replication or user description.
 
 ---
 
@@ -194,26 +109,12 @@ No silent correction is permitted.
 Model Target: gemini-2.5-flash-image
 
 Mandatory rules:
-- Visual geometry only
-- No text, labels, metadata, or annotations
-- Sharp edges prioritized over artistic interpretation
-- High contrast required
-- Single-pass deterministic render
-- Fixed seed per request
-- Temperature locked to deterministic range
+- Visual geometry only.
+- ZERO text/annotations inside the image unless specified by Typo/Monogram module.
+- High contrast, solid colors, professional production readiness.
 
 ---
 
-6. Version Integrity Rule
+6. Failure Is a Valid Output
 
-- Extraction and synthesis versions must match
-- Cross-version DNA usage is forbidden
-- Any mismatch returns VERSION_INCOMPATIBLE_ERROR
-
----
-
-7. Failure Is a Valid Output
-
-The engine must prefer rejection over approximation.
-
-If compliance cannot be proven, the engine must fail explicitly.
+The engine must prefer rejection over approximation if Word-As-Art integrity cannot be achieved.

@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef } from 'react';
 
 export type DevourerState = 
@@ -21,28 +22,64 @@ export type DevourerState =
   | 'LATTICE_ACTIVE' 
   | 'LATTICE_FAIL'
   | 'REFINING_LATTICE'
-  | 'CRITICAL_DRIFT';
+  | 'CRITICAL_DRIFT'
 
-export const useDevourer = (initialState: DevourerState = 'IDLE') => {
+  // Error States
+  | 'ERROR_TIMEOUT'
+  | 'ERROR_BUFFER_EMPTY'
+  | 'ERROR_INVALID_STATE';
+
+export interface UseDevourerReturn {
+  status: DevourerState;
+  isProcessing: boolean;
+  transition: (newState: DevourerState, processing?: boolean) => void;
+  revert: () => void;
+  reset: () => void;
+  isErrorState: boolean;
+}
+
+const ERROR_STATES: DevourerState[] = [
+  'ERROR_TIMEOUT',
+  'ERROR_BUFFER_EMPTY',
+  'ERROR_INVALID_STATE',
+  'LATTICE_FAIL',
+  'CRITICAL_DRIFT'
+];
+
+export const useDevourer = (initialState: DevourerState = 'IDLE'): UseDevourerReturn => {
   const [status, setStatus] = useState<DevourerState>(initialState);
   const [isProcessing, setIsProcessing] = useState(false);
-  const lastState = useRef<DevourerState>(initialState);
+  const stateHistory = useRef<DevourerState[]>([initialState]);
 
   const transition = useCallback((newState: DevourerState, processing = false) => {
-    lastState.current = status;
+    stateHistory.current.push(newState);
     setStatus(newState);
     setIsProcessing(processing);
-  }, [status]);
+  }, []);
 
   const revert = useCallback(() => {
-    setStatus(lastState.current);
-    setIsProcessing(false);
+    if (stateHistory.current.length > 1) {
+      stateHistory.current.pop(); // Remove current state
+      const previousState = stateHistory.current[stateHistory.current.length - 1];
+      setStatus(previousState);
+      setIsProcessing(false);
+    }
   }, []);
+
+  const reset = useCallback(() => {
+    stateHistory.current = [initialState];
+    setStatus(initialState);
+    setIsProcessing(false);
+  }, [initialState]);
+
+  const isErrorState = ERROR_STATES.includes(status);
 
   return { 
     status, 
     isProcessing, 
     transition,
-    revert
+    revert,
+    reset,
+    isErrorState
   };
 };

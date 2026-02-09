@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { PanelMode, KernelConfig } from '../types.ts';
-import { PRESET_REGISTRY } from '../presets/enginePrompts.ts';
+import { PRESET_REGISTRY } from '../presets/index.ts';
 import { GenerationBar } from './GenerationBar.tsx';
 import { PresetCarousel } from './PresetCarousel.tsx';
 import { CanvasStage } from './CanvasStage.tsx';
@@ -47,7 +47,8 @@ export const ImageFilterPanel: React.FC<ImageFilterPanelProps> = ({ onSaveToHist
   const processingRef = useRef(false);
 
   const PRESETS = useMemo(() => {
-    return PRESET_REGISTRY.FILTERS.libraries;
+    // Safely access PRESET_REGISTRY.FILTERS.libraries, defaulting to an empty array if it doesn't exist.
+    return PRESET_REGISTRY.FILTERS?.libraries || [];
   }, []);
 
   useEffect(() => {
@@ -86,72 +87,79 @@ export const ImageFilterPanel: React.FC<ImageFilterPanelProps> = ({ onSaveToHist
     }
   }, [uploadedImage, brightness, contrast, saturation, activeFilterId, PRESETS]);
 
+  const handleClear = useCallback(() => {
+    if(isProcessing) return;
+    setUploadedImage(null);
+    setFilteredImage(null);
+    setActiveFilterId(null);
+    setFilterStatus("IDLE");
+  }, [isProcessing]);
+
+  const handleFileUpload = useCallback((f: File) => {
+    if(isProcessing) return;
+    const r = new FileReader(); r.onload = (e) => {
+        const base64 = e.target?.result as string;
+        setUploadedImage(base64);
+        setFilteredImage(base64);
+        setFilterStatus("BUFFER_LOADED");
+    }; 
+    r.readAsDataURL(f);
+  }, [isProcessing]);
+
   return (
-    <PanelLayout sidebar={null}>
-      <CanvasStage
-        uploadedImage={uploadedImage}
-        generatedOutput={filteredImage}
-        isProcessing={isProcessing}
-        hudContent={<FilterHUD filterStatus={filterStatus} />}
-        isValidationError={false}
-        uiRefined={uiRefined}
-        refinementLevel={refinementLevel}
-        onClear={() => {
-          if(isProcessing) return;
-          setUploadedImage(null);
-          setFilteredImage(null);
-          setActiveFilterId(null);
-          setFilterStatus("IDLE");
-        }}
-        onGenerate={handleApplyFilter}
-        onFileUpload={(f) => {
-          if(isProcessing) return;
-          const r = new FileReader(); r.onload = (e) => {
-              const base64 = e.target?.result as string;
-              setUploadedImage(base64);
-              setFilteredImage(base64);
-              setFilterStatus("BUFFER_LOADED");
-          }; 
-          r.readAsDataURL(f);
-        }}
-        downloadFilename={`hyperxgen_filter_${Date.now()}.png`}
-      />
-
-      <div className="flex flex-col gap-6">
-        <GenerationBar
-          onGenerate={handleApplyFilter}
+    <PanelLayout
+      sidebar={null}
+      canvas={
+        <CanvasStage
+          uploadedImage={uploadedImage}
+          generatedOutput={filteredImage}
           isProcessing={isProcessing}
-          additionalControls={
-            <div className="flex-1 flex items-center gap-6 py-2 min-w-0">
-              {[
-                { label: 'B', val: brightness, set: setBrightness },
-                { label: 'C', val: contrast, set: setContrast },
-                { label: 'S', val: saturation, set: setSaturation }
-              ].map(s => (
-                <div key={s.label} className="flex-1 flex flex-col gap-1.5 min-w-0">
-                  <div className="flex justify-between items-center px-1">
-                    <span className="text-[10px] font-black text-brandCharcoal dark:text-white tracking-widest">{s.label}</span>
-                    <span className="text-[10px] font-mono font-black text-brandRed drop-shadow-sm">{s.val}%</span>
-                  </div>
-                  <div className="relative flex items-center h-4">
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="200" 
-                      value={s.val} 
-                      disabled={isProcessing}
-                      onChange={e => s.set(parseInt(e.target.value))} 
-                      className="w-full h-2 bg-brandCharcoalMuted/30 border border-white/10 rounded-full appearance-none accent-brandRed cursor-pointer disabled:opacity-50 transition-colors hover:bg-white/20" 
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          }
+          hudContent={<FilterHUD filterStatus={filterStatus} />}
+          isValidationError={false}
+          uiRefined={uiRefined}
+          refinementLevel={refinementLevel}
+          onClear={handleClear}
+          onGenerate={handleApplyFilter} // Used for retry on error
+          onFileUpload={handleFileUpload}
+          downloadFilename={`hyperxgen_filter_${Date.now()}.png`}
         />
-
-        <PresetCarousel presets={PRESETS as any} activeId={activeFilterId} onSelect={(id:string) => !isProcessing && setActiveFilterId(id)} />
-      </div>
-    </PanelLayout>
+      }
+      footer={
+        <div className="flex flex-col gap-6">
+          <GenerationBar
+            onGenerate={handleApplyFilter}
+            isProcessing={isProcessing}
+            additionalControls={
+              <div className="flex-1 flex items-center gap-6 py-2 min-w-0">
+                {[
+                  { label: 'B', val: brightness, set: setBrightness },
+                  { label: 'C', val: contrast, set: setContrast },
+                  { label: 'S', val: saturation, set: setSaturation }
+                ].map(s => (
+                  <div key={s.label} className="flex-1 flex flex-col gap-1.5 min-w-0">
+                    <div className="flex justify-between items-center px-1">
+                      <span className="text-[10px] font-black text-brandCharcoal dark:text-white tracking-widest">{s.label}</span>
+                      <span className="text-[10px] font-mono font-black text-brandRed drop-shadow-sm">{s.val}%</span>
+                    </div>
+                    <div className="relative flex items-center h-4">
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max="200" 
+                        value={s.val} 
+                        disabled={isProcessing}
+                        onChange={e => s.set(parseInt(e.target.value))} 
+                        className="w-full h-2 bg-brandCharcoalMuted/30 border border-white/10 rounded-full appearance-none accent-brandRed cursor-pointer disabled:opacity-50 transition-colors hover:bg-white/20" 
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            }
+          />
+          <PresetCarousel categories={PRESETS} activeId={activeFilterId} onSelect={(id:string) => !isProcessing && setActiveFilterId(id)} />
+        </div>
+      }
+    />
   );
 };

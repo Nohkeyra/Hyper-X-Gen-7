@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 // --- Shared Components ---
@@ -35,7 +34,8 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
 
 interface PanelLayoutProps {
   sidebar?: React.ReactNode;
-  children: React.ReactNode; // Main Content Area
+  canvas: React.ReactNode; // Main visual output area
+  footer: React.ReactNode; // Main input/generation bar area
 }
 
 /**
@@ -44,7 +44,7 @@ interface PanelLayoutProps {
  * - Mobile: Sidebar hidden (handled by Carousel/Drawer in panels), content stacks.
  * - Desktop: Fixed width sidebar, fluid content.
  */
-export const PanelLayout: React.FC<PanelLayoutProps> = ({ sidebar, children }) => {
+export const PanelLayout: React.FC<PanelLayoutProps> = ({ sidebar, canvas, footer }) => {
   return (
     <div className="flex h-full w-full overflow-hidden bg-brandNeutral dark:bg-brandNeutral">
       {sidebar && (
@@ -60,7 +60,8 @@ export const PanelLayout: React.FC<PanelLayoutProps> = ({ sidebar, children }) =
         <div className="flex-1 overflow-y-auto custom-scrollbar"> 
           {/* Dynamic padding bottom ensures content clears the fixed AppControlsBar */}
           <div className="w-full max-w-[1400px] mx-auto flex flex-col gap-3 md:gap-6 p-2 md:p-6" style={{ paddingBottom: 'calc(var(--app-controls-bar-h) + 2rem)' }}>
-            {children}
+            {canvas}
+            {footer}
           </div>
         </div>
       </main>

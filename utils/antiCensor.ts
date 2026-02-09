@@ -1,38 +1,55 @@
+
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export const DESIGN_FIDELITY_TOKENS = [
-    // Geometric Construction
-    "mathematical precision, constructed geometry, vector-perfect curves, bezier path optimization",
-    "minimalist geometric forms, Bauhaus-inspired composition, structural balance, architectural intent",
-    "Swiss design principles, grid-based alignment, intentional white space, typographic hierarchy",
-    "Constructivist geometric shapes, primary form deconstruction, solid fills, zero gradients",
-    "uniform line weights, mono-weight strokes, geometric purity, mathematical tessellation",
-    
-    // Aesthetic Constraints
-    "high-contrast flat color palette, Pantone-accurate fills, solid opaque surfaces, zero textures",
-    "minimalist visual hierarchy, legibility-first construction, clean isolated subject, mathematical kerning",
-    "geometric abstraction, simplified silhouette, thick uniform outlines, iconic visual strength",
-    "flat vector aesthetic, minimal detail for maximum impact, hard-edged shapes, crisp geometric borders",
-    "monochrome high-contrast seal, symmetric geometric monogram, interlocked character geometry",
-    
-    // Performance/Scale
-    "infinite scalability logic, vector-ready outlines, sharp geometric edges, mathematically defined paths",
-    "clean subject isolation, white background purity, zero raster noise, zero artifacts",
-    "geometric precision, modular construction, repeating geometric motifs, rhythmic symmetry"
-];
+import { PanelMode } from '../types.ts';
+
+export const DESIGN_FIDELITY_TOKENS = {
+  GENERAL: [
+    "professional graphic design, contemporary aesthetic, high-fidelity rendering, clean execution, intentional design choice"
+  ],
+  [PanelMode.VECTOR]: [
+    "strictly flat vector illustration, safe for work, professional graphic design aesthetic",
+    "clean silhouettes, intentional negative space, bold color storytelling, vector-ready art",
+    "modern digital illustration, cheerful and communicative mood, simple shapes, crisp edges",
+    "solid flat fills, zero gradients, uniform color blocks, high contrast palette",
+    "simplified expressive forms, geometric character construction, 4-8 bold saturated colors"
+  ],
+  [PanelMode.TYPOGRAPHY]: [
+    "word as art, typography as primary subject, cohesive visual shape, legible and artistic",
+    "clean glyph construction, mathematical balance, legible and aesthetic form",
+    "no environmental scenes, solid background, focused typographic execution",
+    "high-contrast letterforms, artistic stroke treatment, vector-sharp glyph edges"
+  ],
+  [PanelMode.MONOGRAM]: [
+    "identity-focused mark, recognizable elegance, balanced geometric forms",
+    "symmetrical geometry, clean line work, scalable vector precision",
+    "letterform discernibility, negative space optimization, balanced weights"
+  ],
+  [PanelMode.EXTRACTOR]: [
+    "style analysis mode, visual language decoding, aesthetic forensic analysis",
+    "color harmony extraction, form language deconstruction",
+    "reusable style preset creation, prompt template generation"
+  ]
+};
 
 /**
- * Injects design-focused fidelity tokens to ensure the model adheres to 
- * geometric and design-first construction rules. No duplicate tokens.
+ * Injects design-focused fidelity tokens appropriate for the specific mode.
  */
-export function injectAntiCensor(prompt: string): string {
-  // Shuffle a copy of the tokens
-  const shuffledTokens = [...DESIGN_FIDELITY_TOKENS].sort(() => Math.random() - 0.5);
-  // Pick first 3 unique tokens
-  const [token1, token2, token3] = shuffledTokens.slice(0, 3);
+export function injectAntiCensor(prompt: string, mode?: PanelMode): string {
+  let tokenSet = DESIGN_FIDELITY_TOKENS.GENERAL;
   
-  return `${token1}, ${token2}, ${token3}, ${prompt}`;
+  if (mode && DESIGN_FIDELITY_TOKENS[mode]) {
+    tokenSet = [...DESIGN_FIDELITY_TOKENS[mode], ...DESIGN_FIDELITY_TOKENS.GENERAL];
+  }
+
+  // Shuffle and select a limited number of tokens to keep the prompt clean
+  const shuffledTokens = [...tokenSet].sort(() => Math.random() - 0.5);
+  const selectedTokens = shuffledTokens.slice(0, 3);
+  
+  return selectedTokens.length > 0 
+    ? `${selectedTokens.join(', ')}, ${prompt}` 
+    : prompt;
 }
