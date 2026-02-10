@@ -6,255 +6,118 @@ Built with React, TypeScript, and wrapped for Android using Capacitor.
 
 ## 📦 What's Included
 - ✅ Complete React/TypeScript source code
-- ✅ Pre-built web application (dist folder)
-- ✅ Android project with Capacitor wrapper
+- ✅ Pre-built web application (`Appsgeyser` folder)
+- ✅ Android project wrapper and setup scripts (`android` folder)
 - ✅ All dependencies configuration files
 - ✅ Build scripts and configurations
 
-## 🚀 Quick Start - Build APK
+---
 
-### Prerequisites
-1. **Java Development Kit (JDK) 17 or 21**
-   - Download: https://adoptium.net/
-   - Verify: `java -version`
+## 🚀 Building the Android APK
 
-2. **Android Studio** (Recommended) or **Android SDK Command Line Tools**
-   - Download: https://developer.android.com/studio
-   - Includes Android SDK and build tools
+This guide provides instructions to compile the HYPERXGEN web application into a native Android APK.
 
-3. **Node.js 18+** and npm
-   - Download: https://nodejs.org/
-   - Verify: `node -v` and `npm -v`
+### Step 1: Environment Setup (One-Time)
 
-### Option 1: Build with Android Studio (Easiest)
+Before you can build the APK, you must install the required development tools on your system. We have provided scripts to verify your installation.
 
-1. **Install Android Studio**
-   - Download from https://developer.android.com/studio
-   - Follow installation wizard
-   - Install recommended SDK packages
+**1. Install Dependencies:**
+   - **Java Development Kit (JDK) 17:** The Android toolchain requires a specific version of Java.
+     - **Download:** [Eclipse Temurin JDK 17](https://adoptium.net/temurin/releases/?version=17)
+   - **Android Studio:** This is the easiest way to get the Android SDK and build tools.
+     - **Download:** [Android Studio](https://developer.android.com/studio)
+     - During installation, ensure you install the "Android SDK Command-line Tools".
 
-2. **Open the Project**
-   - Launch Android Studio
-   - Click "Open an Existing Project"
-   - Navigate to and select the `android` folder in this package
+**2. Configure Environment Variables:**
+   You must tell your system where to find the Java and Android SDK installations.
 
-3. **Wait for Gradle Sync**
-   - Android Studio will automatically sync Gradle (3-5 minutes first time)
-   - Wait for "Gradle build finished" message
-
-4. **Build APK**
-   - Menu: Build → Build Bundle(s) / APK(s) → Build APK(s)
-   - Wait 5-10 minutes for first build
-   - Click "locate" in notification or find at:
-     `android/app/build/outputs/apk/debug/app-debug.apk`
-
-### Option 2: Build with Command Line
-
-1. **Set Environment Variables**
-
-   **Windows (Command Prompt):**
-   ```cmd
-   set ANDROID_HOME=C:\Users\YourUsername\AppData\Local\Android\Sdk
-   set JAVA_HOME=C:\Program Files\Java\jdk-21
-   set PATH=%PATH%;%ANDROID_HOME%\platform-tools;%ANDROID_HOME%\cmdline-tools\latest\bin
-   ```
-
-   **macOS/Linux (Terminal):**
+   **macOS / Linux:**
+   Open your `~/.zshrc`, `~/.bashrc`, or `~/.profile` and add the following lines:
    ```bash
-   export ANDROID_HOME=$HOME/Library/Android/sdk  # macOS
-   # or
-   export ANDROID_HOME=$HOME/Android/Sdk          # Linux
-   export JAVA_HOME=/usr/lib/jvm/java-21-openjdk  # Adjust path
-   export PATH=$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin
+   # Adjust paths if you installed to a different location
+   export JAVA_HOME="/path/to/your/jdk-17" # e.g., /Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home
+   export ANDROID_HOME="$HOME/Library/Android/sdk"
+   export PATH=$PATH:$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin
    ```
+   *Reload your shell after saving by running `source ~/.zshrc` or opening a new terminal.*
 
-2. **Navigate to Android Folder**
-   ```bash
-   cd android
-   ```
-
-3. **Build Debug APK**
-   ```bash
-   # Windows
-   gradlew.bat assembleDebug
+   **Windows:**
+   Open PowerShell as Administrator and run these commands, adjusting the paths for your system:
+   ```powershell
+   # Use 'setx /M' to set system-wide environment variables
+   setx /M JAVA_HOME "C:\Program Files\Eclipse Adoptium\jdk-17.0.x.x-hotspot"
+   setx /M ANDROID_HOME "C:\Users\YourUsername\AppData\Local\Android\Sdk"
    
-   # macOS/Linux
-   ./gradlew assembleDebug
+   # Add to system PATH (be careful not to overwrite existing path)
+   $oldPath = (Get-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment' -Name 'Path').Path
+   $newPath = "$oldPath;%JAVA_HOME%\bin;%ANDROID_HOME%\platform-tools;%ANDROID_HOME%\cmdline-tools\latest\bin"
+   setx /M PATH "$newPath"
    ```
+   *You must restart PowerShell/CMD and possibly your computer for these changes to take effect.*
 
-4. **Find Your APK**
-   - Location: `android/app/build/outputs/apk/debug/app-debug.apk`
-
-### Option 3: Build Release APK (For Distribution)
-
-1. **Generate Signing Key**
+**3. Verify Your Setup:**
+   Run the verification script from the project root:
    ```bash
-   keytool -genkey -v -keystore my-release-key.keystore \
-           -alias hyperxgen -keyalg RSA -keysize 2048 -validity 10000
+   # For macOS / Linux
+   ./android/setup-env.sh
+   
+   # For Windows (CMD or PowerShell)
+   .\android\setup-env.bat
    ```
+   If the script reports success, you are ready to build! If not, follow the error messages to fix your setup. You can also run `npm run setup:android` for a hint.
 
-2. **Configure Signing** (Edit `android/app/build.gradle`)
-   ```groovy
-   android {
-       signingConfigs {
-           release {
-               storeFile file("../../my-release-key.keystore")
-               storePassword "your-password"
-               keyAlias "hyperxgen"
-               keyPassword "your-password"
-           }
-       }
-       buildTypes {
-           release {
-               signingConfig signingConfigs.release
-           }
-       }
-   }
-   ```
+---
 
-3. **Build Release APK**
-   ```bash
-   ./gradlew assembleRelease
-   ```
+### Step 2: Building the APK
 
-4. **Find Signed APK**
-   - Location: `android/app/build/outputs/apk/release/app-release.apk`
+With the environment configured, you can now build the APK.
+
+**Option A: Using Android Studio (Recommended)**
+
+1.  **Open Project:** Launch Android Studio, select "Open", and navigate to the `android` folder within this project.
+2.  **Gradle Sync:** Wait for Android Studio to index files and sync the project with Gradle. This can take several minutes on the first open.
+3.  **Build APK:** From the menu bar, go to `Build` → `Build Bundle(s) / APK(s)` → `Build APK(s)`.
+4.  **Locate APK:** Once the build is complete, a notification will appear. Click "locate" or find the file at `android/app/build/outputs/apk/debug/app-debug.apk`.
+
+**Option B: Using the Command Line**
+
+1.  **Navigate to Folder:** Open your terminal and change the directory to the `android` folder:
+    ```bash
+    cd android
+    ```
+2.  **Run Build Command:**
+    ```bash
+    # For macOS / Linux
+    ./gradlew assembleDebug
+    
+    # For Windows
+    .\gradlew.bat assembleDebug
+    ```
+3.  **Find APK:** The generated file will be at `android/app/build/outputs/apk/debug/app-debug.apk`.
+
+---
+
+### Step 3: Installing the APK
+
+You can install the generated `app-debug.apk` on an Android device or emulator.
+
+1.  **Enable USB Debugging** on your Android device (in Developer Options).
+2.  **Connect Device:** Connect your device to your computer via USB.
+3.  **Install via ADB:** Open a terminal and run:
+    ```bash
+    adb install android/app/build/outputs/apk/debug/app-debug.apk
+    ```
+    Alternatively, you can drag-and-drop the APK file onto an open Android Emulator window.
+
+---
 
 ## 🔧 Development Workflow
 
-### Modify the Web App
-1. Edit React components in `components/`, `services/`, etc.
-2. Test locally: `npm run dev`
-3. Build: `npm run build`
-4. Sync to Android: `npx cap sync android`
-5. Rebuild APK
-
-### 💻 API Usage Example
-
-Here's an example of how to programmatically generate a monogram using a preset and custom initials. This code would typically reside within a component or service file.
-
-```typescript
-import { MONOGRAM_PRESETS } from './presets/enginePrompts.ts';
-import { MonogramPreset, KernelConfig } from './types.ts';
-import { synthesizeMonogramStyle } from './services/geminiService.ts';
-
-// Assume you have a base64 encoded image string for reference (optional)
-const uploadedImageBase64 = 'data:image/png;base64,iVBORw0KGgo...'; 
-const kernelConfig: KernelConfig = {
-  thinkingBudget: 0,
-  temperature: 0.1,
-  model: 'gemini-3-flash-preview',
-  deviceContext: 'MAXIMUM_ARCHITECTURE_OMEGA_V5'
-};
-
-const selectedPresetId = 'mono-royal-seal';
-const preset: MonogramPreset | undefined = MONOGRAM_PRESETS.find(p => p.id === selectedPresetId);
-
-if (!preset) {
-  throw new Error('Preset not found');
-}
-
-const userInitials = 'HXG';
-
-// Combine the preset's prompt with the user's input
-const textPrompt = `${preset.prompt}. The monogram should incorporate the initials: ${userInitials}.`;
-
-// Construct the directives string from the preset parameters
-const extraDirectives = Object.entries(preset.parameters)
-  .map(([key, value]) => {
-    // Convert camelCase to SNAKE_CASE_UPPER
-    const snakeKey = key.replace(/([A-Z])/g, '_$1').toUpperCase();
-    return `${snakeKey}: ${String(value).toUpperCase()}`;
-  })
-  .join('\n');
-
-
-// Call the synthesis function
-synthesizeMonogramStyle(
-  textPrompt,
-  uploadedImageBase64,
-  kernelConfig,
-  undefined, // No DNA provided in this example
-  extraDirectives
-).then(generatedImage => {
-  console.log('Generated Monogram Image URL:', generatedImage);
-}).catch(error => {
-  console.error('Monogram synthesis failed:', error);
-});
-```
-
-### Update Android Configuration
-- **App Name:** Edit `android/app/src/main/res/values/strings.xml`
-- **Package Name:** Edit `android/app/build.gradle` and `AndroidManifest.xml`
-- **Permissions:** Edit `android/app/src/main/AndroidManifest.xml`
-- **App Icon:** Replace files in `android/app/src/main/res/mipmap-*/`
-
-## 📱 Install APK on Device
-
-### Android Device (USB)
-1. Enable Developer Options (tap Build Number 7 times in Settings → About)
-2. Enable USB Debugging in Developer Options
-3. Connect device via USB
-4. Run: `adb install app-debug.apk`
-
-### Android Device (Direct)
-1. Transfer APK to device
-2. Enable "Install from Unknown Sources" in Settings → Security
-3. Tap APK file and install
-
-### Android Emulator
-1. Start emulator from Android Studio (AVD Manager)
-2. Drag and drop APK onto emulator window
-3. Or use: `adb install app-debug.apk`
-
-## ⚠️ Troubleshooting
-
-### "JAVA_HOME not set"
-Set JAVA_HOME environment variable to your JDK installation path.
-
-### "SDK not found"
-Set ANDROID_HOME to your Android SDK path (usually in AppData or Library folder).
-
-### "Gradle build failed"
-- Check internet connection (downloads dependencies)
-- Increase Gradle memory in `android/gradle.properties`:
-  ```
-  org.gradle.jvmargs=-Xmx2048m
-  ```
-
-### "Build too slow"
-First build downloads ~500MB dependencies. Subsequent builds are much faster.
-Enable Gradle daemon in `android/gradle.properties`:
-```
-org.gradle.daemon=true
-org.gradle.configureondemand=true
-```
-
-## 📊 Build Times
-- **First build:** 10-20 minutes (downloads all dependencies)
-- **Incremental builds:** 1-3 minutes
-- **Clean builds:** 3-5 minutes
-
-## 📦 APK Size
-- **Debug APK:** ~5-10 MB
-- **Release APK (optimized):** ~3-6 MB
-
-## 🌐 Alternative: Run as Web App
-The built web app is in the `dist` folder. You can:
-1. Host on any web server
-2. Access on mobile browser
-3. Add to home screen for app-like experience
-
-## 📚 Documentation Links
-- **Capacitor:** https://capacitorjs.com/docs
-- **React:** https://react.dev/
-- **Android Developers:** https://developer.android.com/
-
-## 🆘 Support
-For build issues:
-1. Check Android Studio build output for errors
-2. Verify all prerequisites are installed
-3. Ensure environment variables are set correctly
+1.  **Modify Web App:** Make changes to the React source code in the root directory.
+2.  **Test Locally:** Run `npm run dev` to see your changes in a web browser.
+3.  **Build Web Assets:** Run `npm run build`. This compiles the web app into the `Appsgeyser` directory.
+4.  **Sync to Android:** Run `npx cap sync android`. This copies the web assets into the native Android project.
+5.  **Rebuild APK:** Use Android Studio or the command line to build a new APK with the updated code.
 
 ## 📄 License
 Check project license files for usage terms.

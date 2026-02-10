@@ -1,8 +1,7 @@
-
 {
   "name": "hyperxgen",
   "private": true,
-  "version": "7.6.0",
+  "version": "7.6.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,7 +10,8 @@
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "lint": "eslint . --ext ts,tsx",
-    "security-check": "npm audit"
+    "security-check": "npm audit",
+    "setup:android": "echo \"Run 'android/setup-env.sh' (for Linux/macOS) or 'android\\\\setup-env.bat' (for Windows) to check your environment.\""
   },
   "dependencies": {
     "react": "^19.2.4",
