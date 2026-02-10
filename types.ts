@@ -52,6 +52,7 @@ export enum StyleCategory {
   TYPOGRAPHY = 'TYPOGRAPHY', 
   VECTOR = 'VECTOR',
   FILTER = 'FILTER',
+  GRAFFITI = 'GRAFFITI',
   UNKNOWN = 'UNKNOWN'
 }
 
@@ -70,7 +71,6 @@ export interface LogEntry {
   type: LogType;
 }
 
-// ===================== LATTICE LINK (Update 4) =====================
 export interface LatticeBuffer {
   imageUrl?: string;
   dna?: ExtractionResult;
@@ -79,7 +79,6 @@ export interface LatticeBuffer {
   sourceMode: PanelMode;
 }
 
-// ===================== PANEL STATE =====================
 export interface PanelState {
   type: PanelMode;
   prompt: string;
@@ -91,7 +90,6 @@ export interface PanelState {
   latticeStatus?: LatticeStatus;
 }
 
-
 // ==================== PRESET TYPES ====================
 
 export enum PresetCategoryType {
@@ -101,7 +99,6 @@ export enum PresetCategoryType {
   VAULT = 'VAULT'
 }
 
-// Preset base interface
 export interface BasePreset {
   id: string;
   name: string;
@@ -109,7 +106,7 @@ export interface BasePreset {
   category: string;
   description: string;
   prompt: string;
-  styleDirective?: string; // High-fidelity engine instructions
+  styleDirective?: string; 
   imageUrl?: string;
   thumbnailUrl?: string;
   dna?: ExtractionResult | null;
@@ -127,7 +124,6 @@ export interface BasePreset {
   };
 }
 
-// Vector Preset with specific parameters
 export interface VectorPreset extends BasePreset {
   type: PanelMode.VECTOR;
   parameters: {
@@ -150,7 +146,6 @@ export type VectorStyle =
   | 'Playful' 
   | 'Abstract';
 
-// Typography Preset
 export interface TypographyPreset extends BasePreset {
   type: PanelMode.TYPOGRAPHY;
   parameters: {
@@ -162,7 +157,6 @@ export interface TypographyPreset extends BasePreset {
   styleUsed?: string;
 }
 
-// Fix: Added 'Organic' to TypographyStyle to align with preset definitions in presets/index.ts
 export type TypographyStyle = 
   | 'Grunge' 
   | 'Neon' 
@@ -178,7 +172,6 @@ export type TypographyStyle =
   | 'Organic'
   | '3D';
 
-// Monogram Preset
 export interface MonogramPreset extends BasePreset {
   type: PanelMode.MONOGRAM;
   parameters: {
@@ -194,7 +187,6 @@ export interface MonogramPreset extends BasePreset {
   };
 }
 
-// Filter Preset
 export interface FilterPreset extends BasePreset {
   type: PanelMode.FILTERS;
   parameters: {
@@ -218,19 +210,17 @@ export type FilterType =
 
 export type Preset = VectorPreset | TypographyPreset | MonogramPreset | FilterPreset;
 
-// Type guard functions
 export const isVectorPreset = (preset: Preset): preset is VectorPreset => preset.type === PanelMode.VECTOR;
 export const isTypographyPreset = (preset: Preset): preset is TypographyPreset => preset.type === PanelMode.TYPOGRAPHY;
 export const isMonogramPreset = (preset: Preset): preset is MonogramPreset => preset.type === PanelMode.MONOGRAM;
 export const isFilterPreset = (preset: Preset): preset is FilterPreset => preset.type === PanelMode.FILTERS;
 
-// Logic Types
 export type PresetItem = Preset;
 
 export interface PresetCategory {
   id: string;
   title: string;
-  mobileLabel?: string; // Standardized mobile title
+  mobileLabel?: string; 
   description?: string;
   type: PresetCategoryType;
   items: Preset[];
@@ -239,7 +229,6 @@ export interface PresetCategory {
   isCollapsible?: boolean;
 }
 
-// Added features property to fix type mismatch in geminiService.ts
 export interface ExtractionResult {
   id?: string;
   domain: string;
@@ -274,7 +263,7 @@ export interface ExtractedStyle {
   name: string;
   description: string;
   category: StyleCategory;
-  confidence: number; // 0-100%
+  confidence: number; 
   features: {
     hasLetters: boolean;
     isGeometric: boolean;
@@ -285,7 +274,7 @@ export interface ExtractedStyle {
     colorBased: boolean;
     textureBased: boolean;
   };
-  recommendedPresets: string[]; // IDs of matching presets
+  recommendedPresets: string[]; 
 }
 
 export interface RepairSummary {

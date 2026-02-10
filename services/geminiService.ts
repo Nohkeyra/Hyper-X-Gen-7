@@ -1,7 +1,9 @@
+
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
-import { ExtractionResult, KernelConfig, PanelMode, RealIssue } from "../types.ts";
+import { ExtractionResult, KernelConfig, PanelMode, RealIssue, StyleCategory } from "../types.ts";
 import { injectAntiCensor } from '../utils/antiCensor.ts';
 import { ERROR_MESSAGES, APP_CONSTANTS } from '../constants.ts';
+import { PRESET_REGISTRY } from '../presets/index.ts';
 
 // Helper function to extract pure base64 data
 function getPureBase64Data(dataUrl: string | null | undefined): string | null {
@@ -53,6 +55,139 @@ async function reliableRequest<T>(requestFn: () => Promise<T>, retries: number =
   }
 }
 
+/**
+ * DETERMINISTIC STYLE CLASSIFIER
+ * Analyzes architectural design DNA to route to the correct synthesis module.
+ */
+export class StyleClassifier {
+  static classifyStyle(styleDescription: string, features?: any): {
+    category: StyleCategory;
+    confidence: number;
+    recommendedPanel: PanelMode;
+    matchingPresets: string[];
+  } {
+    const keywords = this.extractKeywords(styleDescription.toLowerCase());
+    
+    // 1. Check for Graffiti Specificity (Master Rules Override)
+    const graffitiScore = this.calculateGraffitiScore(keywords);
+    if (graffitiScore > 50) {
+      return {
+        category: StyleCategory.GRAFFITI,
+        confidence: graffitiScore,
+        recommendedPanel: PanelMode.TYPOGRAPHY,
+        matchingPresets: this.findMatchingPresets(StyleCategory.TYPOGRAPHY, keywords)
+      };
+    }
+
+    // 2. Standard Architectural Scores
+    const monogramScore = this.calculateMonogramScore(keywords, features);
+    const typographyScore = this.calculateTypographyScore(keywords, features);
+    const vectorScore = this.calculateVectorScore(keywords, features);
+    
+    // Determine winner
+    const scores = [
+      { category: StyleCategory.MONOGRAM, score: monogramScore },
+      { category: StyleCategory.TYPOGRAPHY, score: typographyScore },
+      { category: StyleCategory.VECTOR, score: vectorScore }
+    ];
+    
+    scores.sort((a, b) => b.score - a.score);
+    const winner = scores[0] || { category: StyleCategory.UNKNOWN, score: 0 };
+    
+    return {
+      category: winner.category as StyleCategory,
+      confidence: winner.score,
+      recommendedPanel: this.mapCategoryToPanel(winner.category as StyleCategory),
+      matchingPresets: this.findMatchingPresets(winner.category as StyleCategory, keywords)
+    };
+  }
+
+  private static calculateGraffitiScore(keywords: string[]): number {
+    let score = 0;
+    if (keywords.some(k => ['graffiti', 'wildstyle', 'throwup', 'tag', 'streetart'].includes(k))) score += 60;
+    if (keywords.some(k => ['spray', 'urban', 'hiphop', 'drip', 'stencil'].includes(k))) score += 40;
+    if (keywords.some(k => ['bubble', 'block', 'burner', 'piece'].includes(k))) score += 30;
+    return Math.min(score, 100);
+  }
+  
+  private static calculateMonogramScore(keywords: string[], features?: any): number {
+    let score = 0;
+    if (keywords.some(k => ['monogram', 'logo', 'seal', 'emblem', 'initials', 'letter', 'interlocked', 'shield', 'crest'].includes(k))) score += 50;
+    if (keywords.some(k => ['stacked', 'radial', 'symmetry', 'mirror', 'radial', 'centered'].includes(k))) score += 30;
+    if (features) {
+      if (features.hasSymmetry) score += 20;
+      if (features.usesNegativeSpace) score += 10;
+    }
+    return Math.min(score, 100);
+  }
+  
+  private static calculateTypographyScore(keywords: string[], features?: any): number {
+    let score = 0;
+    if (keywords.some(k => ['typography', 'font', 'typeface', 'lettering', 'text', 'word', 'glyph', 'characters'].includes(k))) score += 50;
+    if (keywords.some(k => ['grunge', 'neon', 'vintage', 'artdeco', 'retro', 'cursive', 'stencil', 'cyberpunk'].includes(k))) score += 30;
+    if (features?.hasLetters) score += 40;
+    return Math.min(score, 100);
+  }
+  
+  private static calculateVectorScore(keywords: string[], features?: any): number {
+    let score = 0;
+    if (keywords.some(k => ['vector', 'illustration', 'flat', 'icon', 'sticker', 'lineart', 'silhouette'].includes(k))) score += 50;
+    if (keywords.some(k => ['minimal', 'geometric', 'organic', 'abstract', 'flatdesign', 'modernist'].includes(k))) score += 30;
+    if (features?.isAbstract || features?.isGeometric) score += 10;
+    return Math.min(score, 100);
+  }
+  
+  public static extractKeywords(text: string): string[] {
+    const stopWords = ['the', 'and', 'for', 'with', 'style', 'design', 'art', 'image', 'photo', 'picture', 'draw', 'look', 'shows', 'contains', 'background'];
+    const visualSubjects = ['cat', 'dog', 'person', 'human', 'man', 'woman', 'tree', 'car', 'animal', 'nature', 'object', 'thing', 'bird', 'fish', 'landscape', 'mountain', 'face', 'body', 'hand', 'flower', 'fruit', 'food', 'drink', 'bottle'];
+    
+    const words = text
+      .toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(word => 
+        word.length > 2 && 
+        !stopWords.includes(word) && 
+        !visualSubjects.includes(word)
+      );
+    return [...new Set(words)];
+  }
+  
+  private static findMatchingPresets(category: StyleCategory, keywords: string[]): string[] {
+    const panelMode = this.mapCategoryToPanel(category);
+    const registry = PRESET_REGISTRY[panelMode.toUpperCase()];
+    if (!registry) return [];
+    
+    const matches: { id: string; score: number }[] = [];
+    const allPresets = registry.libraries.flatMap(lib => lib.items);
+    
+    allPresets.forEach(preset => {
+      let score = 0;
+      const presetText = `${preset.name} ${preset.description} ${preset.prompt}`.toLowerCase();
+      keywords.forEach(keyword => {
+        if (presetText.includes(keyword)) score += 25;
+      });
+      if (score > 15) matches.push({ id: preset.id, score });
+    });
+    
+    return matches
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+      .map(m => m.id);
+  }
+  
+  private static mapCategoryToPanel(category: StyleCategory): PanelMode {
+    switch (category) {
+      case StyleCategory.MONOGRAM: return PanelMode.MONOGRAM;
+      case StyleCategory.TYPOGRAPHY: return PanelMode.TYPOGRAPHY;
+      case StyleCategory.VECTOR: return PanelMode.VECTOR;
+      case StyleCategory.FILTER: return PanelMode.FILTERS;
+      case StyleCategory.GRAFFITI: return PanelMode.TYPOGRAPHY;
+      default: return PanelMode.VECTOR;
+    }
+  }
+}
+
 export async function extractStyleFromImage(
   base64Image: string, 
   config: KernelConfig = DEFAULT_CONFIG,
@@ -61,7 +196,7 @@ export async function extractStyleFromImage(
   validateModuleAccess(config.model);
   const ai = createAIInstance();
   if (!ai) return { 
-    domain: 'Mock_Engine', name: 'Identity_Null', description: 'Free mode fallback extraction result.',
+    domain: 'Mock_Engine', name: 'Identity_Null', description: 'Free mode fallback.',
     styleAuthenticityScore: 50, palette: ['#CC0001', '#010066'], mood: ['Static'],
     category: 'Mock', formLanguage: 'Geometric', styleAdjectives: ['Placeholder'], technique: 'Mockup', promptTemplate: 'style of fallback',
     features: { hasLetters: false, isGeometric: true, isAbstract: false, hasSymmetry: true, usesNegativeSpace: true, strokeBased: true, colorBased: true, textureBased: false }
@@ -80,7 +215,7 @@ export async function extractStyleFromImage(
         ],
       },
       config: {
-        systemInstruction: "AESTHETIC_PRESET_FORENSICS: Your SOLE TASK is to map visual traits to design parameters. MANDATORY: IGNORE THE SUBJECT MATTER. If there is a dog, do not mention 'dog'. If there is a person, do not mention 'person'. Describe ONLY the design architectural traits (e.g., 'Flat vector with monoline strokes', 'Grunge sans-serif with neon glow'). Your output must be subject-agnostic DNA that can be applied to ANY new prompt subject.",
+        systemInstruction: "AESTHETIC_PRESET_FORENSICS: Map visual traits to design parameters. IGNORE SUBJECT MATTER.",
         responseMimeType: "application/json",
         responseSchema: {
            type: Type.OBJECT,
@@ -137,12 +272,9 @@ async function performSynthesis(
       model: 'gemini-2.5-flash-image',
       contents,
       config: { 
-        systemInstruction: `High-fidelity ${mode} design engine. Priority: Recognizable elegance. 
-        CRITICAL RULE: DO NOT INCLUDE ANY TEXT LABELS OR WORDS. 
-        STRICT PROHIBITION: Never write words like "MONOGRAM", "SYNTHESIS", "REFINED", "PROTOCOL", "ENGINE", or "HYPERXGEN" inside the graphic. 
-        Only render the letters explicitly asked for in the prompt. If no letters are asked for, render ZERO text. 
-        Labels, peripheral annotations, and decorative word borders are strictly forbidden.`,
-        temperature: config.temperature 
+        systemInstruction: `High-fidelity ${mode} design engine. DO NOT INCLUDE ANY TEXT LABELS.`,
+        temperature: config.temperature,
+        thinkingConfig: { thinkingBudget: 50 } // Added for more reliable image generation
       }
     });
     
@@ -163,9 +295,9 @@ export async function refineTextPrompt(prompt: string, mode: PanelMode, config: 
   return reliableRequest(async () => {
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: 'gemini-3-flash-preview', 
-      contents: `Refine for ${mode} synthesis engine: "${prompt}". Focus on visual subjects. Short and precise.`,
+      contents: `Refine for ${mode} synthesis engine: "${prompt}".`,
       config: { 
-        systemInstruction: "Prompt Architect v5.2. Optimize visual descriptors for image synthesis kernels.",
+        systemInstruction: "Prompt Architect. Optimize visual descriptors.",
         temperature: 0.7
       }
     });
@@ -179,9 +311,9 @@ export async function analyzeCodeForRefinements(code: string): Promise<RealIssue
   return reliableRequest(async () => {
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: 'gemini-3-flash-preview', 
-      contents: `Audit code for React/Vite/CSS best practices:\n${code}`,
+      contents: `Audit code:\n${code}`,
       config: {
-        systemInstruction: "Architect Audit. Return JSON array of valid issues.",
+        systemInstruction: "Architect Audit. Return JSON array.",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.ARRAY,

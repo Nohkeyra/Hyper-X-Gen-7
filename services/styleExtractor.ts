@@ -1,6 +1,6 @@
+
 import { KernelConfig, ExtractionResult, PanelMode, StyleCategory } from '../types.ts';
-import { StyleClassifier } from './styleClassifier.ts';
-import { extractStyleFromImage } from './geminiService.ts';
+import { StyleClassifier, extractStyleFromImage } from './geminiService.ts';
 
 export class EnhancedStyleExtractor {
   /**
@@ -26,7 +26,7 @@ export class EnhancedStyleExtractor {
     // 3. Classify the style using the deterministic StyleClassifier logic
     const classification = StyleClassifier.classifyStyle(
       description,
-      (extractionResult as any).features
+      extractionResult.features
     );
     
     // 4. Enrich the extraction result with classification metadata

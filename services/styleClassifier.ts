@@ -1,3 +1,4 @@
+
 import { PanelMode, StyleCategory } from '../types.ts';
 import { PRESET_REGISTRY } from '../presets/index.ts';
 
@@ -5,6 +6,7 @@ export class StyleClassifier {
   /**
    * Auto-detect which panel a style belongs to
    */
+  // Refined return type to strictly use StyleCategory enum
   static classifyStyle(styleDescription: string, features?: any): {
     category: StyleCategory;
     confidence: number;
@@ -13,7 +15,18 @@ export class StyleClassifier {
   } {
     const keywords = this.extractKeywords(styleDescription.toLowerCase());
     
-    // Check for specific architectural indicators
+    // 1. Check for Graffiti Specificity (Master Rules Override)
+    const graffitiScore = this.calculateGraffitiScore(keywords);
+    if (graffitiScore > 65) {
+      return {
+        category: StyleCategory.GRAFFITI,
+        confidence: graffitiScore,
+        recommendedPanel: PanelMode.TYPOGRAPHY,
+        matchingPresets: this.findMatchingPresets(StyleCategory.TYPOGRAPHY, keywords, styleDescription)
+      };
+    }
+
+    // 2. Standard Architectural Scores
     const monogramScore = this.calculateMonogramScore(keywords, features);
     const typographyScore = this.calculateTypographyScore(keywords, features);
     const vectorScore = this.calculateVectorScore(keywords, features);
@@ -30,7 +43,7 @@ export class StyleClassifier {
     
     // Find matching presets
     const matchingPresets = this.findMatchingPresets(
-      winner.category,
+      winner.category as StyleCategory,
       keywords,
       styleDescription
     );
@@ -41,6 +54,14 @@ export class StyleClassifier {
       recommendedPanel: this.mapCategoryToPanel(winner.category as StyleCategory),
       matchingPresets
     };
+  }
+
+  private static calculateGraffitiScore(keywords: string[]): number {
+    let score = 0;
+    if (keywords.some(k => ['graffiti', 'wildstyle', 'throwup', 'tag', 'streetart'].includes(k))) score += 60;
+    if (keywords.some(k => ['spray', 'urban', 'hiphop', 'drip', 'stencil'].includes(k))) score += 40;
+    if (keywords.some(k => ['bubble', 'block', 'burner', 'piece'].includes(k))) score += 30;
+    return Math.min(score, 100);
   }
   
   private static calculateMonogramScore(keywords: string[], features?: any): number {
@@ -111,7 +132,7 @@ export class StyleClassifier {
       let score = 0;
       const presetText = `${preset.name} ${preset.description} ${preset.prompt}`.toLowerCase();
       keywords.forEach(keyword => {
-        if (presetText.includes(keyword)) score += 20; // Increased weight for keyword matches
+        if (presetText.includes(keyword)) score += 25; // High weight for architectural keyword matches
       });
       if (score > 15) matches.push({ id: preset.id, score });
     });
