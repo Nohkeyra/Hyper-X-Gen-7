@@ -1,3 +1,4 @@
+
 // FINAL – LOCKED - REFINED V7.2
 import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react';
 import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, MonogramPreset, Preset, LatticeBuffer } from '../types.ts';
@@ -22,10 +23,11 @@ interface MonogramPanelProps {
   onSetGlobalDna?: (dna: ExtractionResult | null) => void; 
   globalDna?: ExtractionResult | null;
   latticeBuffer?: LatticeBuffer | null;
+  onClearLattice?: () => void;
 }
 
 export const MonogramPanel: React.FC<MonogramPanelProps> = ({
-  initialData, kernelConfig, savedPresets = [], onSaveToHistory, addLog, onSetGlobalDna, globalDna, onStateUpdate, latticeBuffer
+  initialData, kernelConfig, savedPresets = [], onSaveToHistory, addLog, onSetGlobalDna, globalDna, onStateUpdate, latticeBuffer, onClearLattice
 }) => {
   const PRESETS: PresetCategory[] = useMemo(() => {
     return getMobileCategories(PanelMode.MONOGRAM, savedPresets);
@@ -150,6 +152,17 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
     }
   }, [prompt, activePreset, dna, globalDna, kernelConfig, uploadedImage, structureCreativity, densitySpace, traditionalModern, symmetryType, containmentType, strokeEnds, transition, onSaveToHistory, addLog]);
 
+  const handleFileUpload = useCallback((f: File) => {
+    const r = new FileReader(); 
+    r.onload = e => {
+      setUploadedImage(e.target?.result as string);
+      setGeneratedOutput(null);
+      transition('BUFFER_LOADED');
+      addLog("MONO_SOURCE_LOADED", "info");
+    }; 
+    r.readAsDataURL(f); 
+  }, [transition, addLog]);
+
   return (
     <PanelLayout 
       sidebar={
@@ -210,8 +223,8 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
           generatedOutput={generatedOutput} 
           isProcessing={isProcessing} 
           hudContent={<DevourerHUD devourerStatus={status} />} 
-          onClear={() => { setGeneratedOutput(null); setUploadedImage(null); setDna(null); }} 
-          onFileUpload={(f) => { const r = new FileReader(); r.onload = e => setUploadedImage(e.target?.result as string); r.readAsDataURL(f); }} 
+          onClear={() => { setGeneratedOutput(null); setUploadedImage(null); setDna(null); transition('STARVING'); }} 
+          onFileUpload={handleFileUpload} 
           bridgeSource={initialData?.category === 'LATTICE_BRIDGE' ? latticeBuffer?.sourceMode : null}
         />
       }
@@ -222,6 +235,7 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
             prompt={prompt} setPrompt={setPrompt} onGenerate={handleGenerate} isProcessing={isProcessing} 
             activePresetName={activePreset?.name || dna?.name || globalDna?.name} placeholder="Enter initials (e.g. HXG)..." 
             bridgedThumbnail={initialData?.category === 'LATTICE_BRIDGE' ? initialData.imageUrl : null}
+            onClearBridge={() => { if (onClearLattice) onClearLattice(); setUploadedImage(null); }}
           />
         </div>
       }

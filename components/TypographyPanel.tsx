@@ -1,3 +1,4 @@
+
 // FINAL – LOCKED
 import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react';
 import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, Preset, LatticeBuffer } from '../types.ts';
@@ -26,6 +27,7 @@ interface TypographyPanelProps {
   onSetGlobalDna?: (dna: ExtractionResult | null) => void;
   globalDna?: ExtractionResult | null;
   latticeBuffer?: LatticeBuffer | null;
+  onClearLattice?: () => void;
 }
 
 export const TypographyPanel: React.FC<TypographyPanelProps> = ({
@@ -37,7 +39,8 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
   addLog,
   onSetGlobalDna,
   globalDna,
-  latticeBuffer
+  latticeBuffer,
+  onClearLattice
 }) => {
 
   const PRESETS: PresetCategory[] = useMemo(() => {
@@ -78,6 +81,8 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
     
     if ((preset as any)?.imageUrl) {
         setUploadedImage((preset as any).imageUrl);
+        setGeneratedOutput(null);
+        transition('BUFFER_LOADED');
     }
   }, [PRESETS, isProcessing, onSetGlobalDna, transition]);
 
@@ -135,6 +140,17 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
     }
   };
 
+  const handleFileUpload = useCallback((f: File) => {
+    const r = new FileReader();
+    r.onload = e => {
+        setUploadedImage(e.target?.result as string);
+        setGeneratedOutput(null);
+        transition('BUFFER_LOADED');
+        addLog("TYPO_SOURCE_LOADED", "info");
+    };
+    r.readAsDataURL(f);
+  }, [transition, addLog]);
+
   return (
     <PanelLayout
       sidebar={
@@ -175,14 +191,7 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
             onSetGlobalDna?.(null);
             transition('STARVING');
           }}
-          onFileUpload={(f) => {
-            const r = new FileReader();
-            r.onload = e => {
-                setUploadedImage(e.target?.result as string);
-                transition('BUFFER_LOADED');
-            };
-            r.readAsDataURL(f);
-          }}
+          onFileUpload={handleFileUpload}
           downloadFilename={`hyperxgen_typo_${Date.now()}.png`}
           bridgeSource={initialData?.category === 'LATTICE_BRIDGE' ? latticeBuffer?.sourceMode : null}
         />
@@ -198,6 +207,7 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
             activePresetName={activePreset?.name || dna?.name || globalDna?.name}
             placeholder="Enter words (1-3 ideal)..."
             bridgedThumbnail={initialData?.category === 'LATTICE_BRIDGE' ? initialData.imageUrl : null}
+            onClearBridge={() => { if (onClearLattice) onClearLattice(); setUploadedImage(null); }}
             refineButton={
               <button
                 onClick={handleRefine}

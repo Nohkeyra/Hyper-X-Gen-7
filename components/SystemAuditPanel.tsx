@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { PageLayout } from './Layouts.tsx';
 
@@ -22,12 +23,12 @@ export const SystemAuditPanel: React.FC = () => {
   ];
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsScanning(false), 2500);
+    const timer = setTimeout(() => setIsScanning(false), 800); // Faster scan finish
     const interval = setInterval(() => {
       const hex = Math.random().toString(16).substr(2, 8).toUpperCase();
       const addr = `0x${Math.floor(Math.random()*0xFFFF).toString(16).toUpperCase().padStart(4, '0')}`;
       setDataStream(prev => [ `LOG_SYNC_${hex}_${addr}: OK`, ...prev.slice(0, 20) ]);
-    }, 150);
+    }, 500); // Throttled from 150ms to 500ms
     return () => { clearTimeout(timer); clearInterval(interval); };
   }, []);
 

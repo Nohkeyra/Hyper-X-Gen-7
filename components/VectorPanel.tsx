@@ -1,3 +1,4 @@
+
 // FINAL – LOCKED - REFINED V7.1
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { SparkleIcon } from './Icons.tsx';
@@ -26,6 +27,7 @@ interface VectorPanelProps {
   onStateUpdate?: (state: any) => void;
   addLog: (msg: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
   latticeBuffer?: LatticeBuffer | null;
+  onClearLattice?: () => void;
 }
 
 export const VectorPanel: React.FC<VectorPanelProps> = ({
@@ -37,7 +39,8 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
   onSetGlobalDna, 
   onStateUpdate, 
   addLog,
-  latticeBuffer
+  latticeBuffer,
+  onClearLattice
 }) => {
   const PRESETS: PresetCategory[] = useMemo(() => {
     return getMobileCategories(PanelMode.VECTOR, savedPresets);
@@ -150,6 +153,18 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
     }
   }, [prompt, uploadedImage, activePreset, complexity, outline, mood, kernelConfig, dna, globalDna, transition, addLog, onSaveToHistory]);
 
+  const handleFileUpload = useCallback((f: File) => {
+    const r = new FileReader(); 
+    r.onload = e => {
+      const base64 = e.target?.result as string;
+      setUploadedImage(base64);
+      setGeneratedOutput(null);
+      transition('BUFFER_LOADED');
+      addLog("SOURCE_BUFFER_LOADED: Ready for synthesis", "info");
+    }; 
+    r.readAsDataURL(f); 
+  }, [transition, addLog]);
+
   return (
     <PanelLayout 
       sidebar={
@@ -216,8 +231,8 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
           generatedOutput={generatedOutput} 
           isProcessing={isProcessing} 
           hudContent={<DevourerHUD devourerStatus={status} />} 
-          onClear={() => { setUploadedImage(null); setGeneratedOutput(null); setDna(null); }} 
-          onFileUpload={(f) => { const r = new FileReader(); r.onload = e => setUploadedImage(e.target?.result as string); r.readAsDataURL(f); }} 
+          onClear={() => { setUploadedImage(null); setGeneratedOutput(null); setDna(null); transition('STARVING'); }} 
+          onFileUpload={handleFileUpload} 
           bridgeSource={initialData?.category === 'LATTICE_BRIDGE' ? latticeBuffer?.sourceMode : null}
         />
       }
@@ -229,6 +244,7 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
             activePresetName={activePreset?.name || dna?.name || globalDna?.name} placeholder="Describe subject (e.g. A couple with a kitten)..."
             refineButton={<button onClick={async () => { setIsRefining(true); setPrompt(await refineTextPrompt(prompt, PanelMode.VECTOR, kernelConfig, dna || undefined)); setIsRefining(false); }} className={`p-3 bg-black/40 border border-white/10 text-brandYellow rounded-sm ${isRefining ? 'animate-pulse' : ''}`}><SparkleIcon className="w-4 h-4" /></button>}
             bridgedThumbnail={initialData?.category === 'LATTICE_BRIDGE' ? initialData.imageUrl : null}
+            onClearBridge={() => { if (onClearLattice) onClearLattice(); setUploadedImage(null); }}
           />
         </div>
       }

@@ -1,13 +1,10 @@
+
 import React, { memo } from 'react';
-import { StarIcon, PulseIcon } from './Icons';
 import { ThemeToggle } from './PanelShared';
 
 interface PanelHeaderProps {
   title?: string;
   onBack?: () => void;
-  onStartRepair?: () => void;
-  onStartRefine?: () => void;
-  integrity?: number;
   isDarkMode?: boolean;
   onToggleTheme?: () => void;
   onToggleLogViewer?: () => void; 
@@ -17,9 +14,6 @@ interface PanelHeaderProps {
 export const PanelHeader: React.FC<PanelHeaderProps> = memo(({ 
   title = "HYPERXGEN", 
   onBack = () => {}, 
-  onStartRepair, 
-  onStartRefine, 
-  integrity,
   isDarkMode,
   onToggleTheme,
   onToggleLogViewer,
@@ -57,27 +51,7 @@ export const PanelHeader: React.FC<PanelHeaderProps> = memo(({
              <div className={`w-1.5 h-1.5 rounded-full ${latticeStatus === 'SYNCED' ? 'bg-brandYellow animate-pulse' : 'bg-white/10'}`} />
           </div>
 
-          {typeof integrity === 'number' && (
-            <div className="flex flex-col items-end hidden lg:flex border-r border-white/10 pr-6">
-              <span className="text-[7px] font-black uppercase text-white/40 tracking-widest leading-none mb-1">Stability_Core</span>
-              <div className={`flex items-center gap-2 text-[11px] font-black uppercase italic ${integrity < 100 ? 'text-brandRed' : 'text-brandYellow'}`}>
-                <PulseIcon className={`w-3 h-3 ${integrity === 100 ? 'animate-pulse' : 'animate-bounce'}`} />
-                <span>{integrity}%_OK</span>
-              </div>
-            </div>
-          )}
           <div className="flex gap-1 md:gap-2 items-center">
-             {onStartRepair && (
-               <button onClick={onStartRepair} className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center border border-white/10 bg-white/5 text-white hover:border-brandYellow hover:text-brandYellow transition-all rounded-sm group shadow-sm hover:shadow-lg" title="Forensic Repair">
-                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="group-hover:rotate-6 transition-transform md:w-[18px] md:h-[18px]"><path d="M10 13l4-4M16 16l-4-4-4 4"/></svg>
-               </button>
-             )}
-             {onStartRefine && (
-               <button onClick={onStartRefine} className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center border border-white/10 bg-white/5 text-white hover:border-brandYellow hover:text-brandYellow transition-all rounded-sm group shadow-sm hover:shadow-lg" title="AI Code Refinement">
-                 <StarIcon className="w-3.5 h-3.5 md:w-5 md:h-5 group-hover:scale-110 transition-transform" /> 
-               </button>
-             )}
-             
              {onToggleLogViewer && (
                 <button 
                   onClick={onToggleLogViewer} 

@@ -47,6 +47,14 @@ export enum LatticeStatus {
   LOCKED = 'LOCKED'
 }
 
+export enum StyleCategory {
+  MONOGRAM = 'MONOGRAM',
+  TYPOGRAPHY = 'TYPOGRAPHY', 
+  VECTOR = 'VECTOR',
+  FILTER = 'FILTER',
+  UNKNOWN = 'UNKNOWN'
+}
+
 // ===================== CORE INTERFACES =====================
 export interface KernelConfig {
   thinkingBudget: number;
@@ -154,6 +162,7 @@ export interface TypographyPreset extends BasePreset {
   styleUsed?: string;
 }
 
+// Fix: Added 'Organic' to TypographyStyle to align with preset definitions in presets/index.ts
 export type TypographyStyle = 
   | 'Grunge' 
   | 'Neon' 
@@ -166,6 +175,7 @@ export type TypographyStyle =
   | 'Geometric' 
   | 'Minimalist' 
   | 'Modern' 
+  | 'Organic'
   | '3D';
 
 // Monogram Preset
@@ -229,6 +239,7 @@ export interface PresetCategory {
   isCollapsible?: boolean;
 }
 
+// Added features property to fix type mismatch in geminiService.ts
 export interface ExtractionResult {
   id?: string;
   domain: string;
@@ -245,6 +256,36 @@ export interface ExtractionResult {
   preview_png?: string;
   confidence?: number;
   extractedFrom?: string;
+  metadata?: any;
+  features?: {
+    hasLetters: boolean;
+    isGeometric: boolean;
+    isAbstract: boolean;
+    hasSymmetry: boolean;
+    usesNegativeSpace: boolean;
+    strokeBased: boolean;
+    colorBased: boolean;
+    textureBased: boolean;
+  };
+}
+
+export interface ExtractedStyle {
+  id: string;
+  name: string;
+  description: string;
+  category: StyleCategory;
+  confidence: number; // 0-100%
+  features: {
+    hasLetters: boolean;
+    isGeometric: boolean;
+    isAbstract: boolean;
+    hasSymmetry: boolean;
+    usesNegativeSpace: boolean;
+    strokeBased: boolean;
+    colorBased: boolean;
+    textureBased: boolean;
+  };
+  recommendedPresets: string[]; // IDs of matching presets
 }
 
 export interface RepairSummary {

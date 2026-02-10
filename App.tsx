@@ -18,8 +18,6 @@ import {
   LatticeStatus
 } from './types.ts';
 import { BootScreen } from './components/BootScreen.tsx';
-import { RealRefineDiagnostic } from './components/RealRefineDiagnostic.tsx';
-import { RealRepairDiagnostic } from './components/RealRepairDiagnostic.tsx';
 import { StartScreen } from './components/StartScreen.tsx';
 import { PanelHeader } from './components/PanelHeader.tsx';
 import { AppControlsBar } from './components/AppControlsBar.tsx';
@@ -36,21 +34,10 @@ const StyleExtractorPanel = lazy(() => import('./components/StyleExtractorPanel.
 const ImageFilterPanel = lazy(() => import('./components/ImageFilterPanel.tsx').then(m => ({ default: m.ImageFilterPanel })));
 const SystemAuditPanel = lazy(() => import('./components/SystemAuditPanel.tsx').then(m => ({ default: m.SystemAuditPanel })));
 
-interface AppConfig {
-  panels: {
-    enabled: string[];
-    disabled: string[];
-    panelOrder: string[];
-  };
-}
-
 export const App: React.FC = () => {
   const [isBooting, setIsBooting] = useState(true);
   const [currentPanel, setCurrentPanel] = useState<PanelMode>(PanelMode.START);
   const [transferData, setTransferData] = useState<Preset | null>(null);
-  const [isRepairing, setIsRepairing] = useState(false);
-  const [isRefining, setIsRefining] = useState(false);
-  const [systemIntegrity, setSystemIntegrity] = useState(100);
   const [hasInitialized, setHasInitialized] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [enabledModes, setEnabledModes] = useState<PanelMode[]>([]);
@@ -58,11 +45,9 @@ export const App: React.FC = () => {
   const [showLogViewer, setShowLogViewer] = useState(false);
   const [currentPanelState, setCurrentPanelState] = useState<PanelState | null>(null);
 
-  // LATTICE_LINK (Update 4)
+  // LATTICE_LINK
   const [latticeBuffer, setLatticeBuffer] = useState<LatticeBuffer | null>(null);
   const [latticeStatus, setLatticeStatus] = useState<LatticeStatus>(LatticeStatus.IDLE);
-
-  const [uiRefinementLevel, setUiRefinementLevel] = useState(0);
 
   const [kernelConfig, setKernelConfig] = useState<KernelConfig>({
     thinkingBudget: 0,
@@ -88,6 +73,13 @@ export const App: React.FC = () => {
     });
   }, []);
 
+  const handleClearLattice = useCallback(() => {
+    setLatticeBuffer(null);
+    setLatticeStatus(LatticeStatus.IDLE);
+    setTransferData(prev => prev?.category === 'LATTICE_BRIDGE' ? null : prev);
+    addLog("LATTICE_DECOUPLED: Bridge connection terminated", "warning");
+  }, [addLog]);
+
   useEffect(() => {
     const storedTheme = localStorage.getItem(LS_KEYS.THEME);
     if (storedTheme) setIsDarkMode(storedTheme === 'dark');
@@ -107,10 +99,10 @@ export const App: React.FC = () => {
       const boot = async () => {
         try {
           addLog("INITIATING: OMEGA_KERNEL_BOOT", 'info');
-          await vaultDb.init(); // Initialize IndexedDB
+          await vaultDb.init();
           
           const response = await fetch('/config.json');
-          const appConfig: AppConfig = await response.json();
+          const appConfig = await response.json();
           
           const configuredModes: PanelMode[] = appConfig.panels.enabled.map(panelName => {
             switch (panelName) {
@@ -125,25 +117,18 @@ export const App: React.FC = () => {
           }).filter(mode => (mode as PanelMode) !== PanelMode.START);
           setEnabledModes(configuredModes);
 
-          // Load all state from IndexedDB
           setSavedPresets(await vaultDb.getAll<Preset>('presets'));
           setRecentWorks(await vaultDb.getAll<Preset>('recent'));
           setCloudArchives(await vaultDb.getAll<CloudArchiveEntry>('archives'));
           
           const storedConfig = await vaultDb.getItem<KernelConfig>('config', 'kernel');
-          if (storedConfig) {
-            setKernelConfig(prev => ({...prev, ...storedConfig}));
-          }
+          if (storedConfig) setKernelConfig(prev => ({...prev, ...storedConfig}));
           
           const storedLogs = await vaultDb.getItem<LogEntry[]>('logs', 'entries');
-          if (storedLogs) {
-            setLogs(storedLogs);
-          }
+          if (storedLogs) setLogs(storedLogs);
 
           const storedDna = await vaultDb.getItem<ExtractionResult | null>('global_dna', 'dna');
-          if (typeof storedDna !== 'undefined') {
-            setGlobalDna(storedDna);
-          }
+          if (typeof storedDna !== 'undefined') setGlobalDna(storedDna);
           
           setHasInitialized(true);
           addLog("ARCHITECTURE: MASTER_PROTOCOL_ACTIVE", 'success');
@@ -156,7 +141,6 @@ export const App: React.FC = () => {
     }
   }, [addLog, isBooting, hasInitialized]);
 
-  // Sync state to persistence
   useEffect(() => {
     if (hasInitialized) {
       vaultDb.saveAll('presets', savedPresets);
@@ -193,33 +177,16 @@ export const App: React.FC = () => {
 
     switch (type) {
       case PanelMode.VECTOR:
-        newPreset = {
-          ...basePreset,
-          type: PanelMode.VECTOR,
-          parameters: settings as VectorPreset['parameters'],
-        };
+        newPreset = { ...basePreset, type: PanelMode.VECTOR, parameters: settings as VectorPreset['parameters'] };
         break;
       case PanelMode.TYPOGRAPHY:
-        newPreset = {
-          ...basePreset,
-          type: PanelMode.TYPOGRAPHY,
-          parameters: settings as TypographyPreset['parameters'],
-          styleUsed: (settings as any)?.styleUsed || 'Custom',
-        };
+        newPreset = { ...basePreset, type: PanelMode.TYPOGRAPHY, parameters: settings as TypographyPreset['parameters'], styleUsed: (settings as any)?.styleUsed || 'Custom' };
         break;
       case PanelMode.MONOGRAM:
-        newPreset = {
-          ...basePreset,
-          type: PanelMode.MONOGRAM,
-          parameters: settings as MonogramPreset['parameters'],
-        };
+        newPreset = { ...basePreset, type: PanelMode.MONOGRAM, parameters: settings as MonogramPreset['parameters'] };
         break;
       case PanelMode.FILTERS:
-        newPreset = {
-            ...basePreset,
-            type: PanelMode.FILTERS,
-            parameters: settings as FilterPreset['parameters'],
-        };
+        newPreset = { ...basePreset, type: PanelMode.FILTERS, parameters: settings as FilterPreset['parameters'] };
         break;
       default:
         addLog(`COMMIT_FAIL: Unsupported panel type "${type}" for vault commit.`, 'error');
@@ -230,11 +197,6 @@ export const App: React.FC = () => {
     addLog("COMMIT_SUCCESS: VAULT_SYNCHRONIZED", 'success');
   }, [currentPanelState, addLog]);
 
-
-  /**
-   * Update 4: Lattice_Link Implementation
-   * Automatically updates the global bridge buffer when synthesis completes.
-   */
   useEffect(() => {
     if (currentPanelState?.generatedOutput && currentPanel !== PanelMode.START) {
       setLatticeBuffer({
@@ -290,13 +252,10 @@ export const App: React.FC = () => {
 
   if (isBooting) return <BootScreen onBootComplete={handleBootComplete} isDarkMode={isDarkMode} />;
 
-  if (isRepairing) return <RealRepairDiagnostic onComplete={(summary) => { addLog(`REPAIR_COMPLETE: ${summary.repairedNodes} nodes restored.`, 'success'); setSystemIntegrity(summary.systemStabilityScore); setIsRepairing(false); }} />;
-  if (isRefining) return <RealRefineDiagnostic onComplete={(summary) => { addLog(`REFINE_COMPLETE: ${summary.resolvedIssues} issues resolved.`, 'success'); setUiRefinementLevel(prev => prev + summary.resolvedIssues); setIsRefining(false); }} />;
-
   const commonProps = {
     kernelConfig,
-    integrity: systemIntegrity,
-    uiRefined: uiRefinementLevel > 0,
+    integrity: 100, // Hardcoded as the system is now inherently stable
+    uiRefined: false,
     onSaveToHistory: (work: Preset) => setRecentWorks(prev => [work, ...prev].slice(0, 15)),
     onModeSwitch: handleModeSwitch,
     savedPresets,
@@ -305,7 +264,8 @@ export const App: React.FC = () => {
     onSetGlobalDna: setGlobalDna,
     globalDna: globalDna,
     latticeBuffer: latticeBuffer,
-    latticeStatus: latticeStatus
+    latticeStatus: latticeStatus,
+    onClearLattice: handleClearLattice
   };
   
   return (
@@ -313,9 +273,6 @@ export const App: React.FC = () => {
       <PanelHeader 
         onBack={() => handleModeSwitch(PanelMode.START)} 
         title={currentPanel === PanelMode.START ? "HYPERXGEN 7" : currentPanel.toUpperCase()}
-        onStartRepair={() => setIsRepairing(true)}
-        onStartRefine={() => setIsRefining(true)}
-        integrity={systemIntegrity}
         isDarkMode={isDarkMode}
         onToggleTheme={toggleTheme}
         onToggleLogViewer={() => setShowLogViewer(p => !p)}

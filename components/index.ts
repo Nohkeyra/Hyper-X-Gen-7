@@ -1,3 +1,4 @@
+
 /**
  * HYPERXGEN_COMPONENT_BARREL v7.1
  * Unified entry point for all architectural UI modules.
@@ -14,10 +15,6 @@ export { SystemAuditPanel } from './SystemAuditPanel.tsx';
 // Screen-Level Components
 export { BootScreen } from './BootScreen.tsx';
 export { StartScreen } from './StartScreen.tsx';
-
-// Diagnostic & Repair Modules
-export { RealRefineDiagnostic } from './RealRefineDiagnostic.tsx';
-export { RealRepairDiagnostic } from './RealRepairDiagnostic.tsx';
 
 // Global UI Layout & Controls
 export { PanelHeader } from './PanelHeader.tsx';

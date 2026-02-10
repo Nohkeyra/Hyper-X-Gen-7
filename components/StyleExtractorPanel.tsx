@@ -1,10 +1,11 @@
-// FINAL – LOCKED
+
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { KernelConfig, ExtractionResult, PanelMode } from '../types.ts';
-import { extractStyleFromImage } from '../services/geminiService.ts';
+import { KernelConfig, ExtractionResult, PanelMode, StyleCategory, Preset } from '../types.ts';
+import { EnhancedStyleExtractor } from '../services/styleExtractor.ts';
+import { StyleExtractionResult } from './StyleExtractionResult.tsx';
 import { PresetCard } from './PresetCard.tsx';
 import { PanelLayout, SidebarHeader } from './Layouts.tsx';
-import { TrashIcon, StarIcon, VectorIcon, TypographyIcon, MonogramIcon } from './Icons.tsx';
+import { TrashIcon } from './Icons.tsx';
 import { CanvasStage } from './CanvasStage.tsx';
 import { GenerationBar } from './GenerationBar.tsx';
 import { ReconHUD } from './HUD.tsx';
@@ -23,56 +24,15 @@ interface StyleExtractorPanelProps {
   onModeSwitch?: (mode: PanelMode, data?: any) => void;
 }
 
-const StyleDNAReport: React.FC<{ dna: ExtractionResult; onSave: () => void; onJump: (mode: PanelMode) => void; }> = ({ dna, onSave, onJump }) => {
-  const isAuthenticityHigh = dna.styleAuthenticityScore > 80;
-  
-  return (
-    <div className="bg-brandNeutral dark:bg-brandDeep border-2 border-brandRed p-4 space-y-4 animate-in slide-in-from-bottom-4 duration-500 rounded-sm">
-      <div className="flex justify-between items-center border-b border-white/10 pb-2">
-        <h4 className="text-[10px] font-black uppercase text-brandRed tracking-widest italic">DNA_FOUND: {dna.name}</h4>
-        <span className="text-[9px] font-mono opacity-50 uppercase tracking-widest">Type: {dna.domain}</span>
-      </div>
-
-      <div className="space-y-1 text-[9px] font-bold uppercase">
-        <p>Style: <span className="text-brandRed">{dna.domain}</span></p>
-        <p>Mood: <span className="text-brandYellow">{dna.mood.join(', ')}</span></p>
-        <p>Name: <span className="text-white">{dna.name}</span></p>
-        <p>Style Score: <span className={isAuthenticityHigh ? 'text-brandYellow' : 'text-brandRed'}>{dna.styleAuthenticityScore}%</span></p>
-        <div className="flex gap-1.5 mt-2 mb-2">
-          {dna.palette.map((color, i) => (
-            <div key={i} className="w-6 h-6 rounded-sm border border-white/10 shrink-0 shadow-sm" style={{ backgroundColor: color }} title={color} />
-          ))}
-        </div>
-        {dna.formLanguage && (
-          <p>Forms: <span className="text-white/80">{dna.formLanguage}</span></p>
-        )}
-      </div>
-
-      <p className="text-[9px] text-white/70 uppercase leading-tight font-bold italic border-t border-white/5 pt-3">{dna.description}</p>
-      
-      <div className="grid grid-cols-2 gap-2 pt-2">
-        <button onClick={onSave} className="col-span-2 py-2.5 bg-brandRed text-white text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-[2px_2px_0px_0px_rgba(204,0,1,0.3)] hover:brightness-110 transition-all">
-          <StarIcon className="w-3.5 h-3.5" /> COMMIT_TO_VAULT
-        </button>
-        
-        <button onClick={() => onJump(PanelMode.VECTOR)} className="py-2 border border-white/10 text-white/60 hover:text-brandRed hover:border-brandRed transition-all text-[8px] font-black uppercase tracking-widest flex items-center justify-center gap-2 rounded-sm">
-          <VectorIcon className="w-3 h-3" /> JUMP_VECTOR
-        </button>
-        
-        <button onClick={() => onJump(PanelMode.TYPOGRAPHY)} className="py-2 border border-white/10 text-white/60 hover:text-brandRed hover:border-brandRed transition-all text-[8px] font-black uppercase tracking-widest flex items-center justify-center gap-2 rounded-sm">
-          <TypographyIcon className="w-3 h-3" /> JUMP_TYPO
-        </button>
-      </div>
-    </div>
-  );
-};
-
 export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
   initialData, kernelConfig, savedPresets = [], onSaveToPresets, onDeletePreset, addLog, onModeSwitch, onStateUpdate
 }) => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(initialData?.imageUrl || null);
   const [extractedDna, setExtractedDna] = useState<ExtractionResult | null>(initialData?.dna || null);
+  const [classification, setClassification] = useState<any>(null);
   const [reconStatusOverride, setReconStatusOverride] = useState<string | null>(null);
+  const [showSaveOptions, setShowSaveOptions] = useState(false);
+  const [selectedPanel, setSelectedPanel] = useState<PanelMode>(PanelMode.VECTOR);
   
   const { status, isProcessing, transition } = useDevourer(initialData?.imageUrl ? 'BUFFER_LOADED' : 'STARVING');
 
@@ -81,7 +41,7 @@ export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
       type: PanelMode.EXTRACTOR,
       name: extractedDna?.name || 'Style Extraction',
       uploadedImage,
-      generatedOutput: uploadedImage, // Share the source image as the primary asset if DNA is linked
+      generatedOutput: uploadedImage,
       dna: extractedDna,
       settings: {}
     });
@@ -89,35 +49,30 @@ export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
 
   const dnaVault = useMemo(() => savedPresets.filter(p => p && p.dna), [savedPresets]);
 
-  const handleExtractStyle = useCallback(async (imageBase64: string) => {
-    if (!imageBase64 || isProcessing) return;
+  const handleExtractStyle = useCallback(async (imageUrl: string) => {
+    if (!imageUrl || isProcessing) return;
 
     try {
       addLog("STYLE_EXTRACTION: INITIATED", "info");
       transition('AUDITING_BUFFER', true);
-      
       setReconStatusOverride("ANALYZING_VISUAL_STYLE");
-      await new Promise(r => setTimeout(r, 800));
-      setReconStatusOverride("EXTRACTING_COLOR_DNA");
-      await new Promise(r => setTimeout(r, 1000));
-      setReconStatusOverride("DECODING_FORM_LANGUAGE");
-      await new Promise(r => setTimeout(r, 900));
-      setReconStatusOverride("CAPTURING_MOOD");
-      await new Promise(r => setTimeout(r, 700));
-
-      const prompt = `
-        Capture the ARTISTIC ESSENCE of this image.
-        1. DECODE THE VISUAL LANGUAGE.
-        2. EXTRACT Colors, Mood, Form Language, and Style Family.
-        3. Create a repeatable STYLE PRESET DNA.
-      `;
-
-      const extracted = await extractStyleFromImage(imageBase64, kernelConfig, prompt);
       
-      setExtractedDna(extracted);
+      const result = await EnhancedStyleExtractor.extractStyleWithCategory(
+        imageUrl,
+        kernelConfig
+      );
+      
+      setExtractedDna(result.extraction);
+      setClassification({
+        category: result.category,
+        confidence: result.confidence,
+        recommendedPanel: result.recommendedPanel,
+        matchingPresets: result.matchingPresets
+      });
+      
       setReconStatusOverride("STYLE_CAPTURED");
       transition('DNA_HARVESTED');
-      addLog(`STYLE_DNA_HARVESTED: ${extracted.name}`, "success");
+      addLog(`STYLE_DNA_HARVESTED: ${result.extraction.name}`, "success");
       
     } catch (err: any) {
       console.error(err);
@@ -125,14 +80,37 @@ export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
       transition('LATTICE_FAIL');
       addLog(`EXTRACTION_FAILED: ${err.message}`, "error");
     } finally {
-      setTimeout(() => setReconStatusOverride(null), 2000);
+      setTimeout(() => setReconStatusOverride(null), 1000);
     }
   }, [kernelConfig, addLog, isProcessing, transition]);
 
-  const handleTriggerExtract = () => {
-    if (uploadedImage) {
-      handleExtractStyle(uploadedImage);
+  const handleSavePreset = async () => {
+    if (!extractedDna) return;
+    
+    const preset: any = {
+      id: `user-${Date.now()}`,
+      name: `Preset_${new Date().toLocaleDateString().replace(/\//g, '_')}`,
+      type: selectedPanel,
+      category: 'USER_VAULT',
+      description: extractedDna.description,
+      prompt: extractedDna.promptTemplate,
+      dna: extractedDna,
+      imageUrl: uploadedImage,
+      timestamp: new Date().toISOString()
+    };
+
+    // Initialize module-specific parameters
+    if (selectedPanel === PanelMode.VECTOR) {
+      preset.parameters = { complexity: 'Standard', outline: 'None', mood: 'Professional', background: 'White', colorCount: 6, strokeWeight: 0, style: 'Flat Design' };
+    } else if (selectedPanel === PanelMode.TYPOGRAPHY) {
+      preset.parameters = { fontStyle: 'Modern', weight: 'Bold', spacing: 'Normal', effect: 'None' };
+    } else if (selectedPanel === PanelMode.MONOGRAM) {
+      preset.parameters = { layoutMode: 'interlocked', symmetry: 'Perfect Radial', container: 'Suggested', densityRatio: '1:1', legibility: 'High', structureCreativity: 50, densitySpace: 50, traditionalModern: 50, strokeEnds: 'Rounded' };
     }
+    
+    onSaveToPresets(preset);
+    setShowSaveOptions(false);
+    addLog(`STYLE_COMMITTED: DNA stored in ${selectedPanel.toUpperCase()} vault`, "success");
   };
 
   const handleJumpToSynthesis = (mode: PanelMode) => {
@@ -153,9 +131,13 @@ export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
     <PanelLayout 
       sidebar={
         <>
-          <SidebarHeader moduleNumber="Module_04" title="Style_Extractor" version="Visual Style DNA Capture v2.0" colorClass="text-brandRed" borderColorClass="border-brandRed" />
+          <SidebarHeader moduleNumber="Module_04" title="Style_Extractor" version="Style DNA Capture v7.6" colorClass="text-brandRed" borderColorClass="border-brandRed" />
           <div className="md:block hidden">
-            <p className="text-[10px] font-black uppercase text-brandCharcoal/40 dark:text-white/40 tracking-widest italic mb-4">Visual Style DNA Capture v2.0</p>
+            <p className="text-[10px] font-black uppercase text-brandCharcoal/40 dark:text-brandYellow/40 tracking-widest italic mb-4">Preset Forensics Analysis</p>
+            <div className="p-3 bg-brandRed/5 dark:bg-brandYellow/5 border border-brandRed/20 dark:border-brandYellow/20 rounded-sm mb-6">
+              <span className="text-[8px] font-black text-brandRed dark:text-brandYellow uppercase tracking-widest block mb-1">Instruction:</span>
+              <p className="text-[9px] text-brandCharcoalMuted dark:text-white/60 leading-tight">Identify pure design traits and map them directly to engine synthesis presets.</p>
+            </div>
           </div>
         </>
       }
@@ -164,36 +146,64 @@ export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
           <CanvasStage
             uploadedImage={uploadedImage} generatedOutput={null} isProcessing={isProcessing}
             hudContent={<ReconHUD reconStatus={reconStatusOverride || status} authenticityScore={extractedDna?.styleAuthenticityScore} />}
-            onClear={() => { setUploadedImage(null); setExtractedDna(null); transition('STARVING'); }}
+            onClear={() => { setUploadedImage(null); setExtractedDna(null); setClassification(null); setShowSaveOptions(false); transition('STARVING'); }}
             onFileUpload={(f) => { const r = new FileReader(); r.onload = e => setUploadedImage(e.target?.result as string); r.readAsDataURL(f); transition('BUFFER_LOADED'); }}
           />
-          {extractedDna && (
-            <StyleDNAReport 
-              dna={extractedDna} 
-              onJump={handleJumpToSynthesis}
-              onSave={() => { onSaveToPresets({ id: `dna-${Date.now()}`, name: extractedDna.name, type: PanelMode.EXTRACTOR, dna: extractedDna, timestamp: new Date().toLocaleTimeString(), imageUrl: uploadedImage }); addLog("STYLE_COMMITTED_TO_VAULT", "success"); }} 
+          
+          {extractedDna && classification && (
+            <StyleExtractionResult 
+              extraction={extractedDna}
+              category={classification.category}
+              confidence={classification.confidence}
+              recommendedPanel={classification.recommendedPanel}
+              onApply={handleJumpToSynthesis}
+              onSaveToVault={() => setShowSaveOptions(true)}
             />
+          )}
+
+          {showSaveOptions && (
+            <div className="bg-brandCharcoal dark:bg-zinc-900 border-2 border-brandYellow p-6 rounded-sm shadow-neon-yellow flex flex-col sm:flex-row items-center justify-between gap-4 animate-in zoom-in duration-300">
+              <div className="flex items-center gap-3">
+                <span className="text-[14px] animate-bounce">💾</span>
+                <p className="text-[10px] font-black text-brandYellow uppercase tracking-widest">Commit Style DNA to Vault?</p>
+              </div>
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <select 
+                  onChange={(e) => setSelectedPanel(e.target.value as PanelMode)}
+                  className="bg-black/40 border border-brandYellow/30 text-white text-[10px] font-black p-2 outline-none flex-1 sm:flex-none uppercase"
+                >
+                  <option value={PanelMode.VECTOR}>Vector Art Engine</option>
+                  <option value={PanelMode.TYPOGRAPHY}>Typography Engine</option>
+                  <option value={PanelMode.MONOGRAM}>Monogram Engine</option>
+                </select>
+                <button onClick={handleSavePreset} className="px-6 py-2 bg-brandYellow text-black text-[10px] font-black uppercase hover:brightness-110">Save</button>
+                <button onClick={() => setShowSaveOptions(false)} className="px-6 py-2 bg-white/10 text-white text-[10px] font-black uppercase hover:bg-white/20">Cancel</button>
+              </div>
+            </div>
           )}
         </div>
       }
       footer={
         <div className="space-y-4">
           {dnaVault.length > 0 && (
-            <div className="bg-black/20 p-3 border border-white/5 rounded-sm">
-              <h5 className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-3 italic">STYLE_LIBRARY</h5>
+            <div className="bg-brandNeutral dark:bg-black/20 p-3 border border-brandBlue/10 dark:border-brandYellow/10 rounded-sm">
+              <h5 className="text-[8px] font-black text-brandBlue dark:text-brandYellow/40 uppercase tracking-widest mb-3 italic">PRESET_COLLECTION</h5>
               <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
                 {dnaVault.map(p => (
-                  <div key={p.id} className="relative group shrink-0 w-44">
+                  <div key={p.id} className="relative group shrink-0 w-48">
+                    <div className="absolute top-2 left-2 z-10 px-1.5 py-0.5 bg-brandRed dark:bg-brandYellow text-white dark:text-black text-[6px] font-black uppercase rounded-sm">
+                      {p.type.toUpperCase()}
+                    </div>
                     <PresetCard name={p.name} description={p.dna?.domain || 'DNA'} prompt={p.dna?.promptTemplate} isActive={false} onClick={() => {}} iconChar="S" />
-                    <button onClick={() => { onDeletePreset(p.id); addLog("STYLE_PURGED_FROM_VAULT", "warning"); }} className="absolute top-1 right-1 p-1 bg-brandRed text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><TrashIcon className="w-2.5 h-2.5" /></button>
+                    <button onClick={() => onDeletePreset(p.id)} className="absolute top-2 right-2 p-1 bg-brandRed text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><TrashIcon className="w-3 h-3" /></button>
                   </div>
                 ))}
               </div>
             </div>
           )}
-          <GenerationBar onGenerate={handleTriggerExtract} isProcessing={isProcessing}>
-             <div className="flex-1 flex items-center justify-center text-[10px] font-black uppercase text-brandCharcoal dark:text-white/60 tracking-widest italic">
-               { status === 'STARVING' ? 'Handshake required: upload source image' : (isProcessing ? 'Analyzing Artistic DNA...' : 'Ready for Aesthetic Extraction') }
+          <GenerationBar onGenerate={() => uploadedImage && handleExtractStyle(uploadedImage)} isProcessing={isProcessing}>
+             <div className="flex-1 flex items-center justify-center text-[10px] font-black uppercase text-brandCharcoal dark:text-brandYellow/60 tracking-widest italic">
+               { status === 'STARVING' ? 'Inject image buffer for forensic extraction' : (isProcessing ? 'Harvesting Preset DNA...' : 'Ready for Extraction') }
              </div>
           </GenerationBar>
         </div>

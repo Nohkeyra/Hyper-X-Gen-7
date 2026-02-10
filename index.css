@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -30,7 +31,7 @@
     --color-text-secondary: #A0A0A0;
     --color-text-soft: #666666;
     
-    --lattice-glow: 0 0 20px rgba(204, 0, 1, 0.4);
+    --lattice-glow: 0 0 20px rgba(255, 204, 0, 0.4);
   }
 
   @media (min-width: 640px) {
@@ -50,6 +51,8 @@ body {
   position: fixed;
   font-family: 'Inter', sans-serif;
   transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 #root { 
@@ -58,11 +61,13 @@ body {
   overflow: hidden; 
   display: flex;
   flex-direction: column;
+  contain: layout;
 }
 
 /* UI Elements */
 .panel-header-with-glow {
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  will-change: transform;
 }
 
 /* Light mode specific: Top bar border in Royal Blue */
@@ -85,13 +90,14 @@ body {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, #CC0001, transparent);
-  box-shadow: 0 0 10px #CC0001;
+  background: linear-gradient(90deg, transparent, #FFCC00, transparent);
+  box-shadow: 0 0 10px #FFCC00;
   opacity: 0.6;
 }
 
 .app-controls-bar-with-glow {
   box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.1);
+  will-change: transform;
 }
 
 .dark .app-controls-bar-with-glow::before {
@@ -115,7 +121,7 @@ body {
 
 .custom-scrollbar::-webkit-scrollbar { width: 3px; height: 3px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { @apply bg-brandBlue/10 dark:bg-white/10 rounded-full; }
+.custom-scrollbar::-webkit-scrollbar-thumb { @apply bg-brandBlue/10 dark:bg-brandYellow/10 rounded-full; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
 .mask-gradient-right {
@@ -126,4 +132,18 @@ body {
 .canvas-stage {
   will-change: transform, box-shadow;
   transition: box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  contain: paint;
+}
+
+/* Layer optimization for high-density components */
+main, aside {
+  content-visibility: auto;
+}
+
+/* Utility Neon Glows */
+.shadow-neon-yellow {
+  box-shadow: 0 0 5px rgba(255, 204, 0, 0.7), 0 0 15px rgba(255, 204, 0, 0.4);
+}
+.shadow-neon-red {
+  box-shadow: 0 0 5px rgba(204, 0, 1, 0.7), 0 0 15px rgba(204, 0, 1, 0.4);
 }

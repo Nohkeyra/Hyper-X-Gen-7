@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import { ExtractionResult, KernelConfig, PanelMode, RealIssue } from "../types.ts";
 import { injectAntiCensor } from '../utils/antiCensor.ts';
@@ -18,11 +17,6 @@ const DEFAULT_CONFIG: KernelConfig = {
   deviceContext: 'MAXIMUM_ARCHITECTURE_OMEGA_V5'
 };
 
-/**
- * BLOCKING PROTOCOL: OMEGA_SECURITY
- * Blocks forbidden modules attempting to install/execute.
- * Enforces use of standard Flash/Pro models only, preventing paid-only Imagen/Veo calls.
- */
 function validateModuleAccess(modelName: string, config?: any): void {
   const forbiddenModels = ['veo', 'tts', 'imagen-4', 'gemini-3-pro-image', 'gemini-2.5-flash-native-audio'];
   const isForbidden = forbiddenModels.some(m => modelName.toLowerCase().includes(m));
@@ -69,7 +63,8 @@ export async function extractStyleFromImage(
   if (!ai) return { 
     domain: 'Mock_Engine', name: 'Identity_Null', description: 'Free mode fallback extraction result.',
     styleAuthenticityScore: 50, palette: ['#CC0001', '#010066'], mood: ['Static'],
-    category: 'Mock', formLanguage: 'Geometric', styleAdjectives: ['Placeholder'], technique: 'Mockup', promptTemplate: 'style of fallback'
+    category: 'Mock', formLanguage: 'Geometric', styleAdjectives: ['Placeholder'], technique: 'Mockup', promptTemplate: 'style of fallback',
+    features: { hasLetters: false, isGeometric: true, isAbstract: false, hasSymmetry: true, usesNegativeSpace: true, strokeBased: true, colorBased: true, textureBased: false }
   };
 
   return reliableRequest(async () => {
@@ -85,7 +80,7 @@ export async function extractStyleFromImage(
         ],
       },
       config: {
-        systemInstruction: "Aesthetic Forensic Analyst. Decode visual language into structured JSON DNA.",
+        systemInstruction: "AESTHETIC_PRESET_FORENSICS: Your SOLE TASK is to map visual traits to design parameters. MANDATORY: IGNORE THE SUBJECT MATTER. If there is a dog, do not mention 'dog'. If there is a person, do not mention 'person'. Describe ONLY the design architectural traits (e.g., 'Flat vector with monoline strokes', 'Grunge sans-serif with neon glow'). Your output must be subject-agnostic DNA that can be applied to ANY new prompt subject.",
         responseMimeType: "application/json",
         responseSchema: {
            type: Type.OBJECT,
@@ -100,9 +95,23 @@ export async function extractStyleFromImage(
              formLanguage: { type: Type.STRING },
              styleAdjectives: { type: Type.ARRAY, items: { type: Type.STRING } },
              technique: { type: Type.STRING },
-             promptTemplate: { type: Type.STRING }
+             promptTemplate: { type: Type.STRING },
+             features: {
+               type: Type.OBJECT,
+               properties: {
+                 hasLetters: { type: Type.BOOLEAN },
+                 isGeometric: { type: Type.BOOLEAN },
+                 isAbstract: { type: Type.BOOLEAN },
+                 hasSymmetry: { type: Type.BOOLEAN },
+                 usesNegativeSpace: { type: Type.BOOLEAN },
+                 strokeBased: { type: Type.BOOLEAN },
+                 colorBased: { type: Type.BOOLEAN },
+                 textureBased: { type: Type.BOOLEAN }
+               },
+               required: ['hasLetters', 'isGeometric', 'isAbstract', 'hasSymmetry', 'usesNegativeSpace', 'strokeBased', 'colorBased', 'textureBased']
+             }
            },
-           required: ['domain', 'category', 'name', 'description', 'styleAuthenticityScore', 'palette', 'mood', 'formLanguage', 'styleAdjectives', 'technique', 'promptTemplate']
+           required: ['domain', 'category', 'name', 'description', 'styleAuthenticityScore', 'palette', 'mood', 'formLanguage', 'styleAdjectives', 'technique', 'promptTemplate', 'features']
          }
       }
     });
@@ -114,7 +123,7 @@ async function performSynthesis(
   prompt: string, mode: PanelMode, base64Image?: string, config: KernelConfig = DEFAULT_CONFIG,
   dna?: ExtractionResult, extraDirectives?: string
 ): Promise<string> {
-  validateModuleAccess('gemini-2.5-flash-image'); // Synthesis always uses standard image model
+  validateModuleAccess('gemini-2.5-flash-image');
   const ai = createAIInstance();
   if (!ai) return "";
 
@@ -153,7 +162,7 @@ export async function refineTextPrompt(prompt: string, mode: PanelMode, config: 
   if (!ai) return prompt;
   return reliableRequest(async () => {
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview', // Switched to flash for efficiency and safety
+      model: 'gemini-3-flash-preview', 
       contents: `Refine for ${mode} synthesis engine: "${prompt}". Focus on visual subjects. Short and precise.`,
       config: { 
         systemInstruction: "Prompt Architect v5.2. Optimize visual descriptors for image synthesis kernels.",
@@ -169,7 +178,7 @@ export async function analyzeCodeForRefinements(code: string): Promise<RealIssue
   if (!ai) return [];
   return reliableRequest(async () => {
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview', // Switched to flash to avoid paid-tier reasoning overhead
+      model: 'gemini-3-flash-preview', 
       contents: `Audit code for React/Vite/CSS best practices:\n${code}`,
       config: {
         systemInstruction: "Architect Audit. Return JSON array of valid issues.",
