@@ -1,4 +1,3 @@
-
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -37,6 +36,7 @@ export const DESIGN_FIDELITY_TOKENS = {
 
 /**
  * Injects design-focused fidelity tokens appropriate for the specific mode.
+ * Selection is randomized and limited to prevent prompt over-cluttering.
  */
 export function injectAntiCensor(prompt: string, mode?: PanelMode): string {
   let tokenSet = DESIGN_FIDELITY_TOKENS.GENERAL;
@@ -45,9 +45,10 @@ export function injectAntiCensor(prompt: string, mode?: PanelMode): string {
     tokenSet = [...DESIGN_FIDELITY_TOKENS[mode], ...DESIGN_FIDELITY_TOKENS.GENERAL];
   }
 
-  // Shuffle and select a limited number of tokens to keep the prompt clean
+  // Shuffle and select tokens based on context
+  const maxTokens = (mode === PanelMode.TYPOGRAPHY || mode === PanelMode.MONOGRAM) ? 2 : 3;
   const shuffledTokens = [...tokenSet].sort(() => Math.random() - 0.5);
-  const selectedTokens = shuffledTokens.slice(0, 3);
+  const selectedTokens = shuffledTokens.slice(0, Math.min(shuffledTokens.length, maxTokens));
   
   return selectedTokens.length > 0 
     ? `${selectedTokens.join(', ')}, ${prompt}` 

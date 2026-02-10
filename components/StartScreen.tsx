@@ -1,6 +1,3 @@
-
-
-
 import React, { useMemo } from 'react';
 import { PanelMode } from '../types';
 import { VectorIcon, TypographyIcon, MonogramIcon, ExtractorIcon, FilterIcon, PulseIcon, BoxIcon } from './Icons'; 
@@ -23,13 +20,13 @@ interface CardPalette {
 }
 
 const PALETTES: CardPalette[] = [
-  { bgColor: "bg-brandYellow", textColor: "text-brandBlue", accentColor: "bg-brandBlue/10", shadowColor: "#010066", darkBgColor: "dark:bg-brandYellow", darkTextColor: "dark:text-brandBlue", darkAccentColor: "dark:bg-brandBlue/10" },
-  { bgColor: "bg-brandRed", textColor: "text-white", accentColor: "bg-white/10", shadowColor: "#010066", darkBgColor: "dark:bg-brandRed", darkTextColor: "dark:text-white", darkAccentColor: "dark:bg-white/10" },
+  { bgColor: "bg-brandYellow", textColor: "text-brandBlue", accentColor: "bg-brandBlue/10", shadowColor: "#0032A0", darkBgColor: "dark:bg-brandYellow", darkTextColor: "dark:text-brandBlue", darkAccentColor: "dark:bg-brandBlue/10" },
+  { bgColor: "bg-brandRed", textColor: "text-white", accentColor: "bg-white/10", shadowColor: "#0032A0", darkBgColor: "dark:bg-brandRed", darkTextColor: "dark:text-white", darkAccentColor: "dark:bg-white/10" },
   { bgColor: "bg-brandBlue", textColor: "text-brandYellow", accentColor: "bg-brandYellow/10", shadowColor: "#FFCC00", darkBgColor: "dark:bg-brandBlue", darkTextColor: "dark:text-brandYellow", darkAccentColor: "dark:bg-brandYellow/10" },
   { bgColor: "bg-white", textColor: "text-brandRed", accentColor: "bg-brandRed/10", shadowColor: "#CC0001", darkBgColor: "dark:bg-white", darkTextColor: "dark:text-brandRed", darkAccentColor: "dark:bg-brandRed/10" },
   { bgColor: "bg-brandRed", textColor: "text-brandYellow", accentColor: "bg-brandYellow/10", shadowColor: "#FFCC00", darkBgColor: "dark:bg-brandRed", darkTextColor: "dark:text-brandYellow", darkAccentColor: "dark:bg-brandYellow/10" },
   { bgColor: "bg-brandBlue", textColor: "text-white", accentColor: "bg-white/10", shadowColor: "#FFCC00", darkBgColor: "dark:bg-brandBlue", darkTextColor: "dark:text-white", darkAccentColor: "dark:bg-white/10" },
-  { bgColor: "bg-white", textColor: "text-brandBlue", accentColor: "bg-brandBlue/10", shadowColor: "#010066", darkBgColor: "dark:bg-white", darkTextColor: "dark:text-brandBlue", darkAccentColor: "dark:bg-brandBlue/10" },
+  { bgColor: "bg-white", textColor: "text-brandBlue", accentColor: "bg-brandBlue/10", shadowColor: "#0032A0", darkBgColor: "dark:bg-white", darkTextColor: "dark:text-brandBlue", darkAccentColor: "dark:bg-brandBlue/10" },
   { bgColor: "bg-brandYellow", textColor: "text-brandRed", accentColor: "bg-brandRed/10", shadowColor: "#CC0001", darkBgColor: "dark:bg-brandYellow", darkTextColor: "dark:text-brandRed", darkAccentColor: "dark:bg-brandRed/10" },
 ];
 
@@ -63,21 +60,21 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onSelectMode = (_mode)
       <div className="flex flex-col items-center justify-center text-center py-2 md:py-8">
         <div className="flex flex-col items-center max-w-4xl w-full mb-4 md:mb-12 scale-90 md:scale-100 origin-top">
           <div className="relative inline-block mb-4 md:mb-8">
-            <div className="w-12 h-12 sm:w-32 sm:h-32 bg-brandCharcoal dark:bg-zinc-900 border-[4px] sm:border-[12px] border-brandRed flex items-center justify-center mx-auto shadow-[6px_6px_0px_0px_#CC0001] sm:shadow-[16px_16px_0px_0px_#CC0001] hover:translate-x-1.5 hover:translate-y-1.5 transition-transform duration-500 cursor-pointer group rounded-sm">
-               <svg className="group-hover:rotate-[360deg] transition-transform duration-1000 ease-in-out" width="30" height="30" viewBox="0 0 240 240" fill="none" stroke="#FFCC00" strokeWidth="4"><path d="M120 20L150 100H230L165 150L190 230L120 180L50 230L75 150L10 100H90L120 20Z" fill="currentColor" /></svg>
+            <div className="w-12 h-12 sm:w-32 sm:h-32 bg-brandBlue dark:bg-zinc-900 border-[4px] sm:border-[12px] border-brandYellow flex items-center justify-center mx-auto shadow-[6px_6px_0px_0px_#FFCC00] sm:shadow-[16px_16px_0px_0px_#FFCC00] hover:translate-x-1.5 hover:translate-y-1.5 transition-transform duration-500 cursor-pointer group rounded-sm">
+               <svg className="group-hover:rotate-[360deg] transition-transform duration-1000 ease-in-out" width="30" height="30" viewBox="0 0 240 240" fill="none" stroke="#FFCC00" strokeWidth="4"><path d="M120 20L150 100H230L165 150L190 230L120 180L50 230L75 150L10 100H90L120 20Z" fill="#FFCC00" /></svg>
             </div>
-            <div className="absolute -bottom-2 -right-4 bg-brandYellow text-brandBlue text-[7px] sm:text-[9px] font-black uppercase px-2 py-0.5 sm:px-3 sm:py-1.5 italic tracking-widest shadow-lg rounded-sm border border-brandBlue">Engine_v5.2</div>
+            <div className="absolute -bottom-2 -right-4 bg-brandRed text-white text-[7px] sm:text-[9px] font-black uppercase px-2 py-0.5 sm:px-3 sm:py-1.5 italic tracking-widest shadow-lg rounded-sm border border-brandYellow">Engine_v7.6</div>
           </div>
-          <h1 className="text-3xl xs:text-4xl sm:text-8xl lg:text-9xl font-black tracking-tighter text-brandCharcoal dark:text-white italic uppercase leading-[0.8] select-none mb-3 md:mb-8">HYPER<span className="text-brandRed">X</span>GEN</h1>
+          <h1 className="text-3xl xs:text-4xl sm:text-8xl lg:text-9xl font-black tracking-tighter text-brandBlue dark:text-white italic uppercase leading-[0.8] select-none mb-3 md:mb-8">HYPER<span className="text-brandRed">X</span>GEN</h1>
           <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8">
              <div className="flex flex-col items-start border-l-2 border-brandRed pl-3 text-left">
-               <p className="text-[8px] sm:text-[12px] font-black uppercase tracking-[0.3em] text-brandCharcoalMuted dark:text-white/40 leading-none mb-0.5">Architectural_Engine</p>
-               <span className="text-[7px] sm:text-[9px] font-bold text-brandRed uppercase tracking-widest animate-pulse">PROTOCOL_LOCKED</span>
+               <p className="text-[8px] sm:text-[12px] font-black uppercase tracking-[0.3em] text-brandBlue/60 dark:text-white/40 leading-none mb-0.5">Architectural_Engine</p>
+               <span className="text-[7px] sm:text-[9px] font-bold text-brandRed uppercase tracking-widest animate-pulse">MALAYSIA_EDITION</span>
              </div>
              {recentCount > 0 && (
-               <div className="flex items-center gap-2 bg-brandCharcoal dark:bg-zinc-800 p-1.5 px-4 rounded-sm border border-brandRed/20 shadow-lg">
-                 <div className="w-1.5 h-1.5 bg-brandRed rounded-full animate-ping"></div>
-                 <span className="text-[8px] sm:text-[10px] font-black text-brandCharcoal dark:text-white uppercase tracking-[0.2em]">{recentCount} NODES</span>
+               <div className="flex items-center gap-2 bg-brandBlue dark:bg-zinc-800 p-1.5 px-4 rounded-sm border border-brandYellow/20 shadow-lg">
+                 <div className="w-1.5 h-1.5 bg-brandYellow rounded-full animate-ping"></div>
+                 <span className="text-[8px] sm:text-[10px] font-black text-white uppercase tracking-[0.2em]">{recentCount} NODES</span>
                </div>
              )}
           </div>
@@ -115,8 +112,8 @@ const ModeCard = ({ title, subtitle, onClick, Icon, bgColor, textColor, accentCo
         base = 'shadow-[4px_4px_0px_0px_#FFCC00]';
         neon = 'dark:shadow-neon-yellow-soft';
         break;
-      case '#010066':
-        base = 'shadow-[4px_4px_0px_0px_#010066]';
+      case '#0032A0':
+        base = 'shadow-[4px_4px_0px_0px_#0032A0]';
         neon = 'dark:shadow-neon-blue-soft';
         break;
     }

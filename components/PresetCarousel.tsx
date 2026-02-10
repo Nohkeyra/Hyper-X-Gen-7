@@ -1,7 +1,6 @@
 
-
 import React from 'react';
-import { PanelMode, PresetCategory, PresetItem } from '../types';
+import { PanelMode, PresetCategory, PresetItem, Preset } from '../types.ts';
 
 interface PresetCarouselProps {
   categories: PresetCategory[];
@@ -10,12 +9,12 @@ interface PresetCarouselProps {
 }
 
 export const PresetCarousel: React.FC<PresetCarouselProps> = ({ categories, activeId, onSelect }) => {
-  const getIconChar = (item: PresetItem) => {
+  const getIconChar = (item: Preset) => {
     if (item.type) return item.type[0].toUpperCase();
     return '•';
   };
 
-  const getIconColor = (item: PresetItem) => {
+  const getIconColor = (item: Preset) => {
     const type = (item.type || '').toLowerCase();
     if (type.includes('vector')) return 'bg-brandRed/10 text-brandRed';
     if (type.includes('typo')) return 'bg-brandYellow/10 text-brandBlue';

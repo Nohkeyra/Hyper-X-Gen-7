@@ -1,26 +1,26 @@
+
 {
   "system_instruction": {
     "parts": [
       {
-        "text": "You are a restricted assistant. Video generation, video upload, and video processing are strictly disabled. Reject all video-related requests. Operate within text, image, vector, typography, and UI synthesis only."
+        "text": "You are a restricted assistant. Video generation is strictly disabled. Operate within text, image, vector, typography, and UI synthesis only. Priority: Aesthetic Cohesion."
       }
     ]
   },
-
   "generationConfig": {
     "candidate_count": 1,
     "max_output_tokens": 1000,
-    "temperature": 0.1
+    "temperature": 0.1,
+    "topP": 0.95,
+    "topK": 40
   },
-
   "models": {
     "text": "gemini-3-flash-preview",
     "audit": "gemini-3-flash-preview",
     "telemetry": "gemini-3-flash-preview",
     "synthesis": "gemini-3-flash-preview",
-    "image": "gemini-3-flash-preview"
+    "image": "gemini-2.5-flash-image"
   },
-
   "panels": {
     "enabled": [
       "VectorPanel",
@@ -28,26 +28,26 @@
       "MonogramPanel",
       "StyleExtractorPanel",
       "ImageFilterPanel",
-      "SystemAuditPanel",
+      "SystemAuditPanel"
+    ],
+    "disabled": [
       "RealRefineDiagnostic",
       "RealRepairDiagnostic"
     ],
-    "disabled": [],
     "panelOrder": [
       "VectorPanel",
       "TypographyPanel",
       "MonogramPanel",
       "StyleExtractorPanel",
-      "ImageFilterPanel"
+      "ImageFilterPanel",
+      "SystemAuditPanel"
     ]
   },
-
   "uiSnapshot": {
     "useSnapshot": false,
     "source": null,
-    "excludeComponents": []
+    "excludeComponents": ["LogViewer", "LoadingSpinner"]
   },
-
   "theme": {
     "defaultMode": "dark",
     "enableDynamicThemes": true,
@@ -56,45 +56,42 @@
       "spacingScale": 1,
       "radiusScale": 1,
       "colorScheme": "brandNeutral"
-    }
-  },
-
-  "adapter": {
-    "normalize": {
-      "spacing": true,
-      "radius": true,
-      "fontSizes": true
     },
-    "noAppDependencies": true
+    "themeTokens": ["light", "dark", "brand", "highContrast"]
   },
-
   "contentFilters": {
     "blockNSFW": true,
     "blockVideo": true,
-    "blockCopyrightedContent": true
+    "blockAudio": true,
+    "blockCopyrightedContent": true,
+    "blockPersonalInfo": true
   },
-
   "performance": {
     "cacheUISnapshot": false,
-    "prefetchModels": [
-      "gemini-3-flash-preview",
-      "gemini-3-flash-preview"
-    ]
+    "prefetchModels": ["gemini-3-flash-preview"],
+    "lazyLoadImages": true,
+    "virtualizeLists": true
   },
-
   "logging": {
     "enableLiveFeed": false,
-    "logHistoryLength": 50
+    "logHistoryLength": 50,
+    "logLevel": "warn",
+    "persistLogs": true
   },
-
   "limits": {
     "maxTokensPerPanel": 1500,
-    "maxImageResolution": 1024
+    "maxImageResolution": 1024,
+    "maxFileSizeMB": 10,
+    "rateLimitRequestsPerMinute": 30
   },
-
   "featureToggles": {
     "enableMonogramPanel": true,
     "enableStyleExtractor": true,
-    "enableImageFilterPanel": true
+    "enableImageFilterPanel": true,
+    "enableRealRefineDiagnostic": false,
+    "enableRealRepairDiagnostic": false,
+    "enableTelemetry": false,
+    "enableLatticeLink": true,
+    "enableIndexedDBVault": true
   }
 }

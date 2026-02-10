@@ -1,5 +1,3 @@
-
-
 import React, { useRef, useEffect, useState } from 'react';
 
 interface GenerationBarProps {
@@ -12,6 +10,7 @@ interface GenerationBarProps {
   children?: React.ReactNode;
   additionalControls?: React.ReactNode;
   refineButton?: React.ReactNode;
+  bridgedThumbnail?: string | null; // Thumbnail of asset injected via Lattice Link
 }
 
 export const GenerationBar: React.FC<GenerationBarProps> = ({ 
@@ -23,7 +22,8 @@ export const GenerationBar: React.FC<GenerationBarProps> = ({
   activePresetName,
   children, 
   additionalControls, 
-  refineButton
+  refineButton,
+  bridgedThumbnail
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [latticeId, setLatticeId] = useState('');
@@ -50,6 +50,11 @@ export const GenerationBar: React.FC<GenerationBarProps> = ({
         
         {/* Left Side: Additional Controls */}
         <div className="flex-none bg-brandCharcoal/5 dark:bg-white/5 border-b md:border-b-0 md:border-r border-brandCharcoal dark:border-white/10 px-2 md:px-4 flex items-center py-2 md:py-0 gap-2">
+          {bridgedThumbnail && !isProcessing && (
+            <div className="w-10 h-10 border border-brandRed rounded-sm overflow-hidden shrink-0 shadow-sm animate-in zoom-in duration-300">
+              <img src={bridgedThumbnail} className="w-full h-full object-cover opacity-80" alt="Bridge Thumbnail" />
+            </div>
+          )}
           {additionalControls}
         </div>
         
@@ -110,16 +115,20 @@ export const GenerationBar: React.FC<GenerationBarProps> = ({
       
       {/* Telemetry Footer */}
       <div className="max-w-screen-2xl mx-auto mt-1 md:mt-2 flex justify-between items-center px-1">
-        <div className="flex items-center gap-2">
-          <div className={`w-1 h-1 md:w-1.5 md:h-1.5 rounded-full ${isProcessing ? 'bg-brandYellow animate-pulse' : 'bg-brandYellow'}`} />
-          <span className="text-[7px] md:text-[8px] font-black text-brandCharcoalMuted dark:text-white/40 uppercase tracking-widest">
-            {isProcessing ? 'LATTICE_LOCK_ACTIVE' : 'LATTICE_LOCK_v5.2'}
-          </span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className={`w-1 h-1 md:w-1.5 md:h-1.5 rounded-full ${isProcessing ? 'bg-brandYellow animate-pulse' : 'bg-brandYellow'}`} />
+            <span className="text-[7px] md:text-[8px] font-black text-brandCharcoalMuted dark:text-white/40 uppercase tracking-widest">
+              {isProcessing ? 'LATTICE_LOCK_ACTIVE' : 'LATTICE_LOCK_v7.6'}
+            </span>
+          </div>
+          <div className="h-2 w-[1px] bg-white/10 hidden sm:block" />
+          <span className="hidden sm:inline text-[7px] font-black text-brandRed/60 uppercase tracking-[0.2em] italic">Master_Rules_Loaded</span>
         </div>
         <div className="flex items-center gap-2">
           <span className={`text-[6px] md:text-[7px] font-mono text-brandRed font-black tracking-widest transition-colors duration-500`}>{latticeId}</span>
           <div className="h-2 w-[1px] bg-brandCharcoal/10 dark:bg-white/10" />
-          <span className="text-[6px] md:text-[7px] font-black text-brandCharcoalMuted dark:text-white/20 uppercase">STANDARD_QUOTA_ENGAGED</span>
+          <span className="text-[6px] md:text-[7px] font-black text-brandCharcoalMuted dark:text-white/20 uppercase tracking-tighter">HYPERXGEN_OMEGA_FINAL</span>
         </div>
       </div>
     </div>

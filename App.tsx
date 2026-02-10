@@ -1,15 +1,32 @@
+
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
-import { PanelMode, KernelConfig, CloudArchiveEntry, LogEntry, ExtractionResult } from './types.ts';
+import { 
+  PanelMode, 
+  KernelConfig, 
+  CloudArchiveEntry, 
+  LogEntry, 
+  ExtractionResult, 
+  LogType,
+  Preset,
+  LatticeBuffer,
+  PanelState,
+  VectorPreset,
+  TypographyPreset,
+  MonogramPreset,
+  FilterPreset,
+  BasePreset,
+  LatticeStatus
+} from './types.ts';
 import { BootScreen } from './components/BootScreen.tsx';
 import { RealRefineDiagnostic } from './components/RealRefineDiagnostic.tsx';
 import { RealRepairDiagnostic } from './components/RealRepairDiagnostic.tsx';
-import { useDeviceDetection } from './components/DeviceDetector.tsx';
 import { StartScreen } from './components/StartScreen.tsx';
 import { PanelHeader } from './components/PanelHeader.tsx';
 import { AppControlsBar } from './components/AppControlsBar.tsx';
 import { LogViewer } from './components/LogViewer.tsx';
 import { LoadingSpinner } from './components/Loading.tsx';
 import { LS_KEYS } from './constants.ts';
+import { vaultDb } from './services/dbService.ts';
 
 // Lazy-load panel components
 const VectorPanel = lazy(() => import('./components/VectorPanel.tsx').then(m => ({ default: m.VectorPanel })));
@@ -30,7 +47,7 @@ interface AppConfig {
 export const App: React.FC = () => {
   const [isBooting, setIsBooting] = useState(true);
   const [currentPanel, setCurrentPanel] = useState<PanelMode>(PanelMode.START);
-  const [transferData, setTransferData] = useState<any>(null);
+  const [transferData, setTransferData] = useState<Preset | null>(null);
   const [isRepairing, setIsRepairing] = useState(false);
   const [isRefining, setIsRefining] = useState(false);
   const [systemIntegrity, setSystemIntegrity] = useState(100);
@@ -39,9 +56,12 @@ export const App: React.FC = () => {
   const [enabledModes, setEnabledModes] = useState<PanelMode[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [showLogViewer, setShowLogViewer] = useState(false);
-  const [currentPanelState, setCurrentPanelState] = useState<any>(null);
+  const [currentPanelState, setCurrentPanelState] = useState<PanelState | null>(null);
 
-  const deviceInfo = useDeviceDetection();
+  // LATTICE_LINK (Update 4)
+  const [latticeBuffer, setLatticeBuffer] = useState<LatticeBuffer | null>(null);
+  const [latticeStatus, setLatticeStatus] = useState<LatticeStatus>(LatticeStatus.IDLE);
+
   const [uiRefinementLevel, setUiRefinementLevel] = useState(0);
 
   const [kernelConfig, setKernelConfig] = useState<KernelConfig>({
@@ -51,8 +71,8 @@ export const App: React.FC = () => {
     deviceContext: 'MAXIMUM_ARCHITECTURE_OMEGA_V5'
   });
 
-  const [recentWorks, setRecentWorks] = useState<any[]>([]);
-  const [savedPresets, setSavedPresets] = useState<any[]>([]);
+  const [recentWorks, setRecentWorks] = useState<Preset[]>([]);
+  const [savedPresets, setSavedPresets] = useState<Preset[]>([]);
   const [cloudArchives, setCloudArchives] = useState<CloudArchiveEntry[]>([]);
   const [globalDna, setGlobalDna] = useState<ExtractionResult | null>(null);
 
@@ -62,44 +82,16 @@ export const App: React.FC = () => {
         id: Date.now().toString(),
         timestamp: new Date().toLocaleTimeString(),
         message,
-        type,
+        type: type as LogType,
       };
       return [newLogEntry, ...prev].slice(0, 50);
     });
-  }, []);
-
-  /**
-   * MEMOIZED UTILITY: safeParse
-   * Moved outside hooks to ensure stable reference and prevent recreation on render.
-   */
-  const safeParse = useCallback((key: string, fallback: any) => {
-    try {
-      const item = localStorage.getItem(key);
-      if (!item) return fallback;
-      return JSON.parse(item);
-    } catch (e) {
-      console.error(`Storage Error [${key}]:`, e);
-      localStorage.removeItem(key);
-      return fallback;
-    }
   }, []);
 
   useEffect(() => {
     const storedTheme = localStorage.getItem(LS_KEYS.THEME);
     if (storedTheme) setIsDarkMode(storedTheme === 'dark');
     else if (window.matchMedia('(prefers-color-scheme: dark)').matches) setIsDarkMode(true);
-
-    const storedConfig = localStorage.getItem(LS_KEYS.CONFIG);
-    if (storedConfig) {
-      try { setKernelConfig(prev => ({ ...prev, ...JSON.parse(storedConfig) })); }
-      catch { localStorage.removeItem(LS_KEYS.CONFIG); }
-    }
-
-    const storedLogs = localStorage.getItem(LS_KEYS.LOGS);
-    if (storedLogs) {
-      try { setLogs(JSON.parse(storedLogs)); } 
-      catch { localStorage.removeItem(LS_KEYS.LOGS); }
-    }
   }, []);
 
   useEffect(() => {
@@ -115,6 +107,8 @@ export const App: React.FC = () => {
       const boot = async () => {
         try {
           addLog("INITIATING: OMEGA_KERNEL_BOOT", 'info');
+          await vaultDb.init(); // Initialize IndexedDB
+          
           const response = await fetch('/config.json');
           const appConfig: AppConfig = await response.json();
           
@@ -128,16 +122,31 @@ export const App: React.FC = () => {
               case 'SystemAuditPanel': return PanelMode.AUDIT;
               default: return PanelMode.START;
             }
-          }).filter(mode => mode !== PanelMode.START);
+          }).filter(mode => (mode as PanelMode) !== PanelMode.START);
           setEnabledModes(configuredModes);
 
-          // Use memoized safeParse with stable dependencies
-          setSavedPresets(safeParse(LS_KEYS.PRESETS, []));
-          setRecentWorks(safeParse(LS_KEYS.RECENT, []));
-          setCloudArchives(safeParse(LS_KEYS.ARCHIVES, []));
+          // Load all state from IndexedDB
+          setSavedPresets(await vaultDb.getAll<Preset>('presets'));
+          setRecentWorks(await vaultDb.getAll<Preset>('recent'));
+          setCloudArchives(await vaultDb.getAll<CloudArchiveEntry>('archives'));
+          
+          const storedConfig = await vaultDb.getItem<KernelConfig>('config', 'kernel');
+          if (storedConfig) {
+            setKernelConfig(prev => ({...prev, ...storedConfig}));
+          }
+          
+          const storedLogs = await vaultDb.getItem<LogEntry[]>('logs', 'entries');
+          if (storedLogs) {
+            setLogs(storedLogs);
+          }
+
+          const storedDna = await vaultDb.getItem<ExtractionResult | null>('global_dna', 'dna');
+          if (typeof storedDna !== 'undefined') {
+            setGlobalDna(storedDna);
+          }
           
           setHasInitialized(true);
-          addLog("ARCHITECTURE: PARITY_CHECK_OK", 'success');
+          addLog("ARCHITECTURE: MASTER_PROTOCOL_ACTIVE", 'success');
         } catch (e) {
           setHasInitialized(true);
           addLog(`CRITICAL_KERNEL_PANIC: ${e instanceof Error ? e.message : String(e)}`, 'error');
@@ -145,46 +154,136 @@ export const App: React.FC = () => {
       };
       boot();
     }
-  }, [addLog, isBooting, hasInitialized, safeParse]);
+  }, [addLog, isBooting, hasInitialized]);
 
+  // Sync state to persistence
   useEffect(() => {
     if (hasInitialized) {
-      try {
-        localStorage.setItem(LS_KEYS.PRESETS, JSON.stringify(savedPresets));
-        localStorage.setItem(LS_KEYS.RECENT, JSON.stringify(recentWorks.slice(0, 15)));
-        localStorage.setItem(LS_KEYS.ARCHIVES, JSON.stringify(cloudArchives));
-        localStorage.setItem(LS_KEYS.CONFIG, JSON.stringify(kernelConfig));
-        localStorage.setItem(LS_KEYS.LOGS, JSON.stringify(logs));
-      } catch (e) {
-        console.error("Failed to write to localStorage:", e);
-        addLog("STORAGE_ERROR: Could not persist session.", 'error');
-      }
+      vaultDb.saveAll('presets', savedPresets);
+      vaultDb.saveAll('recent', recentWorks.slice(0, 15));
+      vaultDb.saveAll('archives', cloudArchives);
+      vaultDb.saveItem('config', 'kernel', kernelConfig);
+      vaultDb.saveItem('logs', 'entries', logs);
+      vaultDb.saveItem('global_dna', 'dna', globalDna);
     }
-  }, [savedPresets, recentWorks, cloudArchives, kernelConfig, logs, hasInitialized, addLog]);
+  }, [savedPresets, recentWorks, cloudArchives, kernelConfig, logs, globalDna, hasInitialized]);
 
   const handleCommitToVault = useCallback(() => {
-    if (!currentPanelState) { addLog("COMMIT_FAIL: NO_ACTIVE_LATTICE", 'error'); return; }
-    
-    const name = currentPanelState.prompt ? `Commit: ${currentPanelState.prompt.substring(0, 15)}` : currentPanelState.name || `Commit: ${currentPanelState.type}`;
-    const { generatedOutput, ...restOfState } = currentPanelState;
-    const newPreset = { id: `preset-${Date.now()}`, name, type: currentPanelState.type, ...restOfState, imageUrl: currentPanelState.uploadedImage, timestamp: new Date().toLocaleTimeString() };
-    
+    if (!currentPanelState || (!currentPanelState.generatedOutput && !currentPanelState.dna)) {
+      addLog("COMMIT_FAIL: NO_ENTITY_DETECTED", 'error');
+      return;
+    }
+
+    const { type, prompt, dna, uploadedImage, generatedOutput, settings } = currentPanelState;
+    const name = currentPanelState.name || (prompt ? `Commit: ${prompt.substring(0, 20)}` : `Commit: ${type}_SYNTH`);
+
+    const basePreset: BasePreset = {
+      id: `preset-${Date.now()}`,
+      name,
+      category: 'USER_COMMIT',
+      description: `Synthesized on ${new Date().toLocaleDateString()}`,
+      prompt: prompt || '',
+      dna: dna || undefined,
+      imageUrl: generatedOutput || uploadedImage || undefined,
+      timestamp: new Date().toISOString(),
+      type: type,
+    };
+
+    let newPreset: Preset;
+
+    switch (type) {
+      case PanelMode.VECTOR:
+        newPreset = {
+          ...basePreset,
+          type: PanelMode.VECTOR,
+          parameters: settings as VectorPreset['parameters'],
+        };
+        break;
+      case PanelMode.TYPOGRAPHY:
+        newPreset = {
+          ...basePreset,
+          type: PanelMode.TYPOGRAPHY,
+          parameters: settings as TypographyPreset['parameters'],
+          styleUsed: (settings as any)?.styleUsed || 'Custom',
+        };
+        break;
+      case PanelMode.MONOGRAM:
+        newPreset = {
+          ...basePreset,
+          type: PanelMode.MONOGRAM,
+          parameters: settings as MonogramPreset['parameters'],
+        };
+        break;
+      case PanelMode.FILTERS:
+        newPreset = {
+            ...basePreset,
+            type: PanelMode.FILTERS,
+            parameters: settings as FilterPreset['parameters'],
+        };
+        break;
+      default:
+        addLog(`COMMIT_FAIL: Unsupported panel type "${type}" for vault commit.`, 'error');
+        return;
+    }
+
     setSavedPresets(prev => [newPreset, ...prev]);
-    addLog("COMMIT_SUCCESS: VAULT_UPDATED", 'success');
+    addLog("COMMIT_SUCCESS: VAULT_SYNCHRONIZED", 'success');
   }, [currentPanelState, addLog]);
 
-  const handleModeSwitch = useCallback((mode: PanelMode, data?: any) => {
-    setCurrentPanel(mode);
-    setTransferData(data || null);
-    addLog(`OMEGA_PIVOT: ${mode.toUpperCase()}_ENGAGED`, 'info');
-  }, [addLog]);
 
-  // FIX: Added handleLoadItem to fix "Cannot find name 'handleLoadItem'" error.
-  const handleLoadItem = useCallback((item: any) => {
-    if (item.type && item.type !== PanelMode.START) {
-      handleModeSwitch(item.type, item);
+  /**
+   * Update 4: Lattice_Link Implementation
+   * Automatically updates the global bridge buffer when synthesis completes.
+   */
+  useEffect(() => {
+    if (currentPanelState?.generatedOutput && currentPanel !== PanelMode.START) {
+      setLatticeBuffer({
+        imageUrl: currentPanelState.generatedOutput,
+        dna: currentPanelState.dna || undefined,
+        prompt: currentPanelState.prompt || '',
+        sourceMode: currentPanel,
+        timestamp: Date.now()
+      });
+      setLatticeStatus(LatticeStatus.SYNCED);
     }
-    addLog("ITEM_LOADED", 'info');
+  }, [currentPanelState?.generatedOutput, currentPanelState?.dna, currentPanelState?.prompt, currentPanel]);
+
+  const handleModeSwitch = useCallback((mode: PanelMode, data: Preset | null = null) => {
+    let finalData = data;
+    
+    if (!finalData && latticeBuffer && mode !== PanelMode.START && mode !== latticeBuffer.sourceMode) {
+       addLog(`LATTICE_BRIDGE: HANDSHAKE_${latticeBuffer.sourceMode}_TO_${mode}`, 'info');
+       finalData = {
+         id: `bridge-${Date.now()}`,
+         name: `Bridged: ${latticeBuffer.prompt || 'Artifact'}`,
+         type: mode,
+         category: 'LATTICE_BRIDGE',
+         description: `Bridged from ${latticeBuffer.sourceMode} module`,
+         prompt: latticeBuffer.prompt || '',
+         imageUrl: latticeBuffer.imageUrl,
+         dna: latticeBuffer.dna,
+         timestamp: new Date().toISOString()
+       } as any;
+       setLatticeStatus(LatticeStatus.LOCKED);
+    }
+
+    if (mode === PanelMode.START) {
+      setTransferData(null);
+      setLatticeStatus(LatticeStatus.IDLE);
+    } else {
+      setTransferData(finalData);
+    }
+    
+    setCurrentPanel(mode);
+    addLog(`OMEGA_PIVOT: ${mode.toUpperCase()}_ENGAGED`, 'info');
+  }, [addLog, latticeBuffer]);
+
+  const handleLoadItem = useCallback((item: Preset) => {
+    const mode = item.type;
+    if (mode && (mode as any) !== PanelMode.START) {
+      handleModeSwitch(mode, item);
+    }
+    addLog(`RECALLED: ${item.name}`, 'info');
   }, [handleModeSwitch, addLog]);
 
   const handleBootComplete = useCallback(() => { setIsBooting(false); }, []);
@@ -198,26 +297,29 @@ export const App: React.FC = () => {
     kernelConfig,
     integrity: systemIntegrity,
     uiRefined: uiRefinementLevel > 0,
-    onSaveToHistory: (work: any) => setRecentWorks(prev => [work, ...prev]),
+    onSaveToHistory: (work: Preset) => setRecentWorks(prev => [work, ...prev].slice(0, 15)),
     onModeSwitch: handleModeSwitch,
     savedPresets,
     onStateUpdate: setCurrentPanelState,
     addLog,
     onSetGlobalDna: setGlobalDna,
     globalDna: globalDna,
+    latticeBuffer: latticeBuffer,
+    latticeStatus: latticeStatus
   };
   
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <PanelHeader 
-        onBack={() => setCurrentPanel(PanelMode.START)} 
-        title={currentPanel.replace('_', ' ')}
+        onBack={() => handleModeSwitch(PanelMode.START)} 
+        title={currentPanel === PanelMode.START ? "HYPERXGEN 7" : currentPanel.toUpperCase()}
         onStartRepair={() => setIsRepairing(true)}
         onStartRefine={() => setIsRefining(true)}
         integrity={systemIntegrity}
         isDarkMode={isDarkMode}
         onToggleTheme={toggleTheme}
         onToggleLogViewer={() => setShowLogViewer(p => !p)}
+        latticeStatus={latticeStatus}
       />
       <main className="flex-1 overflow-hidden" style={{ paddingTop: 'var(--header-h)', paddingBottom: 'var(--app-controls-bar-h)' }}>
         <Suspense fallback={<LoadingSpinner />}>
@@ -225,8 +327,8 @@ export const App: React.FC = () => {
           {currentPanel === PanelMode.VECTOR && <VectorPanel {...commonProps} initialData={transferData} />}
           {currentPanel === PanelMode.TYPOGRAPHY && <TypographyPanel {...commonProps} initialData={transferData} />}
           {currentPanel === PanelMode.MONOGRAM && <MonogramPanel {...commonProps} initialData={transferData} />}
-          {currentPanel === PanelMode.EXTRACTOR && <StyleExtractorPanel kernelConfig={kernelConfig} savedPresets={savedPresets} onSaveToPresets={(p) => setSavedPresets(prev => [p, ...prev])} onDeletePreset={(id) => setSavedPresets(prev => prev.filter(p => p.id !== id))} addLog={addLog} onApiKeyError={() => {}} onModeSwitch={handleModeSwitch} />}
-          {currentPanel === PanelMode.FILTERS && <ImageFilterPanel onSaveToHistory={(w) => setRecentWorks(p => [w, ...p])} kernelConfig={kernelConfig} onModeSwitch={handleModeSwitch} onStateUpdate={setCurrentPanelState} />}
+          {currentPanel === PanelMode.EXTRACTOR && <StyleExtractorPanel {...commonProps} initialData={transferData} onSaveToPresets={(p) => setSavedPresets(prev => [p as any, ...prev])} onDeletePreset={(id) => setSavedPresets(prev => prev.filter(p => p.id !== id))} onApiKeyError={() => {}} />}
+          {currentPanel === PanelMode.FILTERS && <ImageFilterPanel {...commonProps} initialData={transferData} />}
           {currentPanel === PanelMode.AUDIT && <SystemAuditPanel />}
         </Suspense>
       </main>
@@ -236,8 +338,8 @@ export const App: React.FC = () => {
         recentWorks={recentWorks} 
         savedPresets={savedPresets}
         onLoadHistoryItem={handleLoadItem}
-        onClearRecentWorks={() => setRecentWorks([])}
-        onClearSavedPresets={() => setSavedPresets([])}
+        onClearRecentWorks={() => { setRecentWorks([]); vaultDb.clearStore('recent'); }}
+        onClearSavedPresets={() => { setSavedPresets([]); vaultDb.clearStore('presets'); }}
         onForceSave={handleCommitToVault}
         enabledModes={enabledModes}
       />

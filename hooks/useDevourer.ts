@@ -1,5 +1,4 @@
-
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 
 export type DevourerState = 
   // General States
@@ -32,6 +31,7 @@ export type DevourerState =
 export interface UseDevourerReturn {
   status: DevourerState;
   isProcessing: boolean;
+  history: DevourerState[];
   transition: (newState: DevourerState, processing?: boolean) => void;
   revert: () => void;
   reset: () => void;
@@ -46,37 +46,51 @@ const ERROR_STATES: DevourerState[] = [
   'CRITICAL_DRIFT'
 ];
 
+const PROCESSING_STATES: DevourerState[] = [
+  'DEVOURING_BUFFER',
+  'AUDITING_BUFFER',
+  'DETECTING_SILHOUETTE',
+  'DNA_STYLIZE_ACTIVE',
+  'REFINING_LATTICE'
+];
+
 export const useDevourer = (initialState: DevourerState = 'IDLE'): UseDevourerReturn => {
   const [status, setStatus] = useState<DevourerState>(initialState);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isManualProcessing, setIsManualProcessing] = useState(false);
   const stateHistory = useRef<DevourerState[]>([initialState]);
 
   const transition = useCallback((newState: DevourerState, processing = false) => {
     stateHistory.current.push(newState);
     setStatus(newState);
-    setIsProcessing(processing);
+    setIsManualProcessing(processing);
   }, []);
 
   const revert = useCallback(() => {
     if (stateHistory.current.length > 1) {
-      stateHistory.current.pop(); // Remove current state
+      stateHistory.current.pop();
       const previousState = stateHistory.current[stateHistory.current.length - 1];
       setStatus(previousState);
-      setIsProcessing(false);
+      setIsManualProcessing(false);
     }
   }, []);
 
   const reset = useCallback(() => {
     stateHistory.current = [initialState];
     setStatus(initialState);
-    setIsProcessing(false);
+    setIsManualProcessing(false);
   }, [initialState]);
 
-  const isErrorState = ERROR_STATES.includes(status);
+  const isErrorState = useMemo(() => ERROR_STATES.includes(status), [status]);
+  
+  const isProcessing = useMemo(() => 
+    isManualProcessing || PROCESSING_STATES.includes(status), 
+    [isManualProcessing, status]
+  );
 
   return { 
     status, 
-    isProcessing, 
+    isProcessing,
+    history: stateHistory.current,
     transition,
     revert,
     reset,

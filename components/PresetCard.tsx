@@ -3,12 +3,13 @@ import React from 'react';
 interface PresetCardProps {
   name: string;
   description: string;
+  prompt?: string;
   isActive: boolean;
   onClick: () => void;
   iconChar: string;
 }
 
-export const PresetCard: React.FC<PresetCardProps> = ({ name, description, isActive, onClick, iconChar }) => (
+export const PresetCard: React.FC<PresetCardProps> = ({ name, description, prompt, isActive, onClick, iconChar }) => (
   <button 
     onClick={onClick} 
     className={`w-full p-3 flex flex-col transition-all duration-300 rounded-sm text-left relative overflow-hidden group border-2
@@ -34,7 +35,7 @@ export const PresetCard: React.FC<PresetCardProps> = ({ name, description, isAct
         `}>
           {name}
         </h4>
-        <div className={`h-[1px] transition-all duration-500 mt-0.5 ${isActive ? 'bg-white/40 w-full' : 'bg-brandRed/20 w-4 group-hover:w-8'}`} />
+        {!isActive && <div className={`h-[1px] transition-all duration-500 mt-0.5 ${isActive ? 'bg-white/40 w-full' : 'bg-brandRed/20 w-4 group-hover:w-8'}`} />}
       </div>
 
       {isActive && (
@@ -43,5 +44,24 @@ export const PresetCard: React.FC<PresetCardProps> = ({ name, description, isAct
         </div>
       )}
     </div>
+
+    {isActive && (
+      <div className="mt-3 pt-3 border-t border-white/20 space-y-2 animate-in slide-in-from-top-2 duration-300 w-full">
+        <p className="text-[9px] font-bold text-white/80 leading-relaxed uppercase italic">
+          {description}
+        </p>
+        {prompt && (
+          <div className="bg-black/30 p-2 rounded-sm border border-white/5">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-[7px] text-white/40 uppercase tracking-widest font-black">Kernel_Prompt</span>
+              <div className="w-1 h-1 bg-brandYellow rounded-full animate-pulse" />
+            </div>
+            <p className="text-[8px] font-mono text-brandYellow/90 leading-tight break-words">
+              {prompt}
+            </p>
+          </div>
+        )}
+      </div>
+    )}
   </button>
 );

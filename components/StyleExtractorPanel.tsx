@@ -1,6 +1,5 @@
-
 // FINAL – LOCKED
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { KernelConfig, ExtractionResult, PanelMode } from '../types.ts';
 import { extractStyleFromImage } from '../services/geminiService.ts';
 import { PresetCard } from './PresetCard.tsx';
@@ -18,6 +17,7 @@ interface StyleExtractorPanelProps {
   onSaveToPresets: (preset: any) => void; 
   onDeletePreset: (id: string) => void; 
   onSaveFeedback?: () => void;
+  onStateUpdate?: (state: any) => void;
   addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void; 
   onApiKeyError: () => void;
   onModeSwitch?: (mode: PanelMode, data?: any) => void;
@@ -68,13 +68,24 @@ const StyleDNAReport: React.FC<{ dna: ExtractionResult; onSave: () => void; onJu
 };
 
 export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
-  initialData, kernelConfig, savedPresets = [], onSaveToPresets, onDeletePreset, addLog, onModeSwitch
+  initialData, kernelConfig, savedPresets = [], onSaveToPresets, onDeletePreset, addLog, onModeSwitch, onStateUpdate
 }) => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(initialData?.imageUrl || null);
   const [extractedDna, setExtractedDna] = useState<ExtractionResult | null>(initialData?.dna || null);
   const [reconStatusOverride, setReconStatusOverride] = useState<string | null>(null);
   
   const { status, isProcessing, transition } = useDevourer(initialData?.imageUrl ? 'BUFFER_LOADED' : 'STARVING');
+
+  useEffect(() => {
+    onStateUpdate?.({
+      type: PanelMode.EXTRACTOR,
+      name: extractedDna?.name || 'Style Extraction',
+      uploadedImage,
+      generatedOutput: uploadedImage, // Share the source image as the primary asset if DNA is linked
+      dna: extractedDna,
+      settings: {}
+    });
+  }, [onStateUpdate, uploadedImage, extractedDna]);
 
   const dnaVault = useMemo(() => savedPresets.filter(p => p && p.dna), [savedPresets]);
 
@@ -85,7 +96,6 @@ export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
       addLog("STYLE_EXTRACTION: INITIATED", "info");
       transition('AUDITING_BUFFER', true);
       
-      // Granular Status Sequence
       setReconStatusOverride("ANALYZING_VISUAL_STYLE");
       await new Promise(r => setTimeout(r, 800));
       setReconStatusOverride("EXTRACTING_COLOR_DNA");
@@ -128,10 +138,15 @@ export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
   const handleJumpToSynthesis = (mode: PanelMode) => {
     if (!extractedDna || !onModeSwitch) return;
     onModeSwitch(mode, { 
+      id: `dna-jump-${Date.now()}`,
       dna: extractedDna, 
       imageUrl: uploadedImage,
-      source: 'EXTRACTION_BRIDGE'
-    });
+      prompt: '',
+      name: extractedDna.name,
+      type: mode,
+      category: 'BRIDGE',
+      description: 'Extracted style bridge'
+    } as any);
   };
 
   return (
@@ -169,7 +184,7 @@ export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
               <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
                 {dnaVault.map(p => (
                   <div key={p.id} className="relative group shrink-0 w-44">
-                    <PresetCard name={p.name} description={p.dna?.domain || 'DNA'} isActive={false} onClick={() => {}} iconChar="S" />
+                    <PresetCard name={p.name} description={p.dna?.domain || 'DNA'} prompt={p.dna?.promptTemplate} isActive={false} onClick={() => {}} iconChar="S" />
                     <button onClick={() => { onDeletePreset(p.id); addLog("STYLE_PURGED_FROM_VAULT", "warning"); }} className="absolute top-1 right-1 p-1 bg-brandRed text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><TrashIcon className="w-2.5 h-2.5" /></button>
                   </div>
                 ))}

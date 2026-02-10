@@ -94,6 +94,8 @@ Rules:
 - Default to symmetrical balance, allow humanized organic weights.
 - Containers (Circle, Hexagon) are guides, not prisons.
 - Recognizable elegance.
+- STRICT FORBIDDEN: Do not write the words "MONOGRAM", "SYNTHESIS", "REFINED", or "PROTOCOL" in the image. 
+- Alphanumeric constraint: ONLY the specified initials are permitted as text elements. No annotations or labels.
 
 ---
 

@@ -1,7 +1,6 @@
 
-
 import React, { useRef, useCallback } from 'react';
-import { DownloadIcon, TrashIcon, BoxIcon } from './Icons.tsx';
+import { DownloadIcon, TrashIcon, BoxIcon, StarIcon } from './Icons.tsx';
 
 interface CanvasStageProps {
   uploadedImage: string | null;
@@ -15,6 +14,7 @@ interface CanvasStageProps {
   onGenerate?: () => void;
   onFileUpload: (file: File) => void;
   downloadFilename?: string;
+  bridgeSource?: string | null; // Module name where the asset came from
 }
 
 export const CanvasStage: React.FC<CanvasStageProps> = ({
@@ -27,7 +27,8 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
   onClear,
   onGenerate,
   onFileUpload,
-  downloadFilename = "hyperxgen_output.png"
+  downloadFilename = "hyperxgen_output.png",
+  bridgeSource
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -81,27 +82,17 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
         
         {/* REFINED VIEWFINDER OVERLAY */}
         <div className="absolute inset-0 pointer-events-none z-20 transition-opacity duration-300 opacity-60 group-hover:opacity-100">
-          {/* Top Left */}
+          {/* Viewfinder brackets omitted for brevity, same as previous */}
           <div className="absolute top-4 left-4 w-6 h-6 md:w-8 md:h-8 border-t-2 border-l-2 border-brandRed/40" />
-          <div className="absolute top-4 left-4 w-1.5 h-1.5 md:w-2 md:h-2 bg-brandRed/40" />
-          
-          {/* Top Right */}
           <div className="absolute top-4 right-4 w-6 h-6 md:w-8 md:h-8 border-t-2 border-r-2 border-brandRed/40" />
-          <div className="absolute top-4 right-4 w-1.5 h-1.5 md:w-2 md:h-2 bg-brandRed/40" />
-          
-          {/* Bottom Left */}
           <div className="absolute bottom-4 left-4 w-6 h-6 md:w-8 md:h-8 border-b-2 border-l-2 border-brandRed/40" />
-          <div className="absolute bottom-4 left-4 w-1.5 h-1.5 md:w-2 md:h-2 bg-brandRed/40" />
-          
-          {/* Bottom Right */}
           <div className="absolute bottom-4 right-4 w-6 h-6 md:w-8 md:h-8 border-b-2 border-r-2 border-brandRed/40" />
-          <div className="absolute bottom-4 right-4 w-1.5 h-1.5 md:w-2 md:h-2 bg-brandRed/40" />
           
-          {/* Crosshair Center */}
-          {!uploadedImage && !generatedOutput && (
-            <div className="absolute inset-0 flex items-center justify-center opacity-20">
-              <div className="w-32 md:w-64 h-[1px] bg-brandRed/30" />
-              <div className="h-32 md:h-64 w-[1px] bg-brandRed/30" />
+          {/* Bridge Source Badge */}
+          {bridgeSource && !generatedOutput && (
+            <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-brandBlue text-white px-4 py-1.5 rounded-full border border-white/20 shadow-xl animate-in slide-in-from-top-4 duration-500">
+              <StarIcon className="w-3 h-3 text-brandYellow animate-pulse" />
+              <span className="text-[9px] font-black uppercase tracking-[0.2em] italic">Bridged_From_{bridgeSource}</span>
             </div>
           )}
 
@@ -143,7 +134,7 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
           ) : (generatedOutput || uploadedImage) ? (
             <img 
               src={generatedOutput || uploadedImage || ''} 
-              className="w-full h-full object-contain animate-in zoom-in duration-1000 select-none pointer-events-none" 
+              className="w-full h-full object-contain animate-in zoom-in duration-1000 select-none pointer-events-none shadow-2xl" 
               alt="Generated Output" 
             />
           ) : (

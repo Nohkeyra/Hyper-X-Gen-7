@@ -1,5 +1,3 @@
-
-
 // tailwind.config.js
 module.exports = {
   darkMode: 'class', // Enable dark mode based on 'class'
@@ -7,16 +5,19 @@ module.exports = {
     extend: {
       screens: { 'xs': '375px' },
       colors: {
-        brandRed: '#CC0001',
-        brandRedHigh: '#CC0001',
-        brandBlue: '#010066',
+        brandRed: '#CC0001', // Jalur Gemilang Red
+        brandBlue: '#0032A0', // Jalur Gemilang Royal Blue
+        brandYellow: '#FFCC00', // Jalur Gemilang Yellow
         brandCharcoal: 'var(--color-text-primary)',
         brandCharcoalMuted: 'var(--color-text-secondary)',
         brandCharcoalSoft: 'var(--color-text-soft)',
-        brandYellow: '#FFCC00',
-        brandYellowDark: '#FFCC00',
         brandNeutral: 'var(--color-primary-bg)',
-        brandDeep: 'var(--color-secondary-bg)'
+        brandDeep: 'var(--color-secondary-bg)',
+        // Flag Specific Tokens
+        flagBlue: '#0032A0',
+        flagRed: '#CC0001',
+        flagYellow: '#FFCC00',
+        flagWhite: '#FFFFFF'
       },
       fontFamily: { sans: ['Inter', 'sans-serif'] },
       spacing: {
@@ -32,15 +33,15 @@ module.exports = {
       boxShadow: {
         'neon-red': '0 0 5px rgba(204,0,1,0.7), 0 0 10px rgba(204,0,1,0.7), 0 0 20px rgba(204,0,1,0.7)',
         'neon-yellow': '0 0 5px rgba(255,204,0,0.7), 0 0 10px rgba(255,204,0,0.7), 0 0 20px rgba(255,204,0,0.7)',
-        'neon-blue': '0 0 5px rgba(1,0,102,0.7), 0 0 10px rgba(1,0,102,0.7), 0 0 20px rgba(1,0,102,0.7)',
+        'neon-blue': '0 0 5px rgba(0,50,160,0.7), 0 0 10px rgba(0,50,160,0.7), 0 0 20px rgba(0,50,160,0.7)',
         'neon-red-soft': '0 0 8px rgba(204,0,1,0.5), 0 0 15px rgba(204,0,1,0.4)',
         'neon-yellow-soft': '0 0 8px rgba(255,204,0,0.5), 0 0 15px rgba(255,204,0,0.4)',
-        'neon-blue-soft': '0 0 8px rgba(1,0,102,0.5), 0 0 15px rgba(1,0,102,0.4)',
+        'neon-blue-soft': '0 0 8px rgba(0,50,160,0.5), 0 0 15px rgba(0,50,160,0.4)',
       },
       dropShadow: {
         'neon-red': '0 0 8px rgba(204, 0, 1, 0.9)',
         'neon-yellow': '0 0 8px rgba(255, 204, 0, 0.9)',
-        'neon-blue': '0 0 8px rgba(1, 0, 102, 0.9)',
+        'neon-blue': '0 0 8px rgba(0, 50, 160, 0.9)',
       },
       keyframes: {
         'fade-in': { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
