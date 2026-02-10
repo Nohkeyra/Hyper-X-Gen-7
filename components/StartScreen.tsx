@@ -61,7 +61,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onSelectMode = (_mode)
         <div className="flex flex-col items-center max-w-4xl w-full mb-4 md:mb-12 scale-90 md:scale-100 origin-top">
           <div className="relative inline-block mb-4 md:mb-8">
             <div className="w-12 h-12 sm:w-32 sm:h-32 bg-brandBlue dark:bg-zinc-900 border-[4px] sm:border-[12px] border-brandYellow flex items-center justify-center mx-auto shadow-[6px_6px_0px_0px_#FFCC00] sm:shadow-[16px_16px_0px_0px_#FFCC00] hover:translate-x-1.5 hover:translate-y-1.5 transition-transform duration-500 cursor-pointer group rounded-sm">
-               <svg className="group-hover:rotate-[360deg] transition-transform duration-1000 ease-in-out" width="30" height="30" viewBox="0 0 240 240" fill="none" stroke="#FFCC00" strokeWidth="4"><path d="M120 20L150 100H230L165 150L190 230L120 180L50 230L75 150L10 100H90L120 20Z" fill="#FFCC00" /></svg>
+               <svg className="group-hover:rotate-[360deg] transition-transform duration-1000 ease-in-out" width="30" height="30" viewBox="0 0 240 240" fill="#FFCC00" stroke="#FFCC00" strokeWidth="4"><path d="M120 20L150 100H230L165 150L190 230L120 180L50 230L75 150L10 100H90L120 20Z" fill="#FFCC00" /></svg>
             </div>
             <div className="absolute -bottom-2 -right-4 bg-brandRed text-white text-[7px] sm:text-[9px] font-black uppercase px-2 py-0.5 sm:px-3 sm:py-1.5 italic tracking-widest shadow-lg rounded-sm border border-brandYellow">Engine_v7.6</div>
           </div>
@@ -125,10 +125,10 @@ const ModeCard = ({ title, subtitle, onClick, Icon, bgColor, textColor, accentCo
       onClick={onClick} 
       className={`relative group p-3 md:p-8 flex flex-col justify-between text-left transition-all duration-500 border-2 md:border-4 rounded-sm h-32 md:h-64 overflow-hidden
         ${bgColor} ${textColor} ${darkBgColor || 'dark:bg-zinc-900'} ${darkTextColor || 'dark:text-white'} 
-        ${borderColor} ${darkBorderColor} hover:-translate-x-1 hover:-translate-y-1 md:hover:-translate-x-1.5 md:hover:-translate-y-1.5 active:translate-x-0 active:translate-y-0 active:shadow-none
+        ${borderColor} ${darkBorderColor} hover:-translate-x-2 hover:-translate-y-2 md:hover:-translate-x-2 md:hover:-translate-y-2 active:translate-x-0 active:translate-y-0 active:shadow-none
         ${shadowClasses}`}
     >
-      <div className={`absolute top-0 right-0 w-16 h-16 md:w-32 md:h-32 -mr-6 -mt-6 md:-mr-12 md:-mt-12 rounded-full blur-2xl md:blur-3xl opacity-50 group-hover:scale-150 transition-transform duration-1000
+      <div className={`absolute top-0 right-0 w-16 h-16 md:w-32 md:h-32 -mr-6 -mt-6 md:-mr-12 md:-mt-12 rounded-full blur-2xl md:blur-3xl opacity-50 group-hover:scale-[2] transition-transform duration-1000
         ${accentColor} ${darkAccentColor || 'dark:bg-brandRed/5'}
       `}></div>
       

@@ -1,5 +1,5 @@
 import React, { useState, memo, useMemo } from 'react';
-import { PanelMode, CloudArchiveEntry } from '../types';
+import { PanelMode } from '../types';
 import { VectorIcon, TypographyIcon, MonogramIcon, ExtractorIcon, FilterIcon, StarIcon, BoxIcon, PulseIcon, TrashIcon } from './Icons'; 
 
 interface HistoryItem {
@@ -53,13 +53,10 @@ const AppModeMenu: React.FC<AppModeMenuProps> = memo(({ visibleModes, activeMode
 interface AppControlsBarProps {
   recentWorks?: HistoryItem[];
   savedPresets?: PresetItem[];
-  cloudArchives?: CloudArchiveEntry[];
   isSaving?: boolean;
   activeMode?: PanelMode;
   onSwitchMode?: (mode: PanelMode) => void;
-  onClearCloudArchives?: () => void;
   onLoadHistoryItem?: (item: any) => void;
-  onLoadCloudArchive?: (item: any) => void;
   onForceSave?: () => void;
   onClearRecentWorks?: () => void;
   onClearSavedPresets?: () => void;
@@ -69,22 +66,19 @@ interface AppControlsBarProps {
 export const AppControlsBar: React.FC<AppControlsBarProps> = memo(({
   recentWorks = [],
   savedPresets = [],
-  cloudArchives = [],
   isSaving = false,
   activeMode = PanelMode.START,
   onSwitchMode = (_mode) => {},
-  onClearCloudArchives = () => {},
   onLoadHistoryItem = (_item) => {},
-  onLoadCloudArchive = (_item) => {},
   onForceSave = () => {},
   onClearRecentWorks = () => {},
   onClearSavedPresets = () => {},
   enabledModes = Object.values(PanelMode),
 }) => {
-  const [activePanel, setActivePanel] = useState<'recent' | 'presets' | 'archives' | null>(null);
+  const [activePanel, setActivePanel] = useState<'recent' | 'presets' | null>(null);
   const isDarkMode = document.documentElement.classList.contains('dark');
 
-  const togglePanel = (panel: 'recent' | 'presets' | 'archives') => {
+  const togglePanel = (panel: 'recent' | 'presets') => {
     setActivePanel(activePanel === panel ? null : panel);
   };
 
@@ -110,7 +104,7 @@ export const AppControlsBar: React.FC<AppControlsBarProps> = memo(({
     }
 
     return (
-      <div key={item.id} className="history-item flex items-center justify-between group p-2 hover:bg-brandRed/5 cursor-pointer border-b border-brandBlue/10 dark:border-white/5 last:border-b-0 transition-colors" onClick={() => onLoadHistoryItem(item)}>
+      <div key={item.id} className="history-item flex items-center justify-between group p-2 hover:bg-brandBlue/5 cursor-pointer border-b border-brandYellow/10 dark:border-white/5 last:border-b-0 transition-colors" onClick={() => onLoadHistoryItem(item)}>
         <div className="flex items-center gap-3 min-w-0">
           <div className={`w-7 h-7 shrink-0 bg-brandNeutral dark:bg-zinc-800 flex items-center justify-center text-[9px] font-black italic border border-brandRed/10 group-hover:bg-brandRed group-hover:text-white transition-all rounded-sm ${iconColorClass}`}>
             {React.createElement(iconComponent, { className: 'w-3.5 h-3.5' })}
@@ -200,8 +194,9 @@ export const AppControlsBar: React.FC<AppControlsBarProps> = memo(({
       </div>
 
       {activePanel && (
-        <div className="absolute bottom-[calc(100%+2px)] left-0 right-0 sm:left-auto sm:right-0 sm:w-80 bg-white dark:bg-brandDeep border-t-4 sm:border-4 border-brandBlue dark:border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.2)] sm:shadow-[12px_12px_0px_0px_rgba(0,50,160,1)] sm:dark:shadow-[12px_12px_0px_0px_rgba(204,0,1,0.3)] animate-in slide-in-from-bottom-2 duration-200 sm:rounded-sm overflow-hidden flex flex-col max-h-[50vh] sm:max-h-[400px]">
-          <div className={`px-4 py-2 border-b-2 border-brandBlue dark:border-white/10 flex justify-between items-center ${activePanel === 'recent' ? 'bg-brandRed text-white' : 'bg-brandYellow text-brandBlue'}`}>
+        <div className="absolute bottom-[calc(100%+2px)] left-0 right-0 sm:left-auto sm:right-0 sm:w-80 bg-brandDeep dark:bg-black/60 border-t-4 sm:border-4 border-brandYellow dark:border-brandYellow shadow-[0_-10px_40px_rgba(0,0,0,0.2)] sm:shadow-[12px_12px_0px_0px_rgba(0,50,160,1)] sm:dark:shadow-[12px_12px_0px_0px_rgba(255,204,0,0.3)] animate-in slide-in-from-bottom-2 duration-200 sm:rounded-sm overflow-hidden flex flex-col max-h-[50vh] sm:max-h-[400px]">
+          {/* Fix: Removed duplicate 'className' attribute */}
+          <div className={`px-4 py-2 border-b-2 border-brandBlue dark:border-brandYellow/10 flex justify-between items-center ${activePanel === 'recent' ? 'bg-brandRed text-white' : 'bg-brandYellow text-brandBlue'}`}>
             <h4 className="text-[9px] font-black uppercase tracking-[0.2em] italic">
               {activePanel === 'recent' ? 'SESSION_BUFFER' : 'STYLE_ARCHIVES'}
             </h4>

@@ -17,29 +17,6 @@ export enum LogType {
   WARNING = 'warning'
 }
 
-export enum IssueSeverity {
-  CRITICAL = 'CRITICAL',
-  HIGH = 'HIGH',
-  MEDIUM = 'MEDIUM',
-  LOW = 'LOW',
-  INFO = 'INFO'
-}
-
-export enum ImpactType {
-  VISUAL = 'VISUAL',
-  PERFORMANCE = 'PERFORMANCE',
-  ACCESSIBILITY = 'ACCESSIBILITY',
-  MAINTAINABILITY = 'MAINTAINABILITY'
-}
-
-export enum IssueType {
-  CSS = 'CSS',
-  ACCESSIBILITY = 'Accessibility',
-  PERFORMANCE = 'Performance',
-  TYPESCRIPT = 'TypeScript',
-  REACT = 'React'
-}
-
 export enum LatticeStatus {
   IDLE = 'IDLE',
   SYNCED = 'SYNCED',
@@ -129,7 +106,8 @@ export interface VectorPreset extends BasePreset {
   parameters: {
     complexity: 'Standard' | 'Minimal' | 'Detailed';
     outline: 'None' | 'Medium-Bold' | 'Thin';
-    mood: 'Cheerful' | 'Professional' | 'Communicative';
+    // Fix: Expanded the mood union type to include 'Dramatic' and 'Serene' used in presets and UI selectors.
+    mood: 'Cheerful' | 'Professional' | 'Communicative' | 'Dramatic' | 'Serene';
     background: string;
     colorCount: number;
     strokeWeight: number;
@@ -184,8 +162,18 @@ export interface MonogramPreset extends BasePreset {
     densitySpace: number;
     traditionalModern: number;
     strokeEnds: 'Sheared' | 'Rounded' | 'Blunt' | 'Tapered';
+    style?: MonogramStyle;
   };
 }
+
+export type MonogramStyle = 
+  | 'Modern Minimal'
+  | 'Classic Heraldic'
+  | 'Interlocked'
+  | 'Geometric'
+  | 'Calligraphic'
+  | 'Brutalist'
+  | 'Futuristic';
 
 export interface FilterPreset extends BasePreset {
   type: PanelMode.FILTERS;
@@ -275,57 +263,4 @@ export interface ExtractedStyle {
     textureBased: boolean;
   };
   recommendedPresets: string[]; 
-}
-
-export interface RepairSummary {
-  totalNodes: number;
-  repairedNodes: number;
-  failedNodes: number;
-  averageRepairTime: number;
-  totalTime: number;
-  criticalFailures: number;
-  systemStabilityScore: number;
-}
-
-export interface CloudRepairSummary extends RepairSummary {
-  id: string;
-  timestamp: string;
-  type: 'RepairReport';
-  integrityAfterRepair: number;
-}
-
-export interface RefineSummary {
-  totalIssues: number;
-  resolvedIssues: number;
-  performanceGain: number;
-  visualScore: number;
-  totalTime: number;
-  mode: string;
-  uxScore: number;
-  aestheticCohesionIndex: number;
-}
-
-export interface CloudRefineSummary extends RefineSummary {
-  id: string;
-  timestamp: string;
-  type: 'RefineReport';
-  uiRefinementLevelAfterRefine: number;
-}
-
-export type CloudArchiveEntry = CloudRepairSummary | CloudRefineSummary;
-
-export interface RealIssue {
-  id: string;
-  type: IssueType;
-  severity: IssueSeverity;
-  title: string;
-  description: string;
-  file: string;
-  line?: number;
-  codeSnippet: string;
-  fix: string;
-  fixed: boolean;
-  canAutoFix: boolean;
-  timestamp: number;
-  impact: ImpactType;
 }

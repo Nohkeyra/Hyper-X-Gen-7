@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { NIcon, BoxIcon, StarIcon } from './Icons.tsx';
 
@@ -90,7 +89,7 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onBootComplete, isDarkMo
         </button>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-brandCharcoal/20 dark:bg-white/10">
+      <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-brandBlue/20 dark:bg-white/10">
         <div 
           className="h-full bg-brandRed transition-all duration-300 ease-out" 
           style={{ width: `${bootProgress}%` }} 
@@ -101,7 +100,7 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onBootComplete, isDarkMo
         {bootLog.map((log, index) => (
           <div key={index} className="flex items-center gap-2">
             <div className={`w-1.5 h-1.5 ${log.includes('MASTER') ? 'bg-brandYellow' : 'bg-brandRed'} rounded-full animate-ping`} />
-            <span className={log.includes('MASTER') ? 'text-brandYellow font-black' : ''}>{log}</span>
+            <span className={log.includes('MASTER') ? 'text-brandYellow font-black' : 'text-brandRed'}>{log}</span>
           </div>
         ))}
         {bootStatus !== "SYSTEM_READY" && (

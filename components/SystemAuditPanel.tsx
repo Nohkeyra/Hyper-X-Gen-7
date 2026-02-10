@@ -10,7 +10,7 @@ interface AuditMetric {
 }
 
 export const SystemAuditPanel: React.FC = () => {
-  const [isScanning, setIsScanning] = useState(true);
+  const [isScanningInitial, setIsScanningInitial] = useState(true); // For initial boot scan
   const [dataStream, setDataStream] = useState<string[]>([]);
   const [activeMetric, setActiveMetric] = useState<number | null>(null);
 
@@ -23,7 +23,7 @@ export const SystemAuditPanel: React.FC = () => {
   ];
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsScanning(false), 800); // Faster scan finish
+    const timer = setTimeout(() => setIsScanningInitial(false), 800); // Faster scan finish
     const interval = setInterval(() => {
       const hex = Math.random().toString(16).substr(2, 8).toUpperCase();
       const addr = `0x${Math.floor(Math.random()*0xFFFF).toString(16).toUpperCase().padStart(4, '0')}`;
@@ -42,7 +42,7 @@ export const SystemAuditPanel: React.FC = () => {
         <p className="text-[10px] opacity-40 uppercase tracking-[0.4em] text-brandCharcoalMuted dark:text-white/40">Full Forensic Reconstruction of Architecture v7.6 Omega</p>
       </header>
 
-      {isScanning ? (
+      {isScanningInitial ? (
         <div className="h-[60vh] flex flex-col items-center justify-center space-y-8">
           <div className="relative w-24 h-24">
              <div className="absolute inset-0 border-4 border-brandRed border-t-transparent rounded-full animate-spin" />
@@ -60,7 +60,7 @@ export const SystemAuditPanel: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          {/* Main Metrics */}
+          {/* Main Content Area - Static Metrics */}
           <div className="lg:col-span-7 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {metrics.map((m, i) => (

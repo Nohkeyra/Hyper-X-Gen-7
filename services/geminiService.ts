@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
-import { ExtractionResult, KernelConfig, PanelMode, RealIssue, StyleCategory } from "../types.ts";
+import { ExtractionResult, KernelConfig, PanelMode, StyleCategory } from "../types.ts";
 import { injectAntiCensor } from '../utils/antiCensor.ts';
 import { ERROR_MESSAGES, APP_CONSTANTS } from '../constants.ts';
 import { PRESET_REGISTRY } from '../presets/index.ts';
@@ -215,14 +215,14 @@ export async function extractStyleFromImage(
         ],
       },
       config: {
-        systemInstruction: "AESTHETIC_PRESET_FORENSICS: Map visual traits to design parameters. IGNORE SUBJECT MATTER.",
+        systemInstruction: "AESTHETIC_PRESET_FORENSICS: Map visual traits to design parameters. IGNORE SUBJECT MATTER. MANDATORY: The 'name' property must be a unique, all-caps descriptive label based on extracted traits (e.g. 'NEON_GLITCH_VECTOR' or 'MINIMAL_CHROME_MONO'). Do not use generic names.",
         responseMimeType: "application/json",
         responseSchema: {
            type: Type.OBJECT,
            properties: {
              domain: { type: Type.STRING },
              category: { type: Type.STRING },
-             name: { type: Type.STRING },
+             name: { type: Type.STRING, description: "Highly descriptive traits-based name in CAPS" },
              description: { type: Type.STRING },
              styleAuthenticityScore: { type: Type.NUMBER },
              palette: { type: Type.ARRAY, items: { type: Type.STRING } },
@@ -258,7 +258,8 @@ async function performSynthesis(
   prompt: string, mode: PanelMode, base64Image?: string, config: KernelConfig = DEFAULT_CONFIG,
   dna?: ExtractionResult, extraDirectives?: string
 ): Promise<string> {
-  validateModuleAccess('gemini-2.5-flash-image');
+  // Use gemini-2.5-flash-image for image generation tasks
+  validateModuleAccess('gemini-2.5-flash-image'); 
   const ai = createAIInstance();
   if (!ai) return "";
 
@@ -272,9 +273,8 @@ async function performSynthesis(
       model: 'gemini-2.5-flash-image',
       contents,
       config: { 
-        systemInstruction: `High-fidelity ${mode} design engine. DO NOT INCLUDE ANY TEXT LABELS.`,
+        systemInstruction: `High-fidelity ${mode} design engine. MANDATORY: Zero text annotations in the final result unless explicitly for Typography module. Production-ready output.`,
         temperature: config.temperature,
-        thinkingConfig: { thinkingBudget: 50 } // Added for more reliable image generation
       }
     });
     
@@ -297,47 +297,10 @@ export async function refineTextPrompt(prompt: string, mode: PanelMode, config: 
       model: 'gemini-3-flash-preview', 
       contents: `Refine for ${mode} synthesis engine: "${prompt}".`,
       config: { 
-        systemInstruction: "Prompt Architect. Optimize visual descriptors.",
+        systemInstruction: "Prompt Architect. Optimize visual descriptors. Return pure string, no quotes.",
         temperature: 0.7
       }
     });
     return response.text?.replace(/"/g, '') || prompt;
-  });
-}
-
-export async function analyzeCodeForRefinements(code: string): Promise<RealIssue[]> {
-  const ai = createAIInstance();
-  if (!ai) return [];
-  return reliableRequest(async () => {
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview', 
-      contents: `Audit code:\n${code}`,
-      config: {
-        systemInstruction: "Architect Audit. Return JSON array.",
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              id: { type: Type.STRING },
-              type: { type: Type.STRING },
-              severity: { type: Type.STRING },
-              title: { type: Type.STRING },
-              description: { type: Type.STRING },
-              file: { type: Type.STRING },
-              codeSnippet: { type: Type.STRING },
-              fix: { type: Type.STRING },
-              fixed: { type: Type.BOOLEAN },
-              canAutoFix: { type: Type.BOOLEAN },
-              timestamp: { type: Type.NUMBER },
-              impact: { type: Type.STRING },
-            },
-            required: ['id', 'type', 'severity', 'title', 'description', 'file', 'codeSnippet', 'fix', 'fixed', 'canAutoFix', 'timestamp', 'impact'],
-          },
-        },
-      }
-    });
-    return JSON.parse(response.text || "[]");
   });
 }

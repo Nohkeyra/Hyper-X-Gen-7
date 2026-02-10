@@ -99,10 +99,28 @@ export const StyleExtractionResult: React.FC<StyleExtractionResultProps> = ({
         </div>
       )}
       
-      <div className="space-y-3">
+      <div className="space-y-4">
         <p className="text-[10px] font-bold text-brandCharcoalSoft dark:text-white/80 leading-relaxed uppercase italic border-l-2 border-brandRed/30 pl-3">
           {extraction.description}
         </p>
+
+        {extraction.palette && extraction.palette.length > 0 && (
+          <div className="pt-2">
+            <p className="text-[7px] font-black text-white/30 uppercase tracking-[0.2em] mb-2">Color_DNA_Cluster:</p>
+            <div className="flex flex-wrap gap-2">
+              {extraction.palette.map((color, idx) => (
+                <div key={idx} className="flex flex-col items-center gap-1 group">
+                  <div 
+                    className="w-8 h-8 rounded-sm border border-white/10 shadow-sm transition-transform group-hover:scale-110" 
+                    style={{ backgroundColor: color }}
+                    title={color}
+                  />
+                  <span className="text-[6px] font-mono text-white/40 group-hover:text-brandYellow transition-colors">{color.toUpperCase()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         
         {extraction.metadata?.matchingPresets && extraction.metadata.matchingPresets.length > 0 && (
           <div className="pt-2 border-t border-white/5 dark:border-brandYellow/10">

@@ -1,5 +1,3 @@
-
-
 import React, { useRef, useEffect } from 'react';
 import { LogEntry } from '../types';
 import { TrashIcon } from './Icons';
@@ -25,7 +23,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logs, onClear, isOpen, onC
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-10 animate-in fade-in duration-300">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-4xl h-full max-h-[600px] bg-brandCharcoal dark:bg-black border-2 border-brandRed shadow-[20px_20px_0px_0px_rgba(204,0,1,0.3)] flex flex-col overflow-hidden rounded-sm">
+      <div className="relative w-full max-w-4xl h-full max-h-[600px] bg-brandCharcoal dark:bg-black border-2 border-brandBlue shadow-[20px_20px_0px_0px_rgba(0,50,160,0.3)] dark:shadow-[20px_20px_0px_0px_rgba(255,204,0,0.3)] flex flex-col overflow-hidden rounded-sm">
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-black/40">
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 bg-brandRed rounded-full animate-ping" />
@@ -43,11 +41,11 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logs, onClear, isOpen, onC
           ) : (
             logs.map((log) => (
               <div key={log.id} className="flex gap-4 group hover:bg-white/5 py-1 px-2 rounded-sm transition-colors border-l border-white/5">
-                <span className="text-white/20 shrink-0 select-none">[{log.timestamp}]</span>
+                <span className="text-white/30 shrink-0 select-none">[{log.timestamp}]</span>
                 <span className={`
                   ${log.type === 'error' ? 'text-brandRed font-black' : 
-                    log.type === 'warning' ? 'text-brandYellow' : 
-                    log.type === 'success' ? 'text-brandYellow' : 'text-white'}
+                    log.type === 'warning' ? 'text-brandYellow font-black' : 
+                    log.type === 'success' ? 'text-green-400 font-black' : 'text-white/80'}
                 `}>
                   {log.message}
                 </span>

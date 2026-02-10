@@ -1,4 +1,3 @@
-
 import React, { memo } from 'react';
 import { ThemeToggle } from './PanelShared';
 
@@ -23,7 +22,7 @@ export const PanelHeader: React.FC<PanelHeaderProps> = memo(({
     <header className={`fixed top-0 left-0 right-0 h-[var(--header-h)] ${isDarkMode ? 'bg-brandDeep' : 'bg-brandBlue'} flex z-[100] border-b border-white/5 shadow-2xl backdrop-blur-xl bg-opacity-95 transition-all duration-300 panel-header-with-glow select-none`}>
       <div className="w-full max-w-[1400px] mx-auto flex flex-row items-center justify-between h-full px-4 md:px-6">
         <div className="flex items-center gap-3 md:gap-6 min-w-0">
-          <button onClick={onBack} className="flex items-center gap-2 md:gap-3 cursor-pointer group shrink-0">
+          <button onClick={onBack} className="flex items-center gap-2 md:gap-3 cursor-pointer group shrink-0 active:scale-95 transition-transform duration-150">
             <div className="relative w-3 h-3 md:w-4 md:h-4">
                <div className={`absolute inset-0 ${isDarkMode ? 'bg-brandRed' : 'bg-brandYellow'} rounded-full animate-ping opacity-30`}></div>
                <div className={`relative w-3 h-3 md:w-4 md:h-4 ${isDarkMode ? 'bg-brandRed' : 'bg-brandYellow'} rounded-full shadow-[0_0_12px_rgba(255,204,0,1)] flex items-center justify-center`}>
@@ -31,7 +30,7 @@ export const PanelHeader: React.FC<PanelHeaderProps> = memo(({
                </div>
             </div>
             <div className="flex flex-col items-start leading-none min-w-0">
-              <div className="font-black text-xs md:text-sm tracking-[0.15em] md:tracking-[0.25em] text-white uppercase italic group-hover:text-brandYellow transition-colors duration-300 truncate">
+              <div className="font-black text-xs md:text-sm tracking-[0.15em] md:tracking-[0.25em] text-white uppercase italic group-hover:text-brandYellow dark:group-hover:text-brandRed transition-colors duration-300 truncate">
                 {title}
               </div>
               <span className={`text-[6px] md:text-[7px] font-black ${isDarkMode ? 'text-brandRed' : 'text-brandYellow'} tracking-[0.1em] opacity-80 uppercase mt-0.5 hidden xs:block`}>OMEGA_CORE_ACTIVE</span>
@@ -41,10 +40,10 @@ export const PanelHeader: React.FC<PanelHeaderProps> = memo(({
 
         <div className="flex items-center gap-2 md:gap-6 shrink-0">
           {/* Lattice Bridge Status */}
-          <div className="hidden sm:flex items-center gap-3 px-4 border-x border-white/10 h-8">
+          <div className="hidden sm:flex items-center gap-3 px-4 border-x border-white/10 h-8 bg-brandCharcoal/20 dark:bg-white/10 rounded-sm">
              <div className="flex flex-col items-end leading-none">
                 <span className="text-[6px] font-black text-white/30 uppercase tracking-widest">Lattice_Bridge</span>
-                <span className={`text-[8px] font-black uppercase italic ${latticeStatus === 'SYNCED' ? 'text-brandYellow' : 'text-white/40'}`}>
+                <span className={`text-[8px] font-black uppercase italic ${latticeStatus === 'SYNCED' ? 'text-brandYellow dark:text-brandRed' : 'text-white/40'}`}>
                   {latticeStatus}
                 </span>
              </div>

@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 
 interface GenerationBarProps {
@@ -72,8 +71,8 @@ export const GenerationBar: React.FC<GenerationBarProps> = ({
         <div className="flex-1 flex min-w-0 items-center bg-transparent">
           {activePresetName && (
             <div className="flex-none pl-3 md:pl-4 py-1 animate-in fade-in slide-in-from-left-2 duration-300">
-              <div className={`px-2 py-1 bg-brandRed dark:bg-black text-white dark:text-brandYellow border-brandRed/50 dark:border-brandYellow/50 text-[7px] md:text-[8px] font-black uppercase italic tracking-widest rounded-sm border flex items-center gap-1.5 whitespace-nowrap shadow-sm dark:shadow-neon-yellow-soft transition-colors duration-500`}>
-                <div className={`w-1 h-1 bg-white dark:bg-brandYellow rounded-full animate-pulse shadow-neon-yellow`} />
+              <div className={`px-2.5 py-1.5 bg-brandBlue dark:bg-black text-white dark:text-brandYellow border-brandBlue/50 dark:border-brandYellow/50 text-[8px] md:text-[9px] font-black uppercase italic tracking-widest rounded-sm border flex items-center gap-1.5 whitespace-nowrap shadow-sm dark:shadow-neon-yellow-soft transition-colors duration-500`}>
+                <div className={`w-1.5 h-1.5 bg-white dark:bg-brandYellow rounded-full animate-pulse shadow-neon-yellow`} />
                 <span className="opacity-70">DNA:</span> {activePresetName}
               </div>
             </div>
@@ -89,7 +88,7 @@ export const GenerationBar: React.FC<GenerationBarProps> = ({
                 onKeyDown={handleKeyPress}
                 placeholder={placeholder}
                 disabled={isProcessing}
-                className={`w-full px-3 py-3 md:px-5 md:py-4 bg-transparent text-brandCharcoal dark:text-white font-mono text-xs md:text-sm focus:outline-none placeholder-brandCharcoalMuted/40 dark:placeholder-white/30 min-w-0 caret-brandRed dark:caret-brandYellow`}
+                className={`w-full px-3 py-3 md:px-5 md:py-4 bg-brandCharcoal/10 dark:bg-black/20 border border-brandBlue/30 dark:border-brandYellow/30 text-brandYellow dark:text-brandYellow font-mono text-xs md:text-sm focus:outline-none placeholder-brandCharcoalMuted/40 dark:placeholder-white/30 min-w-0 caret-brandRed dark:caret-brandYellow`}
               />
             )}
             
@@ -105,7 +104,7 @@ export const GenerationBar: React.FC<GenerationBarProps> = ({
           className={`flex-none px-6 py-3 md:px-10 md:py-4 font-black uppercase text-[10px] md:text-[11px] italic tracking-[0.15em] md:tracking-[0.25em] transition-all flex items-center justify-center border-l border-brandCharcoal/10 dark:border-brandYellow/20
             ${isProcessing 
               ? 'bg-black text-brandYellow animate-pulse cursor-wait' 
-              : 'bg-brandRed dark:bg-brandYellow text-white dark:text-black hover:bg-brandYellow dark:hover:bg-black hover:text-brandBlue dark:hover:text-brandYellow active:translate-x-0.5 active:translate-y-0.5 dark:shadow-neon-yellow-soft'
+              : 'bg-brandBlue dark:bg-brandYellow text-white dark:text-black hover:bg-brandYellow dark:hover:bg-black hover:text-black dark:hover:text-brandYellow active:translate-x-0.5 active:translate-y-0.5 dark:shadow-neon-yellow-soft'
             }
           `}
         >

@@ -1,16 +1,17 @@
+
+
 /**
  * HYPERXGEN VAULT_DB v1.0
  * IndexedDB implementation for massive design buffer persistence (Update 5).
  */
 
-import { Preset, CloudArchiveEntry, KernelConfig, LogEntry, ExtractionResult } from '../types.ts';
+import { Preset, KernelConfig, LogEntry, ExtractionResult } from '../types.ts';
 
 const DB_NAME = 'HYPERXGEN_VAULT';
 const DB_VERSION = 2; // Upped version to introduce new stores
 const STORES = {
   PRESETS: 'presets',
   RECENT: 'recent',
-  ARCHIVES: 'archives',
   CONFIG: 'config',
   LOGS: 'logs',
   GLOBAL_DNA: 'global_dna'
@@ -31,13 +32,17 @@ class VaultDB {
         const db = (event.target as IDBOpenDBRequest).result;
         Object.values(STORES).forEach(storeName => {
           if (!db.objectStoreNames.contains(storeName)) {
-            if ([STORES.PRESETS, STORES.RECENT, STORES.ARCHIVES].includes(storeName)) {
+            if ([STORES.PRESETS, STORES.RECENT].includes(storeName)) { // Removed ARCHIVES
               db.createObjectStore(storeName, { keyPath: 'id' });
             } else {
               db.createObjectStore(storeName);
             }
           }
         });
+        // Delete old stores if they exist and are no longer needed (for downgrade/cleanup)
+        if (db.objectStoreNames.contains('archives')) {
+          db.deleteObjectStore('archives');
+        }
       };
 
       request.onsuccess = (event) => {

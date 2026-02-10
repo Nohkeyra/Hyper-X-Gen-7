@@ -1,7 +1,7 @@
 
-// FINAL – LOCKED - REFINED V7.2
+// FINAL – LOCKED - REFINED V7.2.5
 import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react';
-import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, MonogramPreset, Preset, LatticeBuffer } from '../types.ts';
+import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, MonogramPreset, Preset, LatticeBuffer, MonogramStyle } from '../types.ts';
 import { getMobileCategories } from '../presets/index.ts';
 import { synthesizeMonogramStyle, refineTextPrompt } from '../services/geminiService.ts';
 import { useDevourer } from '../hooks/useDevourer.ts';
@@ -41,6 +41,9 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
   const [activePresetId, setActivePresetId] = useState<string | null>(initialData?.id || null);
   const [activePreset, setActivePreset] = useState<PresetItem | null>(initialData || null);
   
+  // FIX: Added missing isRefining state
+  const [isRefining, setIsRefining] = useState(false);
+  
   const [structureCreativity, setStructureCreativity] = useState(50);
   const [densitySpace, setDensitySpace] = useState(50);
   const [traditionalModern, setTraditionalModern] = useState(50);
@@ -48,8 +51,13 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
   const [symmetryType, setSymmetryType] = useState('Perfect Radial');
   const [containmentType, setContainmentType] = useState('Suggested');
   const [strokeEnds, setStrokeEnds] = useState('Rounded');
+  const [style, setStyle] = useState<MonogramStyle>('Modern Minimal');
 
   const processingRef = useRef(false);
+
+  // History for Undo/Redo
+  const [history, setHistory] = useState<string[]>(initialData?.imageUrl ? [initialData.imageUrl] : []);
+  const [historyIndex, setHistoryIndex] = useState(initialData?.imageUrl ? 0 : -1);
 
   useEffect(() => {
     onStateUpdate?.({
@@ -64,10 +72,11 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
         traditionalModern,
         symmetryType,
         containmentType,
-        strokeEnds
+        strokeEnds,
+        style
       }
     });
-  }, [onStateUpdate, prompt, dna, uploadedImage, generatedOutput, structureCreativity, densitySpace, traditionalModern, symmetryType, containmentType, strokeEnds]);
+  }, [onStateUpdate, prompt, dna, uploadedImage, generatedOutput, structureCreativity, densitySpace, traditionalModern, symmetryType, containmentType, strokeEnds, style]);
 
   const handleSelectPreset = useCallback((id: string) => {
     if (isProcessing) return;
@@ -94,6 +103,7 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
       if (params.symmetry) setSymmetryType(params.symmetry);
       if (params.container) setContainmentType(params.container);
       if (params.strokeEnds) setStrokeEnds(params.strokeEnds);
+      if (params.style) setStyle(params.style);
     }
 
     if (item.dna) {
@@ -110,7 +120,7 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
     const userInitials = prompt.trim() || "HXG";
     const styleDir = activePreset?.styleDirective || "";
     
-    const finalPrompt = `Initials "${userInitials}". Monogram logo design. Style: ${activePreset?.prompt || "Corporate"}. Directives: ${styleDir}`;
+    const finalPrompt = `Initials "${userInitials}". Monogram logo design. Design Style: ${style}. ${activePreset?.prompt || ""}`;
     
     processingRef.current = true;
     transition(dna || globalDna ? "DNA_STYLIZE_ACTIVE" : "DEVOURING_BUFFER", true);
@@ -124,13 +134,22 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
       `5. DENSITY_RATIO: ${densitySpace}%`,
       `6. AESTHETIC_BIAS: ${traditionalModern}%`,
       `7. GEOMETRY_END: ${strokeEnds.toUpperCase()}`,
-      `8. COMPOSITION_RULE: Do not generate any words or sentences. ONLY render the visual symbol formed by "${userInitials}".`,
+      `8. DESIGN_STYLE: ${style.toUpperCase()}`,
+      `9. COMPOSITION_RULE: Do not generate any words or sentences. ONLY render the visual symbol formed by "${userInitials}".`,
       activePreset?.styleDirective || ""
     ].join('\n');
 
     try {
       const result = await synthesizeMonogramStyle(finalPrompt, uploadedImage || undefined, kernelConfig, dna || globalDna || undefined, extraParams);
       setGeneratedOutput(result);
+      
+      // Update History
+      setHistory(prev => {
+        const nextHistory = prev.slice(0, historyIndex + 1);
+        return [...nextHistory, result];
+      });
+      setHistoryIndex(prev => prev + 1);
+
       onSaveToHistory({ 
         id: `mono-${Date.now()}`, 
         name: userInitials, 
@@ -138,11 +157,11 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
         prompt: userInitials, 
         dna: dna || globalDna, 
         imageUrl: result,
-        parameters: { structureCreativity, densitySpace, traditionalModern, symmetryType, containmentType, strokeEnds },
+        parameters: { structureCreativity, densitySpace, traditionalModern, symmetryType, containmentType, strokeEnds, style },
         category: 'Synthesis',
         description: 'User-generated monogram'
       } as any);
-      addLog(`MONOGRAM_CREATED: "${userInitials}" with ${activePreset?.name || 'custom'} style`, 'success');
+      addLog(`MONOGRAM_CREATED: "${userInitials}" with ${style} style`, 'success');
     } catch (e: any) { 
       transition("LATTICE_FAIL"); 
       addLog(`MONOGRAM_ERROR: ${e.message}`, 'error'); 
@@ -150,18 +169,53 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
       processingRef.current = false; 
       transition("LATTICE_ACTIVE"); 
     }
-  }, [prompt, activePreset, dna, globalDna, kernelConfig, uploadedImage, structureCreativity, densitySpace, traditionalModern, symmetryType, containmentType, strokeEnds, transition, onSaveToHistory, addLog]);
+  }, [prompt, activePreset, dna, globalDna, kernelConfig, uploadedImage, structureCreativity, densitySpace, traditionalModern, symmetryType, containmentType, strokeEnds, style, transition, onSaveToHistory, addLog, historyIndex]);
+
+  const handleUndo = useCallback(() => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      setGeneratedOutput(history[newIndex] || null);
+      addLog("MONO_UNDO: Reverting state", "info");
+    }
+  }, [historyIndex, history, addLog]);
+
+  const handleRedo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      setGeneratedOutput(history[newIndex] || null);
+      addLog("MONO_REDO: Advancing state", "info");
+    }
+  }, [historyIndex, history, addLog]);
 
   const handleFileUpload = useCallback((f: File) => {
     const r = new FileReader(); 
     r.onload = e => {
-      setUploadedImage(e.target?.result as string);
+      const base64 = e.target?.result as string;
+      setUploadedImage(base64);
       setGeneratedOutput(null);
+      setHistory([base64]);
+      setHistoryIndex(0);
       transition('BUFFER_LOADED');
       addLog("MONO_SOURCE_LOADED", "info");
     }; 
     r.readAsDataURL(f); 
   }, [transition, addLog]);
+
+  const handleRefine = async () => {
+    if (!prompt.trim() || isRefining) return;
+    setIsRefining(true);
+    try {
+      const refined = await refineTextPrompt(prompt, PanelMode.MONOGRAM, kernelConfig, dna || globalDna || undefined);
+      setPrompt(refined);
+      addLog("PROMPT_REFINED", "success");
+    } catch {
+      addLog("PROMPT_REFINE_FAIL", "error");
+    } finally {
+      setIsRefining(false);
+    }
+  };
 
   return (
     <PanelLayout 
@@ -171,7 +225,25 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
           <div className="space-y-6 px-1">
              <div className="space-y-4">
                 <h4 className="text-[10px] font-black uppercase text-brandCharcoal/40 dark:text-white/40 tracking-widest italic border-b border-white/5 pb-2">User_Controls</h4>
-                <div className="space-y-4">
+                
+                <div className="space-y-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[8px] font-black uppercase text-white/40">Design_Style</label>
+                    <select 
+                      value={style} 
+                      onChange={(e) => setStyle(e.target.value as MonogramStyle)} 
+                      className="bg-brandCharcoal/40 dark:bg-black/40 border border-white/10 text-[10px] p-2 text-white outline-none focus:border-brandRed transition-colors"
+                    >
+                      <option value="Modern Minimal">Modern Minimal</option>
+                      <option value="Classic Heraldic">Classic Heraldic</option>
+                      <option value="Interlocked">Interlocked</option>
+                      <option value="Geometric">Geometric</option>
+                      <option value="Calligraphic">Calligraphic</option>
+                      <option value="Brutalist">Brutalist</option>
+                      <option value="Futuristic">Futuristic</option>
+                    </select>
+                  </div>
+
                   {[
                     { label: 'Structure Creativity', val: structureCreativity, set: setStructureCreativity },
                     { label: 'Density Space', val: densitySpace, set: setDensitySpace },
@@ -200,6 +272,12 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
                       <option>Strict</option><option>Suggested</option><option>Weak</option><option>None</option>
                     </select>
                   </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[8px] font-black uppercase text-white/40">Stroke_Ends</label>
+                    <select value={strokeEnds} onChange={(e) => setStrokeEnds(e.target.value)} className="bg-brandCharcoal/40 dark:bg-black/40 border border-white/10 text-[10px] p-2 text-white outline-none">
+                      <option>Rounded</option><option>Blunt</option><option>Sheared</option><option>Tapered</option>
+                    </select>
+                  </div>
                 </div>
              </div>
 
@@ -223,8 +301,12 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
           generatedOutput={generatedOutput} 
           isProcessing={isProcessing} 
           hudContent={<DevourerHUD devourerStatus={status} />} 
-          onClear={() => { setGeneratedOutput(null); setUploadedImage(null); setDna(null); transition('STARVING'); }} 
-          onFileUpload={handleFileUpload} 
+          onClear={() => { setGeneratedOutput(null); setUploadedImage(null); setDna(null); setHistory([]); setHistoryIndex(-1); transition('STARVING'); }} 
+          onFileUpload={handleFileUpload}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          canUndo={historyIndex > 0}
+          canRedo={historyIndex < history.length - 1}
           bridgeSource={initialData?.category === 'LATTICE_BRIDGE' ? latticeBuffer?.sourceMode : null}
         />
       }
@@ -236,6 +318,16 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
             activePresetName={activePreset?.name || dna?.name || globalDna?.name} placeholder="Enter initials (e.g. HXG)..." 
             bridgedThumbnail={initialData?.category === 'LATTICE_BRIDGE' ? initialData.imageUrl : null}
             onClearBridge={() => { if (onClearLattice) onClearLattice(); setUploadedImage(null); }}
+            refineButton={
+              <button
+                onClick={handleRefine}
+                disabled={isProcessing || isRefining}
+                className={`p-3 bg-black/40 border border-white/10 text-brandYellow rounded-sm ${isRefining ? 'animate-pulse' : ''}`}
+                title="Refine Prompt"
+              >
+                <SparkleIcon className="w-4 h-4" />
+              </button>
+            }
           />
         </div>
       }

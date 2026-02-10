@@ -29,6 +29,7 @@ export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
 }) => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(initialData?.imageUrl || null);
   const [extractedDna, setExtractedDna] = useState<ExtractionResult | null>(initialData?.dna || null);
+  const [customName, setCustomName] = useState<string>(initialData?.dna?.name || '');
   const [classification, setClassification] = useState<any>(null);
   const [reconStatusOverride, setReconStatusOverride] = useState<string | null>(null);
   const [showSaveOptions, setShowSaveOptions] = useState(false);
@@ -39,13 +40,13 @@ export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
   useEffect(() => {
     onStateUpdate?.({
       type: PanelMode.EXTRACTOR,
-      name: extractedDna?.name || 'Style Extraction',
+      name: customName || extractedDna?.name || 'Style Extraction',
       uploadedImage,
       generatedOutput: uploadedImage,
       dna: extractedDna,
       settings: {}
     });
-  }, [onStateUpdate, uploadedImage, extractedDna]);
+  }, [onStateUpdate, uploadedImage, extractedDna, customName]);
 
   const dnaVault = useMemo(() => savedPresets.filter(p => p && p.dna), [savedPresets]);
 
@@ -63,6 +64,7 @@ export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
       );
       
       setExtractedDna(result.extraction);
+      setCustomName(result.extraction.name || '');
       setClassification({
         category: result.category,
         confidence: result.confidence,
@@ -87,9 +89,14 @@ export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
   const handleSavePreset = async () => {
     if (!extractedDna) return;
     
+    // Generate a unique ID with a small hex component
+    const hex = Math.random().toString(16).substring(2, 6).toUpperCase();
+    const uniqueId = `user-${Date.now()}-${hex}`;
+    
     const preset: any = {
-      id: `user-${Date.now()}`,
-      name: `Preset_${new Date().toLocaleDateString().replace(/\//g, '_')}`,
+      id: uniqueId,
+      // Use the edited custom name, the descriptive name from DNA or fall back to a short-hash name
+      name: customName.trim() || extractedDna.name || `STYLE_DNA_${hex}`,
       type: selectedPanel,
       category: 'USER_VAULT',
       description: extractedDna.description,
@@ -110,7 +117,7 @@ export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
     
     onSaveToPresets(preset);
     setShowSaveOptions(false);
-    addLog(`STYLE_COMMITTED: DNA stored in ${selectedPanel.toUpperCase()} vault`, "success");
+    addLog(`STYLE_COMMITTED: ${preset.name} stored in vault`, "success");
   };
 
   const handleJumpToSynthesis = (mode: PanelMode) => {
@@ -120,7 +127,7 @@ export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
       dna: extractedDna, 
       imageUrl: uploadedImage,
       prompt: '',
-      name: extractedDna.name,
+      name: customName || extractedDna.name,
       type: mode,
       category: 'BRIDGE',
       description: 'Extracted style bridge'
@@ -146,7 +153,7 @@ export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
           <CanvasStage
             uploadedImage={uploadedImage} generatedOutput={null} isProcessing={isProcessing}
             hudContent={<ReconHUD reconStatus={reconStatusOverride || status} authenticityScore={extractedDna?.styleAuthenticityScore} />}
-            onClear={() => { setUploadedImage(null); setExtractedDna(null); setClassification(null); setShowSaveOptions(false); transition('STARVING'); }}
+            onClear={() => { setUploadedImage(null); setExtractedDna(null); setClassification(null); setShowSaveOptions(false); setCustomName(''); transition('STARVING'); }}
             onFileUpload={(f) => { const r = new FileReader(); r.onload = e => setUploadedImage(e.target?.result as string); r.readAsDataURL(f); transition('BUFFER_LOADED'); }}
           />
           
@@ -162,22 +169,40 @@ export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
           )}
 
           {showSaveOptions && (
-            <div className="bg-brandCharcoal dark:bg-zinc-900 border-2 border-brandYellow p-6 rounded-sm shadow-neon-yellow flex flex-col sm:flex-row items-center justify-between gap-4 animate-in zoom-in duration-300">
+            <div className="bg-brandCharcoal dark:bg-zinc-900 border-2 border-brandYellow p-6 rounded-sm shadow-neon-yellow flex flex-col gap-6 animate-in zoom-in duration-300">
               <div className="flex items-center gap-3">
                 <span className="text-[14px] animate-bounce">💾</span>
                 <p className="text-[10px] font-black text-brandYellow uppercase tracking-widest">Commit Style DNA to Vault?</p>
               </div>
-              <div className="flex items-center gap-3 w-full sm:w-auto">
-                <select 
-                  onChange={(e) => setSelectedPanel(e.target.value as PanelMode)}
-                  className="bg-black/40 border border-brandYellow/30 text-white text-[10px] font-black p-2 outline-none flex-1 sm:flex-none uppercase"
-                >
-                  <option value={PanelMode.VECTOR}>Vector Art Engine</option>
-                  <option value={PanelMode.TYPOGRAPHY}>Typography Engine</option>
-                  <option value={PanelMode.MONOGRAM}>Monogram Engine</option>
-                </select>
-                <button onClick={handleSavePreset} className="px-6 py-2 bg-brandYellow text-black text-[10px] font-black uppercase hover:brightness-110">Save</button>
-                <button onClick={() => setShowSaveOptions(false)} className="px-6 py-2 bg-white/10 text-white text-[10px] font-black uppercase hover:bg-white/20">Cancel</button>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <label className="text-[8px] font-black text-brandYellow/60 uppercase tracking-widest">Aesthetic_Identity_Name</label>
+                  <input 
+                    type="text" 
+                    value={customName}
+                    onChange={(e) => setCustomName(e.target.value)}
+                    placeholder="Enter style name..."
+                    className="bg-black/40 border border-brandYellow/30 text-brandYellow text-[10px] font-black p-3 outline-none uppercase placeholder:text-brandYellow/20"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[8px] font-black text-brandYellow/60 uppercase tracking-widest">Target_Synthesis_Engine</label>
+                  <select 
+                    value={selectedPanel}
+                    onChange={(e) => setSelectedPanel(e.target.value as PanelMode)}
+                    className="bg-black/40 border border-brandYellow/30 text-white text-[10px] font-black p-3 outline-none uppercase"
+                  >
+                    <option value={PanelMode.VECTOR}>Vector Art Engine</option>
+                    <option value={PanelMode.TYPOGRAPHY}>Typography Engine</option>
+                    <option value={PanelMode.MONOGRAM}>Monogram Engine</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 mt-2 border-t border-brandYellow/10 pt-4">
+                <button onClick={() => setShowSaveOptions(false)} className="px-6 py-2 bg-white/10 text-white text-[10px] font-black uppercase hover:bg-white/20 transition-colors">Cancel</button>
+                <button onClick={handleSavePreset} className="px-8 py-2 bg-brandYellow text-black text-[10px] font-black uppercase hover:brightness-110 transition-all shadow-neon-yellow-soft">Commit_To_Vault</button>
               </div>
             </div>
           )}

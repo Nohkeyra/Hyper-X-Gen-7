@@ -1,4 +1,5 @@
 
+
 /**
  * HYPERXGEN_COMPONENT_BARREL v7.1
  * Unified entry point for all architectural UI modules.

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { PanelMode, PresetCategory, PresetItem, Preset } from '../types.ts';
 
@@ -39,31 +38,33 @@ export const PresetCarousel: React.FC<PresetCarouselProps> = ({ categories, acti
               {category.items.map((item) => {
                 const isActive = activeId === item.id;
                 const iconChar = getIconChar(item);
-                const iconColorClass = getIconColor(item);
+                // Directly define classes for active vs inactive for more control
+                const activeIconBg = 'bg-white text-brandBlue dark:bg-brandYellow dark:text-black';
+                const inactiveIconBg = getIconColor(item);
+                
+                const activeCardBg = 'bg-brandBlue border-brandYellow text-brandYellow shadow-[4px_4px_0px_0px_rgba(0,50,160,0.2)] dark:bg-black dark:border-brandYellow dark:text-brandYellow dark:shadow-neon-yellow';
+                const inactiveCardBg = 'bg-brandDeep text-brandCharcoal dark:bg-brandDeep dark:text-white/60 border-brandYellow/10 dark:border-brandYellow/10 hover:border-brandBlue/30 dark:hover:border-white/30';
 
                 return (
                   <button 
                     key={item.id} 
                     onClick={() => onSelect(item.id)} 
                     className={`flex-none w-48 p-3 flex flex-col transition-all duration-300 rounded-sm text-left relative overflow-hidden group border-2
-                      ${isActive 
-                        ? 'bg-brandRed border-brandRed text-white shadow-[4px_4px_0px_0px_rgba(204,0,1,0.2)] dark:bg-black dark:border-brandYellow dark:text-brandYellow dark:shadow-neon-yellow' 
-                        : 'bg-brandYellow text-brandBlue dark:bg-brandYellow border-brandBlue/10 dark:border-brandYellow dark:text-black hover:border-brandRed/30'
-                      }`}
+                      ${isActive ? activeCardBg : inactiveCardBg}`}
                   >
                     <div className="flex items-center gap-2">
                       <div className={`w-7 h-7 shrink-0 flex items-center justify-center font-black text-[9px] rounded-sm transition-all duration-300
-                        ${isActive ? 'bg-white text-brandRed dark:bg-brandYellow dark:text-black' : iconColorClass}
+                        ${isActive ? activeIconBg : inactiveIconBg}
                       `}>
                         {iconChar}
                       </div>
                       <div className="min-w-0 flex-1">
                         <h4 className={`text-[9px] font-black uppercase truncate tracking-widest leading-none
-                          ${isActive ? 'text-white dark:text-brandYellow' : 'text-brandCharcoal dark:text-black'}
+                          ${isActive ? 'text-brandYellow dark:text-brandYellow' : 'text-brandCharcoal dark:text-white'}
                         `}>
                           {item.name}
                         </h4>
-                        <div className={`h-[1px] transition-all duration-500 mt-1 ${isActive ? 'bg-white/30 w-full dark:bg-brandYellow/40' : 'bg-brandRed/10 w-3 dark:bg-black/20'}`} />
+                        <div className={`h-[1px] transition-all duration-500 mt-1 ${isActive ? 'bg-brandYellow/30 w-full dark:bg-brandYellow/40' : 'bg-brandBlue/10 w-3 dark:bg-white/20'}`} />
                       </div>
                     </div>
                   </button>

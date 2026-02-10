@@ -1,6 +1,6 @@
 
 import React, { useRef, useCallback } from 'react';
-import { DownloadIcon, TrashIcon, BoxIcon, StarIcon } from './Icons.tsx';
+import { DownloadIcon, TrashIcon, BoxIcon, StarIcon, UndoIcon, RedoIcon } from './Icons.tsx';
 
 interface CanvasStageProps {
   uploadedImage: string | null;
@@ -13,6 +13,10 @@ interface CanvasStageProps {
   onClear: () => void;
   onGenerate?: () => void;
   onFileUpload: (file: File) => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
   downloadFilename?: string;
   bridgeSource?: string | null; // Module name where the asset came from
 }
@@ -27,6 +31,10 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
   onClear,
   onGenerate,
   onFileUpload,
+  onUndo,
+  onRedo,
+  canUndo = true,
+  canRedo = true,
   downloadFilename = "hyperxgen_output.png",
   bridgeSource
 }) => {
@@ -150,9 +158,9 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
                 <BoxIcon className="w-8 h-8 md:w-10 md:h-10 text-brandRed opacity-20" />
               </div>
               <div className="space-y-1">
-                <span className="text-4xl xs:text-5xl lg:text-7xl font-black italic tracking-tighter uppercase text-brandCharcoal/5 dark:text-white/5 select-none block">VOID</span>
+                <span className="text-5xl lg:text-8xl font-black italic tracking-tighter uppercase text-brandCharcoal/10 dark:text-white/10 select-none block">VOID</span>
                 <p className="text-[8px] md:text-[9px] font-black text-brandRed/20 uppercase tracking-[0.4em] bg-black/20 px-3 py-1 rounded-full border border-brandRed/5">
-                  Upload_Source_Image
+                  Awaiting_Buffer_Injection
                 </p>
               </div>
             </div>
@@ -165,7 +173,7 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
             <button 
               onClick={(e) => { e.stopPropagation(); onClear(); }} 
               disabled={isProcessing}
-              className="p-2 md:p-3 bg-brandCharcoal/90 text-brandRed border border-brandRed/20 hover:bg-brandRed hover:text-white transition-all shadow-xl rounded-sm disabled:opacity-0 backdrop-blur-sm"
+              className="p-3.5 md:p-4 bg-brandCharcoal/80 dark:bg-black/80 text-brandRed border border-brandRed/20 hover:bg-brandRed hover:text-white transition-all shadow-xl rounded-sm disabled:opacity-0 backdrop-blur-sm"
               title="Purge Buffer"
             >
               <TrashIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
@@ -175,11 +183,32 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
             <button 
               onClick={(e) => { e.stopPropagation(); handleDownload(); }} 
               disabled={isProcessing}
-              className="p-2 md:p-3 bg-brandCharcoal/90 text-brandYellow border border-brandYellow/20 hover:bg-brandYellow hover:text-brandBlue transition-all shadow-xl rounded-sm disabled:opacity-0 backdrop-blur-sm"
+              className="p-3.5 md:p-4 bg-brandCharcoal/80 dark:bg-black/80 text-brandYellow border border-brandYellow/20 hover:bg-brandYellow hover:text-brandBlue transition-all shadow-xl rounded-sm disabled:opacity-0 backdrop-blur-sm"
               title="Export Artifact"
             >
               <DownloadIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
             </button>
+          )}
+          
+          {(generatedOutput || uploadedImage) && (
+            <>
+              <button 
+                onClick={(e) => { e.stopPropagation(); onUndo?.(); }} 
+                disabled={isProcessing || !canUndo}
+                className="p-3.5 md:p-4 bg-brandCharcoal/80 dark:bg-black/80 text-white border border-white/20 hover:bg-white hover:text-brandBlue transition-all shadow-xl rounded-sm disabled:opacity-30 backdrop-blur-sm"
+                title="Undo Transformation"
+              >
+                <UndoIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); onRedo?.(); }} 
+                disabled={isProcessing || !canRedo}
+                className="p-3.5 md:p-4 bg-brandCharcoal/80 dark:bg-black/80 text-white border border-white/20 hover:bg-white hover:text-brandBlue transition-all shadow-xl rounded-sm disabled:opacity-30 backdrop-blur-sm"
+                title="Redo Transformation"
+              >
+                <RedoIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              </button>
+            </>
           )}
         </div>
 

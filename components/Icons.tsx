@@ -1,3 +1,4 @@
+
 import React, { memo } from 'react';
 
 export const TrashIcon = memo((props: React.SVGProps<SVGSVGElement>) => ( <svg {...props} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 01 2-2h4a2 2 0 01 2 2v2"/></svg>));
@@ -92,6 +93,20 @@ export const SunIcon = memo((props: React.SVGProps<SVGSVGElement>) => (
 export const MoonIcon = memo((props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
     <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+  </svg>
+));
+
+export const UndoIcon = memo((props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+    <path d="M9 14L4 9l5-5" />
+    <path d="M4 9h10.5a5.5 5.5 0 010 11H11" />
+  </svg>
+));
+
+export const RedoIcon = memo((props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+    <path d="M15 14l5-5-5-5" />
+    <path d="M20 9H9.5a5.5 5.5 0 000 11H13" />
   </svg>
 ));
 

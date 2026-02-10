@@ -3,7 +3,6 @@ import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { 
   PanelMode, 
   KernelConfig, 
-  CloudArchiveEntry, 
   LogEntry, 
   ExtractionResult, 
   LogType,
@@ -23,6 +22,7 @@ import { PanelHeader } from './components/PanelHeader.tsx';
 import { AppControlsBar } from './components/AppControlsBar.tsx';
 import { LogViewer } from './components/LogViewer.tsx';
 import { LoadingSpinner } from './components/Loading.tsx';
+import { DeviceBadge } from './components/DeviceDetector.tsx';
 import { LS_KEYS } from './constants.ts';
 import { vaultDb } from './services/dbService.ts';
 
@@ -58,7 +58,6 @@ export const App: React.FC = () => {
 
   const [recentWorks, setRecentWorks] = useState<Preset[]>([]);
   const [savedPresets, setSavedPresets] = useState<Preset[]>([]);
-  const [cloudArchives, setCloudArchives] = useState<CloudArchiveEntry[]>([]);
   const [globalDna, setGlobalDna] = useState<ExtractionResult | null>(null);
 
   const addLog = useCallback((message: string, type: 'info' | 'error' | 'success' | 'warning' = 'info') => {
@@ -119,7 +118,6 @@ export const App: React.FC = () => {
 
           setSavedPresets(await vaultDb.getAll<Preset>('presets'));
           setRecentWorks(await vaultDb.getAll<Preset>('recent'));
-          setCloudArchives(await vaultDb.getAll<CloudArchiveEntry>('archives'));
           
           const storedConfig = await vaultDb.getItem<KernelConfig>('config', 'kernel');
           if (storedConfig) setKernelConfig(prev => ({...prev, ...storedConfig}));
@@ -145,12 +143,11 @@ export const App: React.FC = () => {
     if (hasInitialized) {
       vaultDb.saveAll('presets', savedPresets);
       vaultDb.saveAll('recent', recentWorks.slice(0, 15));
-      vaultDb.saveAll('archives', cloudArchives);
       vaultDb.saveItem('config', 'kernel', kernelConfig);
       vaultDb.saveItem('logs', 'entries', logs);
       vaultDb.saveItem('global_dna', 'dna', globalDna);
     }
-  }, [savedPresets, recentWorks, cloudArchives, kernelConfig, logs, globalDna, hasInitialized]);
+  }, [savedPresets, recentWorks, kernelConfig, logs, globalDna, hasInitialized]);
 
   const handleCommitToVault = useCallback(() => {
     if (!currentPanelState || (!currentPanelState.generatedOutput && !currentPanelState.dna)) {
@@ -301,6 +298,7 @@ export const App: React.FC = () => {
         enabledModes={enabledModes}
       />
       <LogViewer logs={logs} onClear={() => setLogs([])} isOpen={showLogViewer} onClose={() => setShowLogViewer(false)} />
+      <DeviceBadge />
     </div>
   );
 };
