@@ -19,6 +19,10 @@ This guide provides instructions to compile the HYPERXGEN web application into a
 
 ### Step 1: Environment Setup (One-Time)
 
+> **IMPORTANT:** This build package relies on you having Java (JDK 17) and the Android SDK installed on your system. **These tools are not included in this package** due to their large size and platform-specific nature. The included `jdk/` and `sdk/` folders are placeholders for structure only.
+> 
+> You must point your `JAVA_HOME` and `ANDROID_HOME` environment variables to your *actual* installation directories, not the empty placeholder folders in this project. The setup scripts provided below will help you verify your local installation.
+
 Before you can build the APK, you must install the required development tools on your system. We have provided scripts to verify your installation.
 
 **1. Install Dependencies:**
