@@ -1,3 +1,4 @@
+
 import React, { memo } from 'react';
 import { ThemeToggle } from './PanelShared';
 
@@ -40,7 +41,7 @@ export const PanelHeader: React.FC<PanelHeaderProps> = memo(({
 
         <div className="flex items-center gap-2 md:gap-6 shrink-0">
           {/* Lattice Bridge Status */}
-          <div className="hidden sm:flex items-center gap-3 px-4 border-x border-white/10 h-8 bg-brandCharcoal/20 dark:bg-white/10 rounded-sm">
+          <div className="flex items-center gap-3 px-4 border-x border-white/10 h-8 bg-brandCharcoal/20 dark:bg-white/10 rounded-sm">
              <div className="flex flex-col items-end leading-none">
                 <span className="text-[6px] font-black text-white/30 uppercase tracking-widest">Lattice_Bridge</span>
                 <span className={`text-[8px] font-black uppercase italic ${latticeStatus === 'SYNCED' ? 'text-brandYellow dark:text-brandRed' : 'text-white/40'}`}>
