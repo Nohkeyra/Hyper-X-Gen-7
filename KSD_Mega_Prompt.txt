@@ -1,4 +1,3 @@
-
 HYPERXGEN Engine Protocol v7.1
 Deterministic Synthesis and Artistic Style DNA Specification
 
@@ -71,38 +70,75 @@ Rules:
 
 ---
 
-3.2 DIRECTIVE: TYPOGRAPHY_ART_SYNTAX_V2
-Word-As-Art Protocol
+3.2 DIRECTIVE: TYPOGRAPHY_ART_SYNTAX_V3
+Preset-Driven Word-As-Art Protocol
 
 Rules:
-- THE TEXT IS THE ARTWORK. Letters must be synthesized as the primary subject.
-- FORBIDDEN: Placing text on objects (signs, shirts, environmental backgrounds).
-- COMPOSITION: Word must form a cohesive visual shape. Balanced composition.
-- SPACING: Optical spacing over mathematical. Allow artistic overlap.
-- READABILITY: Word must be recognizable as intended text. Distortion allowed only if style-appropriate.
-- STYLE FIDELITY: Presets determine style authentically (Grunge = distressed, Neon = glowing tubes, etc).
-- BACKGROUND: Solid color only. No environmental scenes. No decorative frames.
-- FORM: Allow organic curves and variable stroke weights. Prevent forced geometric rigidity unless "Geometric" style is active.
+1. CORE PRINCIPLE: THE TEXT IS THE ARTWORK. All synthesis operations must treat the user-provided text as the singular artistic subject.
+2. PRESET-DRIVEN LAYOUT INTELLIGENCE: Each preset's DNA contains an intrinsic layout strategy (e.g., Arched, Stacked, Linear). The engine autonomously selects and executes the optimal layout based on the chosen preset and input text length. User layout controls are forbidden.
+3. HOLISTIC COMPOSITION AWARENESS: The entire canvas is treated as a single compositional unit. Text is optically balanced, spaced, and positioned according to the preset's internal rules for visual weight and negative space. Synthesis is deterministic; user intervention is forbidden.
+4. ABSOLUTE STYLE FIDELITY: Each preset constitutes a unique and identifiable visual system. Style is not a skin; it is the core logic. Grunge is distressed and raw. Art Deco is geometric and ornamental. Cyberpunk is glitchy and neon-drenched. Heraldic Crest is symmetrical, bordered, and arched. Presets must be instantly recognizable and distinct.
+5. INTRINSIC LETTERFORM STYLIZATION: Specific presets may possess baked-in logic for letterform modification (e.g., swashes, terminals, ligatures, decorative cuts). These modifications are an integral part of the preset's DNA and are not user-configurable.
+6. STRICT BACKGROUND PROTOCOL: The background is a solid, flat color field ONLY. No scenes, no objects, no photographic environments, no decorative frames.
+7. READABILITY MANDATE: The final synthesized word must remain recognizable as the intended text. Stylistic distortion is permitted only to the extent that it serves the preset's aesthetic without sacrificing core legibility.
 
 ---
 
-3.3 DIRECTIVE: REFINED_MONOGRAM_V7
-Monogram Synthesis Lock
+3.3 DIRECTIVE: REFINED_MONOGRAM_V8
+Preset-Driven Identity Mark Protocol
+
+CORE PHILOSOPHY: A monogram is not typography. It is a single, unified symbol constructed from two or more initials. The letters lose their individual identity to form a new whole. Synthesis must create a finished identity mark, not stylized lettering.
 
 Rules:
-- Initials must remain discernible (3-second rule).
-- Default to symmetrical balance, allow humanized organic weights.
-- Containers (Circle, Hexagon) are guides, not prisons.
-- Recognizable elegance.
-- STRICT FORBIDDEN: Do not write the words "MONOGRAM", "SYNTHESIS", "REFINED", or "PROTOCOL" in the image. 
-- Alphanumeric constraint: ONLY the specified initials are permitted as text elements. No annotations or labels.
+1. FUSION MANDATE: Letters MUST be structurally connected. They must interlock, superimpose (overlap), or share common strokes. Simple side-by-side arrangement of letters is strictly forbidden.
+2. NO EXTRANEOUS TEXT: The engine is forbidden from generating ANY words, labels, or annotations. ONLY the user-provided initials may appear, fused into the final mark.
+3. NO ILLUSTRATIONS: The engine is forbidden from generating icons, mascots, or any pictorial elements. The fused letterforms ARE the mark.
+4. DISCERNIBILITY: The provided initials must remain recognizable within the final symbol within a 3-second analysis window, even at high levels of abstraction.
+5. PRESET-DRIVEN AESTHETICS: All visual parameters (symmetry, containment, weight, abstraction, etc.) are dictated by the selected preset's internal DNA. User controls are forbidden.
+6. CONTAINMENT PROTOCOL: The use of an explicit container (circle, shield, square) is determined by the preset's DNA. Some presets are contained; others are freeform.
+7. OUTPUT FORMAT: The final output must be a pure, scalable vector graphic suitable for professional brand identity use.
+
+---
+
+3.4 DIRECTIVE: EMBLEM_FORGE_V1
+Preset-Driven Emblem Protocol
+
+CORE PHILOSOPHY: An emblem is a unified composition combining illustration, ornamentation, and multi-line typography into a single, contained identity mark.
+
+Rules:
+1. TEXT HIERARCHY: Primary text is dominant. Subtext is secondary. Dates/established are tertiary. Layout must enforce this hierarchy.
+2. CURVED TYPOGRAPHY: Arched or curved text (top/bottom) must be legible with minimal distortion and no hallucinated characters.
+3. ILLUSTRATION INTEGRATION: The central illustrative motif MUST relate to the chosen preset's theme (e.g., lion for heraldry, razor for barbershop). Generic or unrelated clip art is forbidden.
+4. CONTAINMENT MANDATE: Every emblem MUST be enclosed within an explicit border, frame, or shield shape defined by the preset. Freeform emblems are forbidden.
+5. NO EXTRANEOUS TEXT: The engine may ONLY use text provided by the user (primary, subtext). Inventing mottoes, Latin phrases, or other text is strictly forbidden.
+6. BACKGROUND PROTOCOL: The background is a solid, flat color ONLY. No scenes, no environments, no photographic textures.
+7. COMPOSITIONAL UNITY: All elements (text, illustration, borders) must form a single, cohesive, and balanced composition.
+
+---
+
+3.5 DIRECTIVE: COMMAND_DRIVEN_VECTORIZATION_V8
+Image-to-Vector Synthesis Protocol
+
+CORE TASK: Vectorize the user-provided raster image. This is a tracing and stylization task, NOT a generative task from scratch.
+
+INPUTS:
+1.  MANDATORY: Source Raster Image.
+2.  MANDATORY: Style Preset Definition (parameters, prompt, DNA).
+3.  OPTIONAL: User Text Command (a direct modification instruction).
+
+EXECUTION PROTOCOL:
+1.  Analyze the Source Image to identify core shapes, subjects, and composition.
+2.  Apply the Style Preset's aesthetic system: color palette, stroke weight, complexity rules, mood, etc. All rules from DIRECTIVE: REFINED_VECTOR_ILLUSTRATION_V7 are inherited (Flat Illustration Lock).
+3.  If a User Text Command is present, execute it as a direct instruction during the vectorization process. Examples: "isolate the subject only", "change all red to blue", "simplify the shapes".
+4.  If no User Text Command is provided, perform a standard, high-fidelity vectorization according to the Style Preset.
+5.  Output must be a clean, production-ready vector graphic. Zero text annotations.
 
 ---
 
 4. Synthesis Conflict Resolution
 
 1. Style DNA provides context.
-2. Global Directives (v7) provide constraints.
+2. Global Directives provide constraints.
 3. If conflict arises, PRESET FIDELITY takes priority over literal DNA replication or user description.
 
 ---

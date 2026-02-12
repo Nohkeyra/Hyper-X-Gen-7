@@ -1,6 +1,7 @@
+
 import React, { useState, memo, useMemo } from 'react';
 import { PanelMode } from '../types';
-import { VectorIcon, TypographyIcon, MonogramIcon, ExtractorIcon, FilterIcon, StarIcon, BoxIcon, PulseIcon, TrashIcon } from './Icons'; 
+import { VectorIcon, TypographyIcon, MonogramIcon, ExtractorIcon, FilterIcon, StarIcon, BoxIcon, EmblemIcon, TrashIcon } from './Icons'; 
 
 interface HistoryItem {
   id: string;
@@ -82,6 +83,18 @@ export const AppControlsBar: React.FC<AppControlsBarProps> = memo(({
     setActivePanel(activePanel === panel ? null : panel);
   };
 
+  const handleClearRecent = () => {
+    if (window.confirm('Are you sure you want to purge the session buffer? This action cannot be undone.')) {
+      onClearRecentWorks();
+    }
+  };
+
+  const handleClearVault = () => {
+    if (window.confirm('Are you sure you want to purge all saved styles from the vault? This action cannot be undone.')) {
+      onClearSavedPresets();
+    }
+  };
+
   const renderHistoryItem = (item: any) => {
     const isDna = (item.type === PanelMode.EXTRACTOR || item.mode === PanelMode.EXTRACTOR) && !!item.dna;
     
@@ -98,7 +111,7 @@ export const AppControlsBar: React.FC<AppControlsBarProps> = memo(({
         case PanelMode.MONOGRAM: iconComponent = MonogramIcon; iconColorClass = 'text-brandBlue'; break;
         case PanelMode.EXTRACTOR: iconComponent = ExtractorIcon; iconColorClass = 'text-brandRed'; break;
         case PanelMode.FILTERS: iconComponent = FilterIcon; iconColorClass = 'text-brandBlue'; break;
-        case PanelMode.AUDIT: iconComponent = PulseIcon; iconColorClass = 'text-brandYellow'; break;
+        case PanelMode.EMBLEM_FORGE: iconComponent = EmblemIcon; iconColorClass = 'text-brandYellow'; break;
         default: iconComponent = BoxIcon; iconColorClass = 'text-brandCharcoalMuted dark:text-white/60'; break;
       }
     }
@@ -111,7 +124,7 @@ export const AppControlsBar: React.FC<AppControlsBarProps> = memo(({
           </div>
           <div className="history-info min-w-0 truncate">
             <span className="history-word truncate block text-[9px] font-black text-brandBlue dark:text-brandNeutral group-hover:text-brandRed transition-colors uppercase tracking-tight">{item.name}</span>
-            <span className="text-[6px] text-brandCharcoalMuted dark:text-white/10 uppercase font-black tracking-widest">{item.timestamp || 'BLUEPRINT'}</span>
+            <span className="text-[6px] text-brandCharcoalMuted dark:text-white/30 uppercase font-black tracking-widest">{item.timestamp || 'BLUEPRINT'}</span>
           </div>
         </div>
         <button onClick={(e) => { e.stopPropagation(); onLoadHistoryItem(item); }} className={`shrink-0 px-2 py-0.5 border border-brandBlue/10 dark:border-white/5 text-[7px] font-black text-brandBlue dark:text-white/40 hover:bg-brandRed hover:text-white transition-all uppercase rounded-sm`}>
@@ -125,9 +138,9 @@ export const AppControlsBar: React.FC<AppControlsBarProps> = memo(({
     { id: PanelMode.VECTOR, label: 'VECTOR', Icon: VectorIcon }, 
     { id: PanelMode.TYPOGRAPHY, label: 'TYPO', Icon: TypographyIcon }, 
     { id: PanelMode.MONOGRAM, label: 'MONO', Icon: MonogramIcon },
+    { id: PanelMode.EMBLEM_FORGE, label: 'EMBLEM', Icon: EmblemIcon },
     { id: PanelMode.EXTRACTOR, label: 'EXTRACT', Icon: ExtractorIcon }, 
-    { id: PanelMode.FILTERS, label: 'FILTERS', Icon: FilterIcon },
-    { id: PanelMode.AUDIT, label: 'AUDIT', Icon: PulseIcon }
+    { id: PanelMode.FILTERS, label: 'FILTERS', Icon: FilterIcon }
   ], []);
 
   const visibleModes = useMemo(() => {
@@ -195,31 +208,44 @@ export const AppControlsBar: React.FC<AppControlsBarProps> = memo(({
 
       {activePanel && (
         <div className="absolute bottom-[calc(100%+2px)] left-0 right-0 sm:left-auto sm:right-0 sm:w-80 bg-brandDeep dark:bg-black/60 border-t-4 sm:border-4 border-brandYellow dark:border-brandYellow shadow-[0_-10px_40px_rgba(0,0,0,0.2)] sm:shadow-[12px_12px_0px_0px_rgba(0,50,160,1)] sm:dark:shadow-[12px_12px_0px_0px_rgba(255,204,0,0.3)] animate-in slide-in-from-bottom-2 duration-200 sm:rounded-sm overflow-hidden flex flex-col max-h-[50vh] sm:max-h-[400px]">
-          {/* Fix: Removed duplicate 'className' attribute */}
+          {/* Header */}
           <div className={`px-4 py-2 border-b-2 border-brandBlue dark:border-brandYellow/10 flex justify-between items-center ${activePanel === 'recent' ? 'bg-brandRed text-white' : 'bg-brandYellow text-brandBlue'}`}>
             <h4 className="text-[9px] font-black uppercase tracking-[0.2em] italic">
               {activePanel === 'recent' ? 'SESSION_BUFFER' : 'STYLE_ARCHIVES'}
             </h4>
             <div className="flex items-center gap-2">
               {activePanel === 'recent' && recentWorks.length > 0 && (
-                <button onClick={onClearRecentWorks} className="text-[8px] font-black uppercase hover:opacity-70 flex items-center gap-1 transition-opacity" title="Clear History">
+                <button onClick={handleClearRecent} className="text-[8px] font-black uppercase hover:opacity-70 flex items-center gap-1 transition-opacity" title="Clear History">
                   <TrashIcon className="w-3 h-3" /> CLEAR
                 </button>
               )}
               {activePanel === 'presets' && savedPresets.length > 0 && (
-                <button onClick={onClearSavedPresets} className="text-[8px] font-black uppercase hover:opacity-70 flex items-center gap-1 transition-opacity" title="Clear Vault">
+                <button onClick={handleClearVault} className="text-[8px] font-black uppercase hover:opacity-70 flex items-center gap-1 transition-opacity" title="Clear Vault">
                   <TrashIcon className="w-3 h-3" /> CLEAR
                 </button>
               )}
               <button onClick={() => setActivePanel(null)} className="text-[9px] font-black uppercase p-2 -mr-2">✕</button>
             </div>
           </div>
+          
+          {/* Content */}
           <div className="overflow-y-auto custom-scrollbar flex-1 bg-brandNeutral dark:bg-brandDeep">
             {activePanel === 'recent' ? (
               recentWorks.length === 0 ? <p className="text-[9px] p-6 text-brandCharcoalMuted dark:text-white/20 uppercase font-black text-center tracking-widest italic">Buffer_Empty</p> : recentWorks.map(renderHistoryItem)
             ) : (
               savedPresets.length === 0 ? <p className="text-[9px] p-6 text-brandCharcoalMuted dark:text-white/20 uppercase font-black text-center tracking-widest italic">No_Presets_Buffered</p> : savedPresets.map(renderHistoryItem)
             )}
+          </div>
+
+          {/* Footer for mobile status */}
+          <div className="lg:hidden p-2 border-t-2 border-brandBlue dark:border-brandYellow/10 flex justify-between items-center bg-brandNeutral dark:bg-brandDeep">
+              <span className="text-[7px] font-black text-brandCharcoalMuted dark:text-white/40 uppercase tracking-[0.2em]">Kernel_Status</span>
+              <div className="flex items-center gap-2">
+                  <div className={`w-1.5 h-1.5 rounded-full ${isSaving ? 'bg-brandYellow animate-ping' : 'bg-brandYellow'}`} />
+                  <span className={`text-[9px] font-black uppercase ${isSaving ? 'text-brandYellow' : 'text-brandCharcoal dark:text-white'}`}>
+                      {isSaving ? 'SYNC_ACTIVE' : 'IDLE'}
+                  </span>
+              </div>
           </div>
         </div>
       )}

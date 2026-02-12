@@ -1,4 +1,6 @@
 
+
+
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { 
   PanelMode, 
@@ -13,6 +15,7 @@ import {
   TypographyPreset,
   MonogramPreset,
   FilterPreset,
+  EmblemPreset,
   BasePreset,
   LatticeStatus
 } from './types.ts';
@@ -23,7 +26,7 @@ import { AppControlsBar } from './components/AppControlsBar.tsx';
 import { LogViewer } from './components/LogViewer.tsx';
 import { LoadingSpinner } from './components/Loading.tsx';
 import { DeviceBadge } from './components/DeviceDetector.tsx';
-import { LS_KEYS } from './constants.ts';
+import { LS_KEYS, SUCCESS_MESSAGES } from './constants.ts';
 import { vaultDb } from './services/dbService.ts';
 
 // Lazy-load panel components
@@ -32,7 +35,7 @@ const TypographyPanel = lazy(() => import('./components/TypographyPanel.tsx').th
 const MonogramPanel = lazy(() => import('./components/MonogramPanel.tsx').then(m => ({ default: m.MonogramPanel })));
 const StyleExtractorPanel = lazy(() => import('./components/StyleExtractorPanel.tsx').then(m => ({ default: m.StyleExtractorPanel })));
 const ImageFilterPanel = lazy(() => import('./components/ImageFilterPanel.tsx').then(m => ({ default: m.ImageFilterPanel })));
-const SystemAuditPanel = lazy(() => import('./components/SystemAuditPanel.tsx').then(m => ({ default: m.SystemAuditPanel })));
+const EmblemForgePanel = lazy(() => import('./components/EmblemForgePanel.tsx').then(m => ({ default: m.EmblemForgePanel })));
 
 export const App: React.FC = () => {
   const [isBooting, setIsBooting] = useState(true);
@@ -108,9 +111,9 @@ export const App: React.FC = () => {
               case 'VectorPanel': return PanelMode.VECTOR;
               case 'TypographyPanel': return PanelMode.TYPOGRAPHY;
               case 'MonogramPanel': return PanelMode.MONOGRAM;
+              case 'EmblemForgePanel': return PanelMode.EMBLEM_FORGE;
               case 'StyleExtractorPanel': return PanelMode.EXTRACTOR;
               case 'ImageFilterPanel': return PanelMode.FILTERS;
-              case 'SystemAuditPanel': return PanelMode.AUDIT;
               default: return PanelMode.START;
             }
           }).filter(mode => (mode as PanelMode) !== PanelMode.START);
@@ -177,13 +180,17 @@ export const App: React.FC = () => {
         newPreset = { ...basePreset, type: PanelMode.VECTOR, parameters: settings as VectorPreset['parameters'] };
         break;
       case PanelMode.TYPOGRAPHY:
-        newPreset = { ...basePreset, type: PanelMode.TYPOGRAPHY, parameters: settings as TypographyPreset['parameters'], styleUsed: (settings as any)?.styleUsed || 'Custom' };
+        // FIX: Removed 'styleUsed' property which does not exist on TypographyPreset type.
+        newPreset = { ...basePreset, type: PanelMode.TYPOGRAPHY, parameters: settings as TypographyPreset['parameters'] };
         break;
       case PanelMode.MONOGRAM:
         newPreset = { ...basePreset, type: PanelMode.MONOGRAM, parameters: settings as MonogramPreset['parameters'] };
         break;
       case PanelMode.FILTERS:
         newPreset = { ...basePreset, type: PanelMode.FILTERS, parameters: settings as FilterPreset['parameters'] };
+        break;
+      case PanelMode.EMBLEM_FORGE:
+        newPreset = { ...basePreset, type: PanelMode.EMBLEM_FORGE, parameters: settings as EmblemPreset['parameters'] };
         break;
       default:
         addLog(`COMMIT_FAIL: Unsupported panel type "${type}" for vault commit.`, 'error');
@@ -251,7 +258,7 @@ export const App: React.FC = () => {
 
   const commonProps = {
     kernelConfig,
-    integrity: 100, // Hardcoded as the system is now inherently stable
+    integrity: 100,
     uiRefined: false,
     onSaveToHistory: (work: Preset) => setRecentWorks(prev => [work, ...prev].slice(0, 15)),
     onModeSwitch: handleModeSwitch,
@@ -261,7 +268,6 @@ export const App: React.FC = () => {
     onSetGlobalDna: setGlobalDna,
     globalDna: globalDna,
     latticeBuffer: latticeBuffer,
-    latticeStatus: latticeStatus,
     onClearLattice: handleClearLattice
   };
   
@@ -269,7 +275,7 @@ export const App: React.FC = () => {
     <div className="flex flex-col h-full overflow-hidden">
       <PanelHeader 
         onBack={() => handleModeSwitch(PanelMode.START)} 
-        title={currentPanel === PanelMode.START ? "HYPERXGEN 7" : currentPanel.toUpperCase()}
+        title={currentPanel === PanelMode.START ? "HYPERXGEN 7" : currentPanel.toUpperCase().replace('_', ' ')}
         isDarkMode={isDarkMode}
         onToggleTheme={toggleTheme}
         onToggleLogViewer={() => setShowLogViewer(p => !p)}
@@ -281,9 +287,9 @@ export const App: React.FC = () => {
           {currentPanel === PanelMode.VECTOR && <VectorPanel {...commonProps} initialData={transferData} />}
           {currentPanel === PanelMode.TYPOGRAPHY && <TypographyPanel {...commonProps} initialData={transferData} />}
           {currentPanel === PanelMode.MONOGRAM && <MonogramPanel {...commonProps} initialData={transferData} />}
+          {currentPanel === PanelMode.EMBLEM_FORGE && <EmblemForgePanel {...commonProps} initialData={transferData} />}
           {currentPanel === PanelMode.EXTRACTOR && <StyleExtractorPanel {...commonProps} initialData={transferData} onSaveToPresets={(p) => setSavedPresets(prev => [p as any, ...prev])} onDeletePreset={(id) => setSavedPresets(prev => prev.filter(p => p.id !== id))} onApiKeyError={() => {}} />}
           {currentPanel === PanelMode.FILTERS && <ImageFilterPanel {...commonProps} initialData={transferData} />}
-          {currentPanel === PanelMode.AUDIT && <SystemAuditPanel />}
         </Suspense>
       </main>
       <AppControlsBar 
@@ -292,8 +298,8 @@ export const App: React.FC = () => {
         recentWorks={recentWorks} 
         savedPresets={savedPresets}
         onLoadHistoryItem={handleLoadItem}
-        onClearRecentWorks={() => { setRecentWorks([]); vaultDb.clearStore('recent'); }}
-        onClearSavedPresets={() => { setSavedPresets([]); vaultDb.clearStore('presets'); }}
+        onClearRecentWorks={() => { setRecentWorks([]); vaultDb.clearStore('recent'); addLog(SUCCESS_MESSAGES.HISTORY_CLEARED, 'success'); }}
+        onClearSavedPresets={() => { setSavedPresets([]); vaultDb.clearStore('presets'); addLog(SUCCESS_MESSAGES.VAULT_CLEARED, 'success'); }}
         onForceSave={handleCommitToVault}
         enabledModes={enabledModes}
       />

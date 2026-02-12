@@ -1,4 +1,5 @@
 
+
 // ===================== ENUMS =====================
 export enum PanelMode {
   START = 'start',
@@ -7,7 +8,7 @@ export enum PanelMode {
   MONOGRAM = 'monogram',
   EXTRACTOR = 'extractor',
   FILTERS = 'filters',
-  AUDIT = 'audit'
+  EMBLEM_FORGE = 'emblem_forge'
 }
 
 export enum LogType {
@@ -30,6 +31,7 @@ export enum StyleCategory {
   VECTOR = 'VECTOR',
   FILTER = 'FILTER',
   GRAFFITI = 'GRAFFITI',
+  EMBLEM = 'EMBLEM',
   UNKNOWN = 'UNKNOWN'
 }
 
@@ -101,79 +103,65 @@ export interface BasePreset {
   };
 }
 
-export interface VectorPreset extends BasePreset {
-  type: PanelMode.VECTOR;
-  parameters: {
-    complexity: 'Standard' | 'Minimal' | 'Detailed';
-    outline: 'None' | 'Medium-Bold' | 'Thin';
-    // Fix: Expanded the mood union type to include 'Dramatic' and 'Serene' used in presets and UI selectors.
-    mood: 'Cheerful' | 'Professional' | 'Communicative' | 'Dramatic' | 'Serene';
-    background: string;
-    colorCount: number;
-    strokeWeight: number;
-    style: VectorStyle;
-  };
+export interface VectorDna {
+  detail_fidelity: 'Minimal' | 'Moderate' | 'High' | 'Maximum';
+  edge_quality: string;
+  palette_strategy: string;
+  color_direction: string;
+  background: string;
+  form_language: string;
+  stroke_preset: 'Uniform Thin' | 'Uniform Medium' | 'Uniform Heavy' | 'None';
+  effect?: string;
+  refinement?: string;
+  palette_forced?: string;
+  notation?: string;
+  fills?: string;
+  fidelity_priority?: 'Maximum';
+  edge_softness?: 'High';
+  perspective?: 'Isometric';
+  curvature?: 'High';
+  tech_influence?: 'High';
+  abstraction_level?: 'High';
+  ethereal_quality?: 'High';
 }
 
-export type VectorStyle = 
-  | 'Flat Design' 
-  | 'Line Art' 
-  | 'Geometric' 
-  | 'Organic' 
-  | 'Corporate' 
-  | 'Playful' 
-  | 'Abstract';
+export interface VectorPreset extends BasePreset {
+  type: PanelMode.VECTOR;
+  parameters: VectorDna;
+}
+
+export interface TypographyDna {
+  letterform_style: string;
+  layout: string;
+  spacing: string;
+  effects: string;
+  background: string;
+  color_logic: string;
+  texture: string;
+  ornamentation: string;
+}
 
 export interface TypographyPreset extends BasePreset {
   type: PanelMode.TYPOGRAPHY;
-  parameters: {
-    fontStyle: TypographyStyle;
-    weight: 'Light' | 'Regular' | 'Bold' | 'Heavy';
-    spacing: 'Tight' | 'Normal' | 'Wide';
-    effect?: 'Shadow' | 'Glow' | 'Outline' | 'None';
-  };
-  styleUsed?: string;
+  parameters: TypographyDna;
 }
 
-export type TypographyStyle = 
-  | 'Grunge' 
-  | 'Neon' 
-  | 'Cyberpunk' 
-  | 'Art Deco' 
-  | 'Retro' 
-  | 'Vintage' 
-  | 'Watercolor' 
-  | 'Handwritten' 
-  | 'Geometric' 
-  | 'Minimalist' 
-  | 'Modern' 
-  | 'Organic'
-  | '3D';
+export interface MonogramDna {
+  letter_relationship: string;
+  symmetry: string;
+  container: string;
+  legibility_target: string;
+  form_language: string;
+  stroke_character: string;
+  spatial_density: string;
+  abstraction_tolerance: string;
+  period_influence: string;
+}
 
 export interface MonogramPreset extends BasePreset {
   type: PanelMode.MONOGRAM;
-  parameters: {
-    layoutMode: 'interlocked' | 'stacked' | 'block' | 'mirrored';
-    symmetry: 'Perfect Radial' | 'Vertical Mirror' | 'Asymmetrical' | 'Dynamic';
-    container: 'Strict' | 'Suggested' | 'Weak' | 'None';
-    densityRatio: string;
-    legibility: 'High' | 'Medium' | 'Low';
-    structureCreativity: number;
-    densitySpace: number;
-    traditionalModern: number;
-    strokeEnds: 'Sheared' | 'Rounded' | 'Blunt' | 'Tapered';
-    style?: MonogramStyle;
-  };
+  parameters: MonogramDna;
 }
-
-export type MonogramStyle = 
-  | 'Modern Minimal'
-  | 'Classic Heraldic'
-  | 'Interlocked'
-  | 'Geometric'
-  | 'Calligraphic'
-  | 'Brutalist'
-  | 'Futuristic';
 
 export interface FilterPreset extends BasePreset {
   type: PanelMode.FILTERS;
@@ -196,12 +184,30 @@ export type FilterType =
   | 'High Contrast' 
   | 'Soft Glow';
 
-export type Preset = VectorPreset | TypographyPreset | MonogramPreset | FilterPreset;
+export interface EmblemDna {
+  containment: string;
+  border: string;
+  illustration: string;
+  illustration_style: string;
+  typography_layout: string;
+  text_hierarchy: string;
+  background: string;
+  period_influence: string;
+  effects?: string;
+}
+
+export interface EmblemPreset extends BasePreset {
+  type: PanelMode.EMBLEM_FORGE;
+  parameters: EmblemDna;
+}
+
+export type Preset = VectorPreset | TypographyPreset | MonogramPreset | FilterPreset | EmblemPreset;
 
 export const isVectorPreset = (preset: Preset): preset is VectorPreset => preset.type === PanelMode.VECTOR;
 export const isTypographyPreset = (preset: Preset): preset is TypographyPreset => preset.type === PanelMode.TYPOGRAPHY;
 export const isMonogramPreset = (preset: Preset): preset is MonogramPreset => preset.type === PanelMode.MONOGRAM;
 export const isFilterPreset = (preset: Preset): preset is FilterPreset => preset.type === PanelMode.FILTERS;
+export const isEmblemPreset = (preset: Preset): preset is EmblemPreset => preset.type === PanelMode.EMBLEM_FORGE;
 
 export type PresetItem = Preset;
 

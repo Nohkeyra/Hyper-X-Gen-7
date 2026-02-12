@@ -1,10 +1,11 @@
 
+
 // ⚠️ SYSTEM NOTICE:
 // These presets are CORE ASSETS.
 // DO NOT delete, modify, or refactor them except the user ask for.
 // Treat as READ-ONLY.
 
-import { PanelMode, Preset, VectorPreset, TypographyPreset, MonogramPreset, FilterPreset, PresetCategory, PresetCategoryType } from '../types.ts';
+import { PanelMode, Preset, VectorPreset, TypographyPreset, MonogramPreset, FilterPreset, EmblemPreset, PresetCategory, PresetCategoryType } from '../types.ts';
 
 /**
  * HYPERXGEN PRESET REGISTRY v7.6.3 - OMEGA DEFINITIVE FINAL EDITION
@@ -26,75 +27,11 @@ export const PRESET_REGISTRY: PresetRegistry = {
         mobileLabel: "LEGACY_V",
         type: PresetCategoryType.BUILT_IN,
         items: [
-          {
-            id: 'logo-clean',
-            name: 'Clean Logo',
-            type: PanelMode.VECTOR,
-            category: 'Essentials',
-            description: 'Minimal, sharp vector look ideal for logos and icons',
-            prompt: 'Minimal, sharp vector look for logos and icons, geometric precision',
-            parameters: {
-              complexity: 'Minimal',
-              outline: 'Thin',
-              mood: 'Professional',
-              background: 'transparent',
-              colorCount: 2,
-              strokeWeight: 1,
-              style: 'Flat Design'
-            }
-          } as VectorPreset,
-          {
-            id: 'modern-illustration',
-            name: 'Modern Illustration',
-            type: PanelMode.VECTOR,
-            category: 'Essentials',
-            description: 'Bold, colorful illustration with strong contrast',
-            prompt: 'Bold colorful illustration, high contrast, expressive vector forms',
-            parameters: {
-              complexity: 'Detailed',
-              outline: 'Medium-Bold',
-              mood: 'Communicative',
-              background: 'light',
-              colorCount: 8,
-              strokeWeight: 3,
-              style: 'Organic'
-            }
-          } as VectorPreset,
-          {
-            id: 'soft-flat',
-            name: 'Soft Flat',
-            type: PanelMode.VECTOR,
-            category: 'Essentials',
-            description: 'Smooth flat vector style with gentle tones',
-            prompt: 'Smooth flat vector, gentle tones, minimalist aesthetic',
-            parameters: {
-              complexity: 'Standard',
-              outline: 'Thin',
-              mood: 'Cheerful',
-              background: 'light',
-              colorCount: 2,
-              strokeWeight: 2,
-              style: 'Flat Design'
-            }
-          } as VectorPreset,
-          {
-            id: 'gritty-art',
-            name: 'Gritty Art',
-            type: PanelMode.VECTOR,
-            category: 'Essentials',
-            description: 'High-detail, textured vector art with dramatic depth',
-            prompt: 'High-detail gritty vector art, dramatic depth and texture',
-            parameters: {
-              complexity: 'Detailed',
-              outline: 'Medium-Bold',
-              mood: 'Dramatic',
-              background: 'dark',
-              colorCount: 6,
-              strokeWeight: 4,
-              style: 'Abstract'
-            }
-          } as VectorPreset
-        ]
+          { id: 'logo-clean', name: 'Clean Logo', type: PanelMode.VECTOR, category: 'Legacy', description: 'Minimal vector tracing with sharp edges and aggressive color reduction. Ideal for converting sketches or raster logos into clean brand marks.', prompt: 'Vectorize the uploaded image with minimal detail preservation. Simplify shapes to geometric precision. Enforce sharp, clean edges. Reduce palette to 2 colors. Render on flat transparent background. Prioritize clarity and scalability.', parameters: { detail_fidelity: 'Minimal', edge_quality: 'Sharp, refined', palette_strategy: 'Reduce to 2 colors', color_direction: 'Professional, restrained', background: 'Flat Transparent', form_language: 'Geometric, simplified', stroke_preset: 'Uniform Thin' } },
+          { id: 'modern-illustration', name: 'Modern Illustration', type: PanelMode.VECTOR, category: 'Legacy', description: 'Bold, colorful vector conversion with expressive forms and high contrast.', prompt: 'Vectorize the uploaded image with balanced detail preservation. Translate forms into bold, expressive shapes. Apply saturated, high-contrast color palette. Medium-bold defining outlines. Render on flat white background.', parameters: { detail_fidelity: 'Moderate', edge_quality: 'Bold, expressive', palette_strategy: 'Moderate reduction (6-8 colors)', color_direction: 'Saturated, high-contrast', background: 'Flat White (#FFFFFF)', form_language: 'Organic, expressive', stroke_preset: 'Uniform Medium' } },
+          { id: 'soft-flat', name: 'Soft Flat', type: PanelMode.VECTOR, category: 'Legacy', description: 'Smooth, gentle vector conversion with minimalist forms and cheerful, light palette.', prompt: 'Vectorize the uploaded image with strong simplification. Reduce to essential flat shapes. Apply gentle, cheerful color palette. Thin defining outlines. Render on flat white background.', parameters: { detail_fidelity: 'Minimal', edge_quality: 'Soft, refined', palette_strategy: 'Reduce to 2-3 colors', color_direction: 'Cheerful, light', background: 'Flat White (#FFFFFF)', form_language: 'Simplified, rounded', stroke_preset: 'Uniform Thin' } },
+          { id: 'gritty-art', name: 'Gritty Art', type: PanelMode.VECTOR, category: 'Legacy', description: 'High-detail vector conversion with dramatic contrast and textured aesthetic.', prompt: 'Vectorize the uploaded image with high detail preservation. Translate forms with dramatic contrast. Medium-bold outlines. Render on flat black background. Retain sense of texture and depth through shape complexity.', parameters: { detail_fidelity: 'High', edge_quality: 'Bold, textured feel', palette_strategy: 'Moderate reduction (6 colors)', color_direction: 'Dramatic, high-contrast', background: 'Flat Black (#000000)', form_language: 'Complex, atmospheric', stroke_preset: 'Uniform Heavy' } },
+        ].map(p => p as VectorPreset)
       },
       {
         id: "lib-vector-prime",
@@ -102,99 +39,11 @@ export const PRESET_REGISTRY: PresetRegistry = {
         mobileLabel: "PRIME_V",
         type: PresetCategoryType.BUILT_IN,
         items: [
-          {
-            id: 'vector-clean-minimal',
-            name: 'Clean Minimal',
-            type: PanelMode.VECTOR,
-            category: 'Essentials',
-            description: 'Minimal vector style with clean lines and high legibility',
-            prompt: 'A clean, minimal vector logo with strong clarity and balance',
-            styleDirective: 'Reduce unnecessary detail, focus on clarity and balance',
-            tags: ['minimal', 'clean', 'logo', 'professional'],
-            rating: 4.8,
-            usageCount: 0,
-            isFavorite: false,
-            isProtected: true,
-            metadata: {
-              mobileTitle: 'Clean',
-              mobileIcon: 'sparkles',
-              mobilePriority: 1
-            },
-            parameters: {
-              complexity: 'Minimal',
-              outline: 'Thin',
-              mood: 'Professional',
-              background: 'transparent',
-              colorCount: 2,
-              strokeWeight: 1,
-              style: 'Flat Design'
-            }
-          } as VectorPreset,
-          {
-            id: 'vector-corporate-bold',
-            name: 'Corporate Bold',
-            type: PanelMode.VECTOR,
-            category: 'Business',
-            description: 'Strong corporate vector style with confident geometry',
-            prompt: 'A bold corporate vector logo with geometric precision',
-            styleDirective: 'Use structured geometry and confident proportions',
-            tags: ['corporate', 'business', 'geometric'],
-            rating: 4.6,
-            usageCount: 0,
-            isProtected: true,
-            parameters: {
-              complexity: 'Standard',
-              outline: 'Medium-Bold',
-              mood: 'Professional',
-              background: 'light',
-              colorCount: 3,
-              strokeWeight: 2,
-              style: 'Corporate'
-            }
-          } as VectorPreset,
-          {
-            id: 'vector-playful-organic',
-            name: 'Playful Organic',
-            type: PanelMode.VECTOR,
-            category: 'Creative',
-            description: 'Friendly, organic vector style with playful curves',
-            prompt: 'A playful organic vector illustration with soft shapes',
-            styleDirective: 'Favor curves, asymmetry, and friendly proportions',
-            tags: ['playful', 'organic', 'friendly'],
-            rating: 4.7,
-            usageCount: 0,
-            parameters: {
-              complexity: 'Standard',
-              outline: 'None',
-              mood: 'Cheerful',
-              background: 'light',
-              colorCount: 4,
-              strokeWeight: 2,
-              style: 'Organic'
-            }
-          } as VectorPreset,
-          {
-            id: 'vector-abstract-expressive',
-            name: 'Abstract Expressive',
-            type: PanelMode.VECTOR,
-            category: 'Experimental',
-            description: 'Expressive abstract vector style with artistic freedom',
-            prompt: 'An abstract vector composition with expressive forms',
-            styleDirective: 'Encourage abstraction, visual rhythm, and contrast',
-            tags: ['abstract', 'artistic', 'experimental'],
-            rating: 4.5,
-            usageCount: 0,
-            parameters: {
-              complexity: 'Detailed',
-              outline: 'Medium-Bold',
-              mood: 'Communicative',
-              background: 'dark',
-              colorCount: 5,
-              strokeWeight: 3,
-              style: 'Abstract'
-            }
-          } as VectorPreset
-        ]
+          { id: 'vector-clean-minimal', name: 'Clean Minimal', type: PanelMode.VECTOR, category: 'Prime', description: 'Ultra-minimal vector tracing. Shapes reduced to essentials. High legibility.', prompt: 'Vectorize the uploaded image with extreme simplification. Reduce to essential geometric shapes. Enforce clean, precise edges. Reduce palette to 2 colors. Render on flat transparent background.', parameters: { detail_fidelity: 'Minimal', edge_quality: 'Clean, precise', palette_strategy: 'Reduce to 2 colors', color_direction: 'Professional, neutral', background: 'Flat Transparent', form_language: 'Geometric, reduced', stroke_preset: 'Uniform Thin' } },
+          { id: 'vector-corporate-bold', name: 'Corporate Bold', type: PanelMode.VECTOR, category: 'Prime', description: 'Confident vector conversion with geometric precision and professional palette.', prompt: 'Vectorize the uploaded image with strong geometric simplification. Translate forms into bold, confident shapes. Apply professional 3-color palette. Medium-bold outlines. Render on flat white background.', parameters: { detail_fidelity: 'Moderate', edge_quality: 'Bold, precise', palette_strategy: 'Reduce to 3 colors', color_direction: 'Professional, authoritative', background: 'Flat White (#FFFFFF)', form_language: 'Geometric, structured', stroke_preset: 'Uniform Medium' } },
+          { id: 'vector-playful-organic', name: 'Playful Organic', type: PanelMode.VECTOR, category: 'Prime', description: 'Friendly, soft vector conversion with no outlines and cheerful colors.', prompt: 'Vectorize the uploaded image with organic simplification. Translate forms into soft, rounded shapes. No outlines. Apply cheerful, friendly color palette. Render on flat white background.', parameters: { detail_fidelity: 'Moderate', edge_quality: 'Soft, organic', palette_strategy: 'Moderate reduction (4 colors)', color_direction: 'Cheerful, warm', background: 'Flat White (#FFFFFF)', form_language: 'Organic, rounded', stroke_preset: 'None' } },
+          { id: 'vector-abstract-expressive', name: 'Abstract Expressive', type: PanelMode.VECTOR, category: 'Prime', description: 'Artistic vector conversion with expressive interpretation of forms.', prompt: 'Vectorize the uploaded image with artistic license. Translate shapes expressively rather than literal tracing. Medium-bold outlines. Render on flat black background. Prioritize visual rhythm over fidelity.', parameters: { detail_fidelity: 'Moderate', edge_quality: 'Expressive, bold', palette_strategy: 'Moderate reduction (5 colors)', color_direction: 'Communicative, dynamic', background: 'Flat Black (#000000)', form_language: 'Abstract, rhythmic', stroke_preset: 'Uniform Medium' } },
+        ].map(p => p as VectorPreset)
       },
       {
         id: "lib-vector-essentials",
@@ -202,11 +51,11 @@ export const PRESET_REGISTRY: PresetRegistry = {
         mobileLabel: "CORE_V",
         type: PresetCategoryType.BUILT_IN,
         items: [
-          { id: "vec-logo", name: "Logo", category: "ESSENTIALS", description: "Clean geometric emblem", type: PanelMode.VECTOR, prompt: "Clean geometric emblem, monoweight strokes, high negative space", parameters: { complexity: 'Standard', outline: 'None', mood: 'Professional', background: 'White', colorCount: 4, strokeWeight: 0, style: 'Flat Design' } },
-          { id: "vec-sticker-icon", name: "Sticker/Icon", category: "ESSENTIALS", description: "Flat graphic icon, bold strokes", type: PanelMode.VECTOR, prompt: "Flat vector sticker, bold strokes, minimal shapes", parameters: { complexity: 'Minimal', outline: 'Medium-Bold', mood: 'Cheerful', background: 'White', colorCount: 3, strokeWeight: 2, style: 'Flat Design' } },
-          { id: "vec-minimalist", name: "Minimalist", category: "ESSENTIALS", description: "Few shapes, high space", type: PanelMode.VECTOR, prompt: "Minimalist vector, clean lines, maximum breathing room", parameters: { complexity: 'Minimal', outline: 'None', mood: 'Professional', background: 'White', colorCount: 2, strokeWeight: 0, style: 'Geometric' } },
-          { id: "vec-technical", name: "Technical Diagram", category: "ESSENTIALS", description: "Precise geometric grids", type: PanelMode.VECTOR, prompt: "Technical diagram, precise geometric shapes, grid-aligned", parameters: { complexity: 'Standard', outline: 'Thin', mood: 'Professional', background: 'White', colorCount: 3, strokeWeight: 1, style: 'Geometric' } }
-        ]
+          { id: "vec-logo", name: "Logo", type: PanelMode.VECTOR, description: "Clean geometric vector tracing optimized for brand marks. High negative space.", prompt: "Vectorize the uploaded image as a clean geometric emblem. No outlines. Maximize negative space through simplification. Reduce palette to 4 colors. Render on flat white background.", parameters: { detail_fidelity: 'Moderate', edge_quality: 'Clean, refined', palette_strategy: 'Moderate reduction (4 colors)', color_direction: 'Professional, balanced', background: 'Flat White (#FFFFFF)', form_language: 'Geometric, emblematic', stroke_preset: 'None' } },
+          { id: "vec-sticker-icon", name: "Sticker/Icon", type: PanelMode.VECTOR, description: "Bold, graphic vector conversion with heavy outlines and minimal shapes.", prompt: "Vectorize the uploaded image as a bold sticker or icon. Heavy defining outlines. Minimal shapes. Reduce palette to 3 colors. Cheerful color direction. Render on flat white background.", parameters: { detail_fidelity: 'Minimal', edge_quality: 'Bold, graphic', palette_strategy: 'Reduce to 3 colors', color_direction: 'Cheerful, punchy', background: 'Flat White (#FFFFFF)', form_language: 'Simplified, iconic', stroke_preset: 'Uniform Heavy' } },
+          { id: "vec-minimalist", name: "Minimalist", type: PanelMode.VECTOR, description: "Extreme reduction. Few shapes. Maximum breathing room. No outlines.", prompt: "Vectorize the uploaded image with extreme minimalist reduction. Translate only the most essential shapes. No outlines. Maximum negative space. Reduce palette to 2 colors. Render on flat white background.", parameters: { detail_fidelity: 'Minimal', edge_quality: 'Clean, refined', palette_strategy: 'Reduce to 2 colors', color_direction: 'Professional, calm', background: 'Flat White (#FFFFFF)', form_language: 'Reduced, spacious', stroke_preset: 'None' } },
+          { id: "vec-technical", name: "Technical Diagram", type: PanelMode.VECTOR, description: "Precise, grid-aligned vector tracing. Thin outlines. Engineering aesthetic.", prompt: "Vectorize the uploaded image as a technical diagram. Enforce grid alignment. Thin, precise outlines. Reduce palette to 3 colors. Render on flat white background.", parameters: { detail_fidelity: 'Moderate', edge_quality: 'Precise, technical', palette_strategy: 'Reduce to 3 colors', color_direction: 'Professional, neutral', background: 'Flat White (#FFFFFF)', form_language: 'Grid-aligned, structural', stroke_preset: 'Uniform Thin' } },
+        ].map(p => p as VectorPreset)
       },
       {
         id: "lib-vector-underground",
@@ -214,43 +63,11 @@ export const PRESET_REGISTRY: PresetRegistry = {
         mobileLabel: "VOID_V",
         type: PresetCategoryType.BUILT_IN,
         items: [
-          { 
-            id: 'vector-data-mosh', 
-            name: 'Data Corruption', 
-            category: 'UNDERGROUND', 
-            description: 'Intentional digital glitches as aesthetic', 
-            type: PanelMode.VECTOR,
-            prompt: 'vector art with controlled data corruption, RGB channel separation, intentional artifacts, digital glitch aesthetic but clean execution, geometric disruption',
-            parameters: { complexity: 'Detailed', outline: 'Thin', mood: 'Communicative', background: 'Dark', colorCount: 8, strokeWeight: 1, style: 'Abstract' }
-          },
-          { 
-            id: 'vector-brutalist', 
-            name: 'Brutalist Vector', 
-            category: 'UNDERGROUND', 
-            description: 'Raw, unpolished geometric aesthetic', 
-            type: PanelMode.VECTOR,
-            prompt: 'brutalist vector art, raw geometric shapes, default system colors, intentional awkward spacing, anti-design aesthetic, structural honesty',
-            parameters: { complexity: 'Minimal', outline: 'Medium-Bold', mood: 'Professional', background: 'White', colorCount: 3, strokeWeight: 3, style: 'Geometric' }
-          },
-          { 
-            id: 'vector-neo-construct', 
-            name: 'Neo-Constructivist', 
-            category: 'UNDERGROUND', 
-            description: 'Soviet meets cyberpunk fusion', 
-            type: PanelMode.VECTOR,
-            prompt: 'neo-constructivist vector style, geometric propaganda aesthetic, cyberpunk elements, red and black palette with single electric blue accent, mixed Cyrillic influences',
-            parameters: { complexity: 'Standard', outline: 'Thin', mood: 'Professional', background: 'Dark', colorCount: 4, strokeWeight: 1, style: 'Geometric' }
-          },
-          { 
-            id: 'vector-chem-diagram', 
-            name: 'Chemical Diagrams', 
-            category: 'UNDERGROUND', 
-            description: 'Molecular structures as art', 
-            type: PanelMode.VECTOR,
-            prompt: 'vector chemical diagram aesthetic, molecular structures, bond lines and electron dots, laboratory precision, scientific illustration style, clean connections',
-            parameters: { complexity: 'Minimal', outline: 'Thin', mood: 'Professional', background: 'White', colorCount: 2, strokeWeight: 1, style: 'Line Art' }
-          }
-        ]
+          { id: 'vector-data-mosh', name: 'Data Corruption', type: PanelMode.VECTOR, description: 'Intentional digital glitch aesthetic applied during vectorization. Controlled corruption, clean execution.', prompt: 'Vectorize the uploaded image with controlled digital corruption. Apply RGB channel separation. Introduce intentional geometric artifacts. Thin outlines. Render on flat black background. 8-color palette.', parameters: { detail_fidelity: 'High', edge_quality: 'Clean with controlled disruption', palette_strategy: 'Moderate reduction (8 colors)', color_direction: 'Communicative, electronic', background: 'Flat Black (#000000)', form_language: 'Geometric with glitch artifacts', stroke_preset: 'Uniform Thin', effect: 'Channel separation, controlled artifacts' } },
+          { id: 'vector-brutalist', name: 'Brutalist Vector', type: PanelMode.VECTOR, description: 'Raw, unpolished geometric conversion. Intentional awkwardness. Anti-design aesthetic.', prompt: 'Vectorize the uploaded image with brutalist rawness. Default system color logic. Intentional awkward spacing. Unpolished geometric simplification. Medium-bold outlines. Render on flat white background. 3-color palette.', parameters: { detail_fidelity: 'Minimal', edge_quality: 'Raw, unrefined', palette_strategy: 'Reduce to 3 colors', color_direction: 'Default system, primary', background: 'Flat White (#FFFFFF)', form_language: 'Unpolished geometric', stroke_preset: 'Uniform Heavy', refinement: 'Intentional none' } },
+          { id: 'vector-neo-construct', name: 'Neo-Constructivist', type: PanelMode.VECTOR, description: 'Soviet cyberpunk fusion. Geometric propaganda aesthetic with electric accents.', prompt: 'Vectorize the uploaded image in neo-constructivist style. Geometric propaganda forms with cyberpunk influence. Palette restricted to red, black, and single electric blue accent. Thin outlines. Render on flat black background.', parameters: { detail_fidelity: 'Moderate', edge_quality: 'Refined, geometric', palette_strategy: 'Fixed palette (Red, Black, Electric Blue)', color_direction: 'Revolutionary, intense', background: 'Flat Black (#000000)', form_language: 'Constructivist geometric', stroke_preset: 'Uniform Thin', palette_forced: '#FF0000, #000000, #00FFFF' } },
+          { id: 'vector-chem-diagram', name: 'Chemical Diagrams', type: PanelMode.VECTOR, description: 'Scientific illustration aesthetic. Molecular precision. Bond lines and electron dots.', prompt: 'Vectorize the uploaded image as a chemical diagram. Translate forms into molecular structure aesthetic. Bond lines and electron dot patterns. Thin outlines. Render on flat white background. 2-color palette.', parameters: { detail_fidelity: 'Minimal', edge_quality: 'Precise, technical', palette_strategy: 'Reduce to 2 colors', color_direction: 'Scientific, neutral', background: 'Flat White (#FFFFFF)', form_language: 'Molecular, diagrammatic', stroke_preset: 'Uniform Thin', notation: 'Bond lines, electron dots' } },
+        ].map(p => p as VectorPreset)
       },
       {
         id: "lib-vector-artistic",
@@ -258,16 +75,17 @@ export const PRESET_REGISTRY: PresetRegistry = {
         mobileLabel: "ART_V",
         type: PresetCategoryType.BUILT_IN,
         items: [
-          { id: "vec-illustration", name: "Illustration", category: "ARTISTIC", description: "Detailed layered shapes", type: PanelMode.VECTOR, prompt: "Detailed illustration, layered shapes, smooth strokes", parameters: { complexity: 'Detailed', outline: 'None', mood: 'Communicative', background: 'White', colorCount: 6, strokeWeight: 0, style: 'Organic' } },
-          { id: "vec-photo-vec", name: "Photo Vectorization", category: "ARTISTIC", description: "High-detail vector tracing", type: PanelMode.VECTOR, prompt: "High-detail vector tracing, color accuracy prioritized", parameters: { complexity: 'Detailed', outline: 'None', mood: 'Professional', background: 'White', colorCount: 8, strokeWeight: 0, style: 'Organic' } },
-          { id: "vec-line-art", name: "Line Art", category: "ARTISTIC", description: "Simplified line drawing", type: PanelMode.VECTOR, prompt: "Clean line art, uniform strokes, no fills", parameters: { complexity: 'Minimal', outline: 'Thin', mood: 'Professional', background: 'White', colorCount: 1, strokeWeight: 1, style: 'Line Art' } },
-          { id: "vec-watercolor", name: "Watercolor", category: "ARTISTIC", description: "Soft flowing vector layers", type: PanelMode.VECTOR, prompt: "Watercolor style vector, transparent layers, organic edges", parameters: { complexity: 'Standard', outline: 'None', mood: 'Communicative', background: 'Soft', colorCount: 5, strokeWeight: 0, style: 'Organic' } },
-          { id: "vec-abstract", name: "Abstract", category: "ARTISTIC", description: "Non-objective vector forms", type: PanelMode.VECTOR, prompt: "Abstract vector shapes, non-objective composition, dynamic balance", parameters: { complexity: 'Standard', outline: 'None', mood: 'Communicative', background: 'White', colorCount: 4, strokeWeight: 0, style: 'Abstract' } },
-          { id: "vec-fantasy", name: "Fantasy", category: "ARTISTIC", description: "Whimsical dreamlike vectors", type: PanelMode.VECTOR, prompt: "Fantasy illustration, magical lighting, ethereal vector shapes", parameters: { complexity: 'Detailed', outline: 'None', mood: 'Cheerful', background: 'Soft', colorCount: 6, strokeWeight: 0, style: 'Organic' } },
-          { id: "vec-isometric", name: "Isometric", category: "ARTISTIC", description: "3D-effect vector perspective", type: PanelMode.VECTOR, prompt: "Isometric vector illustration, 3D perspective, geometric precision", parameters: { complexity: 'Detailed', outline: 'Thin', mood: 'Professional', background: 'White', colorCount: 5, strokeWeight: 1, style: 'Geometric' } },
-          { id: "vec-organic", name: "Organic", category: "ARTISTIC", description: "Nature-inspired fluid forms", type: PanelMode.VECTOR, prompt: "Fluid organic vector forms, biological inspiration, soft curves", parameters: { complexity: 'Standard', outline: 'None', mood: 'Communicative', background: 'Soft', colorCount: 5, strokeWeight: 0, style: 'Organic' } },
-          { id: "vec-tech", name: "Tech", category: "ARTISTIC", description: "Digital circuit aesthetic", type: PanelMode.VECTOR, prompt: "High-tech vector UI, circuit patterns, digital aesthetic", parameters: { complexity: 'Detailed', outline: 'Thin', mood: 'Professional', background: 'Dark', colorCount: 4, strokeWeight: 1, style: 'Corporate' } }
-        ]
+          { id: "vec-illustration", name: "Illustration", type: PanelMode.VECTOR, description: "Detailed vector conversion with layered shapes and smooth forms. No outlines.", prompt: "Vectorize the uploaded image as a detailed illustration. Translate forms into layered, smooth shapes. No outlines. Reduce palette to 6 colors. Render on flat white background.", parameters: { detail_fidelity: 'High', edge_quality: 'Smooth, organic', palette_strategy: 'Moderate reduction (6 colors)', color_direction: 'Communicative, rich', background: 'Flat White (#FFFFFF)', form_language: 'Layered, illustrative', stroke_preset: 'None' } },
+          { id: "vec-photo-vec", name: "Photo Vectorization", type: PanelMode.VECTOR, description: "High-fidelity vector tracing. Color accuracy prioritized over simplification.", prompt: "Vectorize the uploaded image with maximum color and detail fidelity. Prioritize accurate reproduction of original shapes and colors. No outlines. Reduce palette minimally to 8 colors. Render on flat white background.", parameters: { detail_fidelity: 'Maximum', edge_quality: 'Faithful to source', palette_strategy: 'Minimal reduction (8 colors)', color_direction: 'Accurate to source', background: 'Flat White (#FFFFFF)', form_language: 'Source-respecting', stroke_preset: 'None', fidelity_priority: 'Maximum' } },
+          { id: "vec-line-art", name: "Line Art", type: PanelMode.VECTOR, description: "Clean, uniform stroke conversion. No fills. Simplified line drawing aesthetic.", prompt: "Vectorize the uploaded image as clean line art. Convert to uniform strokes. No fills. Single color. Thin, consistent outlines. Render on flat white background.", parameters: { detail_fidelity: 'Minimal', edge_quality: 'Clean, uniform', palette_strategy: 'Single color', color_direction: 'Monochrome', background: 'Flat White (#FFFFFF)', form_language: 'Linear, simplified', stroke_preset: 'Uniform Thin', fills: 'None' } },
+          { id: "vec-watercolor", name: "Watercolor", type: PanelMode.VECTOR, description: "Soft, flowing vector conversion. Translucent color fields. Organic edges.", prompt: "Vectorize the uploaded image in watercolor style. Soft, organic edge treatment. Translucent color fields suggested through value and blending. No outlines. Render on flat off-white background. 5-color palette.", parameters: { detail_fidelity: 'Moderate', edge_quality: 'Soft, organic', palette_strategy: 'Moderate reduction (5 colors)', color_direction: 'Communicative, gentle', background: 'Flat Off-White (#FAF9F7)', form_language: 'Flowing, translucent feel', stroke_preset: 'None', edge_softness: 'High' } },
+          { id: "vec-abstract", name: "Abstract", type: PanelMode.VECTOR, description: "Non-objective vector interpretation. Dynamic composition. Artistic reduction.", prompt: "Vectorize the uploaded image as abstract vector forms. Translate shapes non-objectively. Dynamic compositional balance. No outlines. Render on flat white background. 4-color palette.", parameters: { detail_fidelity: 'Moderate', edge_quality: 'Clean, considered', palette_strategy: 'Moderate reduction (4 colors)', color_direction: 'Communicative, balanced', background: 'Flat White (#FFFFFF)', form_language: 'Abstract, compositional', stroke_preset: 'None', abstraction_level: 'High' } },
+          { id: "vec-fantasy", name: "Fantasy", type: PanelMode.VECTOR, description: "Whimsical, dreamlike vector conversion. Ethereal forms. Gentle presence.", prompt: "Vectorize the uploaded image as fantasy illustration. Translate forms with whimsical, ethereal quality. Soft, organic edges. No outlines. Render on flat soft gray background. 6-color cheerful palette.", parameters: { detail_fidelity: 'High', edge_quality: 'Soft, dreamlike', palette_strategy: 'Moderate reduction (6 colors)', color_direction: 'Cheerful, magical', background: 'Flat Soft Gray (#F0F0F2)', form_language: 'Whimsical, organic', stroke_preset: 'None', ethereal_quality: 'High' } },
+          { id: "vec-isometric", name: "Isometric", type: PanelMode.VECTOR, description: "3D-effect vector conversion. Geometric perspective. Grid-aligned precision.", prompt: "Vectorize the uploaded image in isometric perspective. Translate forms into 3D-effect geometric projection. Grid alignment. Thin outlines. Render on flat white background. 5-color professional palette.", parameters: { detail_fidelity: 'High', edge_quality: 'Precise, technical', palette_strategy: 'Moderate reduction (5 colors)', color_direction: 'Professional, dimensional', background: 'Flat White (#FFFFFF)', form_language: 'Isometric, geometric', stroke_preset: 'Uniform Thin', perspective: 'Isometric' } },
+          { id: "vec-organic", name: "Organic", type: PanelMode.VECTOR, description: "Nature-inspired fluid forms. Biological curves. Soft, no outlines.", prompt: "Vectorize the uploaded image with organic, fluid forms. Biological inspiration. Soft, curved translation. No outlines. Render on flat soft gray background. 5-color communicative palette.", parameters: { detail_fidelity: 'Moderate', edge_quality: 'Fluid, organic', palette_strategy: 'Moderate reduction (5 colors)', color_direction: 'Communicative, natural', background: 'Flat Soft Gray (#F5F5F2)', form_language: 'Biological, flowing', stroke_preset: 'None', curvature: 'High' } },
+          { id: "vec-tech", name: "Tech", type: PanelMode.VECTOR, description: "Digital circuit aesthetic. High-tech UI influence. Dark background.", prompt: "Vectorize the uploaded image with high-tech digital aesthetic. Circuit pattern influence in form language. UI design language. Thin outlines. Render on flat black background. 4-color professional palette.", parameters: { detail_fidelity: 'High', edge_quality: 'Refined, technical', palette_strategy: 'Moderate reduction (4 colors)', color_direction: 'Professional, futuristic', background: 'Flat Black (#000000)', form_language: 'Digital, circuit-influenced', stroke_preset: 'Uniform Thin', tech_influence: 'High' } },
+          { id: "vec-architectural-realism", name: "Architectural Realism", type: PanelMode.VECTOR, description: "Precise architectural vector illustration with clean modular forms and soft daylight realism.", prompt: "Vectorize the uploaded image as a flat architectural illustration. Enforce clean geometric lines, modular building facades, and a symmetrical central perspective. Emulate soft natural daylight with a warm earth tone palette accented by cerulean sky. Ligne Claire vector style with precise fine-line definition.", parameters: { detail_fidelity: 'High', edge_quality: 'Precise, fine-line', palette_strategy: 'Moderate reduction (6 colors)', color_direction: 'Warm earth tones, cerulean accents', background: 'Flat Off-White (#FAF9F7)', form_language: 'Modular architectural, geometric', stroke_preset: 'Uniform Thin' } },
+        ].map(p => p as VectorPreset)
       }
     ]
   },
@@ -280,79 +98,29 @@ export const PRESET_REGISTRY: PresetRegistry = {
         type: PresetCategoryType.BUILT_IN,
         items: [
           {
-            id: 'typo-modern-minimal',
-            name: 'Modern Minimal',
-            type: PanelMode.TYPOGRAPHY,
-            category: 'Essentials',
-            description: 'Clean modern typography with strong readability',
-            prompt: 'Modern minimalist typography with clean spacing and balance',
-            styleUsed: 'Modern',
-            tags: ['modern', 'minimal', 'clean'],
-            rating: 4.8,
-            isProtected: true,
-            metadata: {
-              mobileTitle: 'Modern',
-              mobileIcon: 'type',
-              mobilePriority: 1
-            },
-            parameters: {
-              fontStyle: 'Modern',
-              weight: 'Regular',
-              spacing: 'Normal',
-              effect: 'None'
-            }
+            id: 'typo-modern-minimal', name: 'Modern Minimal', type: PanelMode.TYPOGRAPHY, category: 'Essentials',
+            description: 'Clean, unadorned typography with balanced spacing and professional restraint. The text breathes. Nothing extra.',
+            prompt: 'Render the text as modern minimalist typography. Clean sans-serif letterforms. Balanced optical spacing. No decorative effects. Solid flat white or light gray background. High legibility. The typography itself is the entire composition.',
+            parameters: { letterform_style: 'Modern Sans', layout: 'Horizontal, optically centered', spacing: 'Balanced, professional', effects: 'None', background: 'Flat White (#FFFFFF) or Flat Light Gray (#F5F5F5)', color_logic: 'Monochrome or single accent', texture: 'None', ornamentation: 'None' }
           } as TypographyPreset,
           {
-            id: 'typo-art-deco-bold',
-            name: 'Art Deco Bold',
-            type: PanelMode.TYPOGRAPHY,
-            category: 'Classic',
-            description: 'Elegant Art Deco typography with bold personality',
-            prompt: 'Art Deco inspired typography with bold geometry',
-            styleUsed: 'Art Deco',
-            tags: ['art-deco', 'luxury', 'vintage'],
-            rating: 4.7,
-            parameters: {
-              fontStyle: 'Art Deco',
-              weight: 'Bold',
-              spacing: 'Wide',
-              effect: 'Outline'
-            }
+            id: 'typo-art-deco-bold', name: 'Art Deco Bold', type: PanelMode.TYPOGRAPHY, category: 'Essentials',
+            description: 'Geometric elegance with stepped forms, stylized serifs, and glamorous authority. Bold, symmetrical, contained.',
+            prompt: 'Render the text in bold Art Deco typography. Geometric construction. Stylized, stepped serifs. Symmetrical composition. Optional thin inline effect. Rich, deep color palette (gold, emerald, navy, black). Solid flat dark background. Vintage glamour.',
+            parameters: { letterform_style: 'Art Deco Serif', layout: 'Horizontal or stacked, symmetrical', spacing: 'Wide, regal', effects: 'Optional inline', background: 'Flat Black (#000000) or Flat Navy (#0A0A1A)', color_logic: 'Metallics, jewel tones', texture: 'None', ornamentation: 'Stepped geometric terminals' }
           } as TypographyPreset,
           {
-            id: 'typo-neon-cyber',
-            name: 'Neon Cyber',
-            type: PanelMode.TYPOGRAPHY,
-            category: 'Futuristic',
-            description: 'Glowing cyberpunk typography with neon presence',
-            prompt: 'Cyberpunk neon typography glowing with futuristic energy',
-            styleUsed: 'Cyberpunk',
-            tags: ['neon', 'cyberpunk', 'futuristic'],
-            rating: 4.6,
-            parameters: {
-              fontStyle: 'Cyberpunk',
-              weight: 'Heavy',
-              spacing: 'Normal',
-              effect: 'Glow'
-            }
+            id: 'typo-neon-cyber', name: 'Neon Cyber', type: PanelMode.TYPOGRAPHY, category: 'Essentials',
+            description: 'Futuristic glow typography. Electric colors, ambient bloom, cyberpunk energy. Text radiates.',
+            prompt: 'Render the text as neon cyberpunk typography. Bold, heavy letterforms with inner glow and outer bloom. Electric blues, magentas, cyans. Solid flat black background. Optional subtle digital noise. Text appears self-illuminated.',
+            parameters: { letterform_style: 'Heavy Geometric Sans', layout: 'Horizontal, compressed optional', spacing: 'Tight, aggressive', effects: 'Inner glow, outer bloom', background: 'Flat Black (#000000)', color_logic: 'Electric blues, magentas, cyans', texture: 'None (digital noise optional minimal)', ornamentation: 'None' }
           } as TypographyPreset,
           {
-            id: 'typo-handwritten-organic',
-            name: 'Handwritten Organic',
-            type: PanelMode.TYPOGRAPHY,
-            category: 'Creative',
-            description: 'Organic handwritten typography with personal character',
-            prompt: 'Handwritten organic typography with natural flow',
-            styleUsed: 'Handwritten',
-            tags: ['handwritten', 'organic', 'friendly'],
-            rating: 4.5,
-            parameters: {
-              fontStyle: 'Handwritten',
-              weight: 'Light',
-              spacing: 'Tight',
-              effect: 'None'
-            }
-          } as TypographyPreset
+            id: 'typo-handwritten-organic', name: 'Handwritten Organic', type: PanelMode.TYPOGRAPHY, category: 'Essentials',
+            description: 'Natural, flowing script with personal character. Warm, imperfect, human.',
+            prompt: 'Render the text as organic handwritten typography. Natural flow, variable stroke weight. Imperfect, human quality. Warm, soft color palette. Solid flat warm gray or cream background. No strict geometric alignment.',
+            parameters: { letterform_style: 'Cursive / Script', layout: 'Horizontal, natural rhythm', spacing: 'Loose, breathing', effects: 'None', background: 'Flat Warm Gray (#F0F0E8) or Flat Cream (#FAF7F0)', color_logic: 'Warm neutrals, earth tones, muted accents', texture: 'None', ornamentation: 'Optional gentle swashes' }
+          } as TypographyPreset,
         ]
       },
       {
@@ -361,11 +129,11 @@ export const PRESET_REGISTRY: PresetRegistry = {
         mobileLabel: "URBAN_T",
         type: PresetCategoryType.BUILT_IN,
         items: [
-          { id: 'type-graffiti-wildstyle', name: 'Wildstyle Graffiti', category: 'GRAFFITI', description: 'Complex interlocking letters', type: PanelMode.TYPOGRAPHY, prompt: 'wildstyle graffiti typography, complex interlocking letters, 3D perspective, arrows and connections, spray paint texture, vibrant colors with black outline, urban street art', parameters: { fontStyle: 'Grunge', weight: 'Heavy', spacing: 'Tight', effect: 'Shadow' } },
-          { id: 'type-graffiti-bubble', name: 'Bubble Graffiti', category: 'GRAFFITI', description: 'Rounded, cartoon-like letters', type: PanelMode.TYPOGRAPHY, prompt: 'bubble graffiti letters, rounded plump shapes, cartoon-like appearance, soft shadows, gradient fills, playful style, 1990s hip hop aesthetic', parameters: { fontStyle: 'Modern', weight: 'Bold', spacing: 'Normal', effect: 'None' } },
-          { id: 'type-graffiti-tag', name: 'Throw-up Tag', category: 'GRAFFITI', description: 'Quick, bold street tags', type: PanelMode.TYPOGRAPHY, prompt: 'graffiti throw-up tag, bold simple letters, quick execution style, outline with fill, spray paint drips, urban signature, street credibility', parameters: { fontStyle: 'Grunge', weight: 'Regular', spacing: 'Normal', effect: 'None' } },
-          { id: 'type-graffiti-stencil', name: 'Stencil Graffiti', category: 'GRAFFITI', description: 'Political/Banksy-style stencils', type: PanelMode.TYPOGRAPHY, prompt: 'stencil graffiti typography, cut-out letter forms, bridge connections maintained, spray paint overspray texture, political art aesthetic, urban rebellion', parameters: { fontStyle: 'Grunge', weight: 'Heavy', spacing: 'Normal', effect: 'None' } }
-        ]
+            { id: 'typo-graffiti-wildstyle', name: 'Wildstyle Graffiti', type: PanelMode.TYPOGRAPHY, category: 'Graffiti', description: 'Complex interlocking letters. Arrows, connections, 3D perspective. Urban complexity on flat ground.', prompt: 'Render the text as wildstyle graffiti. Complex interlocking letterforms. 3D perspective blocks. Arrows and decorative connections. Vibrant color palette with black outline. Solid flat dark gray or black background. Urban street art aesthetic on solid ground.', parameters: { letterform_style: 'Wildstyle', layout: 'Interlocked, dynamic flow', spacing: 'Tight, overlapping', effects: '3D shadow, black outline', background: 'Flat Dark Gray (#1A1A1A) or Flat Black (#000000)', color_logic: 'Vibrant, high contrast', texture: 'None', ornamentation: 'Arrows, extensions, connections' } },
+            { id: 'typo-graffiti-bubble', name: 'Bubble Graffiti', type: PanelMode.TYPOGRAPHY, category: 'Graffiti', description: 'Rounded, plump letterforms. Cartoon-like. Soft shadows. 90s hip-hop aesthetic.', prompt: 'Render the text as bubble graffiti. Rounded, plump, cartoon-like letterforms. Soft drop shadows. Gradient fills optional. Playful, energetic. Bright, cheerful palette. Solid flat bright or light background.', parameters: { letterform_style: 'Bubble / Rounded', layout: 'Horizontal, bouncy baseline', spacing: 'Loose, playful', effects: 'Soft shadow', background: 'Flat White (#FFFFFF) or Flat Light Blue (#E6F0FA)', color_logic: 'Bright, saturated, fun', texture: 'None', ornamentation: 'None' } },
+            { id: 'typo-graffiti-tag', name: 'Throw-up Tag', type: PanelMode.TYPOGRAPHY, category: 'Graffiti', description: 'Quick, bold street tags. Simple forms. Spray drips. Raw urgency on flat color.', prompt: 'Render the text as a graffiti throw-up tag. Bold, simple letterforms. Quick execution style. Single outline with fill. Spray paint drip texture. Solid flat white or black background. Urban signature aesthetic.', parameters: { letterform_style: 'Simple block / Bubble', layout: 'Horizontal, quick rhythm', spacing: 'Variable, natural', effects: 'Outline + fill', background: 'Flat White (#FFFFFF) or Flat Black (#000000)', color_logic: 'High contrast, limited palette', texture: 'Spray drip texture only on letters', ornamentation: 'None' } },
+            { id: 'typo-graffiti-stencil', name: 'Stencil Graffiti', type: PanelMode.TYPOGRAPHY, category: 'Graffiti', description: 'Cut-out letterforms with bridge connections. Political aesthetic on flat ground.', prompt: 'Render the text as stencil graffiti. Cut-out letterforms with maintained bridge connections. Overspray texture on letters only. Political art aesthetic. High contrast, limited palette. Solid flat off-white or black background.', parameters: { letterform_style: 'Stencil', layout: 'Horizontal, industrial', spacing: 'Even, functional', effects: 'None', background: 'Flat Off-White (#F5F5F5) or Flat Black (#000000)', color_logic: 'High contrast, limited (black/white, red/black)', texture: 'Overspray on letters only', ornamentation: 'None' } },
+        ].map(p => p as TypographyPreset)
       },
       {
         id: "lib-typo-geometric",
@@ -373,249 +141,138 @@ export const PRESET_REGISTRY: PresetRegistry = {
         mobileLabel: "GEO_T",
         type: PresetCategoryType.BUILT_IN,
         items: [
-          { id: "typo-triangle", name: "Triangle Text", category: "GEOMETRIC", description: "Sharp triangular glyphs", type: PanelMode.TYPOGRAPHY, prompt: "Typography composed of interlocking triangular shapes, sharp edges, geometric", parameters: { fontStyle: 'Geometric', weight: 'Bold', spacing: 'Normal', effect: 'None' } },
-          { id: "typo-hexa", name: "Hexa Glyphs", category: "GEOMETRIC", description: "Modular hexagonal letters", type: PanelMode.TYPOGRAPHY, prompt: "Hexagonal modular typography, geometric honeycomb structure", parameters: { fontStyle: 'Geometric', weight: 'Bold', spacing: 'Tight', effect: 'None' } },
-          { id: "typo-diamond", name: "Diamond Cut", category: "GEOMETRIC", description: "Reflective faceted letters", type: PanelMode.TYPOGRAPHY, prompt: "Diamond cut typography, faceted letterforms, reflective geometric edges", parameters: { fontStyle: '3D', weight: 'Heavy', spacing: 'Normal', effect: 'Glow' } }
-        ]
+            { id: 'typo-triangle-text', name: 'Triangle Text', type: PanelMode.TYPOGRAPHY, category: 'Geometric', description: 'Sharp, angular glyphs constructed from triangular forms. Geometric precision. Edgy.', prompt: 'Render the text using interlocking triangular shapes. Sharp, angular letterforms. Geometric construction. No curves. Monoline or varied weight. Bold, architectural presence. Solid flat dark or neutral background.', parameters: { letterform_style: 'Triangular / Faceted', layout: 'Horizontal, rigid grid', spacing: 'Tight, precise', effects: 'None', background: 'Flat Dark Gray (#1E1E1E) or Flat Charcoal (#2A2A2A)', color_logic: 'High contrast, limited', texture: 'None', ornamentation: 'Faceted edges' } },
+            { id: 'typo-hexa-glyphs', name: 'Hexa Glyphs', type: PanelMode.TYPOGRAPHY, category: 'Geometric', description: 'Modular hexagonal letterforms. Honeycomb structure. Technical, biological fusion.', prompt: 'Render the text as hexagonal modular typography. Honeycomb grid structure. Each letter constructed from hexagon units. Tight spacing. Geometric, technical aesthetic. Solid flat dark or neutral background.', parameters: { letterform_style: 'Hexagonal', layout: 'Horizontal, grid-aligned', spacing: 'Tight', effects: 'None', background: 'Flat Dark Gray (#1E1E1E) or Flat Slate (#2F4F4F)', color_logic: 'Limited, structural', texture: 'None', ornamentation: 'Hexagon joints' } },
+            { id: 'typo-diamond-cut', name: 'Diamond Cut', type: PanelMode.TYPOGRAPHY, category: 'Geometric', description: 'Faceted, geometric letterforms. Precision-cut presence. Jewel-like.', prompt: 'Render the text as diamond-cut typography. Faceted, geometric letterforms. Reflective surfaces implied through value contrast. Bold presence. Solid flat black background.', parameters: { letterform_style: 'Faceted Geometric', layout: 'Horizontal', spacing: 'Normal', effects: 'Faceted shading (value only)', background: 'Flat Black (#000000)', color_logic: 'Cool metallics, monochromatic', texture: 'None', ornamentation: 'Faceted cuts' } },
+        ].map(p => p as TypographyPreset)
+      },
+      {
+        id: "lib-typo-heraldic",
+        title: "HERALDIC_SCRIPT",
+        mobileLabel: "SCRIPT_T",
+        type: PresetCategoryType.BUILT_IN,
+        items: [
+            { id: 'typo-ornamental-serif', name: 'Ornamental Serif', type: PanelMode.TYPOGRAPHY, category: 'Heraldic', description: 'Vintage victorian lettering. Decorative terminals, swashes, filigree. Formal elegance on solid ground.', prompt: 'Render the text as ornamental serif typography. Victorian influence. Decorative terminals. Optional entry/exit swashes. Filigree flourishes integrated with letterforms. Rich, deep color palette. Solid flat deep background. Formal, elegant.', parameters: { letterform_style: 'Ornamental Serif', layout: 'Horizontal, formal', spacing: 'Wide, regal', effects: 'None', background: 'Flat Deep Navy (#0A0A1A) or Flat Burgundy (#2A0A0A)', color_logic: 'Rich, deep, metallic optional', texture: 'None', ornamentation: 'Swashes, filigree, decorative terminals' } },
+            { id: 'typo-celtic-knot', name: 'Celtic Knot', type: PanelMode.TYPOGRAPHY, category: 'Heraldic', description: 'Interlaced letterforms with knotwork influence. Continuous woven forms. Ancient, mystical.', prompt: 'Render the text as Celtic knot-inspired typography. Interlaced, woven letterforms. Continuous path logic. Knotwork ornamentation integrated. Earthy, deep color palette. Solid flat deep green or navy background. Mystical presence.', parameters: { letterform_style: 'Interlaced Celtic', layout: 'Horizontal or stacked', spacing: 'Tight, interwoven', effects: 'None', background: 'Flat Deep Green (#1E3A2F) or Flat Navy (#1A2A3A)', color_logic: 'Earthy, jewel, metallic', texture: 'None', ornamentation: 'Knotwork, interlacing' } },
+            { id: 'typo-rustic-timber', name: 'Rustic Timber', type: PanelMode.TYPOGRAPHY, category: 'Heraldic', description: 'Wood-carved aesthetic. Notched terminals. Craft, brewery, tavern. Flat color ground.', prompt: 'Render the text as rustic timber-carved typography. Notched, chiseled terminals. Craft aesthetic. Warm, earthy palette. Solid flat warm gray or cream background. Hand-carved presence on solid ground.', parameters: { letterform_style: 'Slab / Wood-carved', layout: 'Horizontal', spacing: 'Normal', effects: 'Bevel optional (value only)', background: 'Flat Warm Gray (#4A4A4A) or Flat Cream (#FAF0E6)', color_logic: 'Earthy, warm', texture: 'None (carved forms only)', ornamentation: 'Notched terminals' } },
+        ].map(p => p as TypographyPreset)
+      },
+      {
+        id: "lib-typo-experimental",
+        title: "EXPERIMENTAL",
+        mobileLabel: "EXP_T",
+        type: PresetCategoryType.BUILT_IN,
+        items: [
+            { id: 'typo-liquid-metal', name: 'Liquid Metal', type: PanelMode.TYPOGRAPHY, category: 'Experimental', description: 'Molten, fluid metallic letterforms. Reflective, flowing. Industrial elegance on solid black.', prompt: 'Render the text as liquid metal typography. Molten, fluid forms. Reflective metallic surfaces implied through value contrast. Flowing, organic letter construction. Industrial elegance. Solid flat black background.', parameters: { letterform_style: 'Fluid Organic', layout: 'Horizontal, flowing', spacing: 'Variable', effects: 'Metallic reflection (value only)', background: 'Flat Black (#000000)', color_logic: 'Metallics (silver, gold, copper)', texture: 'None', ornamentation: 'Flow tails' } },
+            { id: 'typo-bioluminescent', name: 'Bioluminescent', type: PanelMode.TYPOGRAPHY, category: 'Experimental', description: 'Glowing organic forms. Deep sea / fungal aesthetic. Ethereal, alien on flat deep color.', prompt: 'Render the text as bioluminescent typography. Organic, flowing letterforms. Self-illuminated glow. Deep blue/green/purple palette. Solid flat deep blue or black background. Ethereal, alien beauty.', parameters: { letterform_style: 'Organic Fluid', layout: 'Horizontal, natural flow', spacing: 'Loose, breathing', effects: 'Inner glow, ambient glow', background: 'Flat Deep Blue (#0A1A2A) or Flat Black (#000000)', color_logic: 'Bioluminescent blues, greens, purples', texture: 'None', ornamentation: 'Glow points, tendrils' } },
+            { id: 'typo-crystal-growth', name: 'Crystal Growth', type: PanelMode.TYPOGRAPHY, category: 'Experimental', description: 'Geode-inspired letterforms. Crystalline structures. Faceted, luminous on flat ground.', prompt: 'Render the text as crystal growth typography. Geode-inspired. Faceted, crystalline letterforms. Luminous, translucent quality implied through value. Light, ethereal palette. Solid flat light gray or black background.', parameters: { letterform_style: 'Crystalline Geometric', layout: 'Horizontal', spacing: 'Normal', effects: 'Faceted shading (value only)', background: 'Flat Light Gray (#E8E8E8) or Flat Black (#000000)', color_logic: 'Quartz, amethyst, citrine, aquamarine', texture: 'None', ornamentation: 'Crystal growth points' } },
+        ].map(p => p as TypographyPreset)
       }
     ]
   },
   MONOGRAM: {
     libraries: [
       {
-        id: "lib-monogram-essentials",
-        title: "ESSENTIALS",
+        id: "lib-monogram-core",
+        title: "CORE_SYSTEMS",
         mobileLabel: "CORE_M",
         type: PresetCategoryType.BUILT_IN,
         items: [
-          {
-            id: 'mono-classic-interlock',
-            name: 'Classic Interlock',
-            type: PanelMode.MONOGRAM,
-            category: 'Classic',
-            description: 'Timeless interlocked monogram with perfect symmetry',
-            prompt: 'Classic interlocked monogram with elegant balance',
-            tags: ['classic', 'elegant', 'luxury'],
-            rating: 4.9,
-            isProtected: true,
-            metadata: {
-              mobileTitle: 'Classic',
-              mobileIcon: 'shield',
-              mobilePriority: 1
-            },
-            parameters: {
-              layoutMode: 'interlocked',
-              symmetry: 'Perfect Radial',
-              container: 'Strict',
-              densityRatio: 'Balanced',
-              legibility: 'High',
-              structureCreativity: 35,
-              densitySpace: 60,
-              traditionalModern: 20,
-              strokeEnds: 'Sheared',
-              style: 'Classic Heraldic'
-            }
-          } as MonogramPreset,
-          {
-            id: 'mono-modern-stack',
-            name: 'Modern Stack',
-            type: PanelMode.MONOGRAM,
-            category: 'Modern',
-            description: 'Modern stacked monogram with clean geometry',
-            prompt: 'Modern stacked monogram with geometric clarity',
-            tags: ['modern', 'stacked', 'clean'],
-            rating: 4.7,
-            parameters: {
-              layoutMode: 'stacked',
-              symmetry: 'Vertical Mirror',
-              container: 'Suggested',
-              densityRatio: 'Open',
-              legibility: 'High',
-              structureCreativity: 50,
-              densitySpace: 55,
-              traditionalModern: 65,
-              strokeEnds: 'Blunt',
-              style: 'Modern Minimal'
-            }
-          } as MonogramPreset,
-          {
-            id: 'mono-expressive-mirror',
-            name: 'Expressive Mirror',
-            type: PanelMode.MONOGRAM,
-            category: 'Creative',
-            description: 'Expressive mirrored monogram with dynamic balance',
-            prompt: 'Expressive mirrored monogram with artistic flair',
-            tags: ['expressive', 'artistic', 'dynamic'],
-            rating: 4.6,
-            parameters: {
-              layoutMode: 'mirrored',
-              symmetry: 'Dynamic',
-              container: 'Weak',
-              densityRatio: 'Dense',
-              legibility: 'Medium',
-              structureCreativity: 80,
-              densitySpace: 40,
-              traditionalModern: 55,
-              strokeEnds: 'Tapered',
-              style: 'Futuristic'
-            }
-          } as MonogramPreset,
-          {
-            id: 'mono-avant-garde',
-            name: 'Avant-Garde',
-            type: PanelMode.MONOGRAM,
-            category: 'Experimental',
-            description: 'Avant-garde monogram pushing structure and abstraction',
-            prompt: 'Avant-garde abstract monogram with experimental structure',
-            tags: ['avant-garde', 'experimental', 'abstract'],
-            rating: 4.4,
-            parameters: {
-              layoutMode: 'block',
-              symmetry: 'Asymmetrical',
-              container: 'None',
-              densityRatio: 'Compressed',
-              legibility: 'Low',
-              structureCreativity: 95,
-              densitySpace: 25,
-              traditionalModern: 75,
-              strokeEnds: 'Rounded',
-              style: 'Brutalist'
-            }
-          } as MonogramPreset
-        ]
+          { id: 'mono-classic-interlock', name: 'Classic Interlock', type: PanelMode.MONOGRAM, category: 'Classic', description: 'Traditional interlocked monogram. Letters weave tightly. Symmetrical. Contained within implied shield or circle. Serif or slab-serif adjacent. High legibility.', prompt: 'Generate a traditional, elegant interlocked monogram for the initials provided. Letters weave together seamlessly, sharing strokes. Perfect radial symmetry. Contained within an implied circular or shield-like form. Classic serif or slab-serif letterforms. High legibility. Flat solid background. No extraneous text or illustrations.', parameters: { letter_relationship: 'Interlocked, stroke-sharing', symmetry: 'Perfect Radial', container: 'Strict, implied circular', legibility_target: 'High', form_language: 'Traditional serif / slab-serif', stroke_character: 'Sheared terminals, modulated weight', spatial_density: 'Balanced, traditional breathing', abstraction_tolerance: 'Low', period_influence: 'Classical / Heraldic' } },
+          { id: 'mono-modern-stack', name: 'Modern Stack', type: PanelMode.MONOGRAM, category: 'Modern', description: 'Contemporary stacked monogram. Letters arranged vertically or horizontally compressed. Asymmetrical. Sans-serif. Active negative space. Contained or freeform.', prompt: 'Generate a contemporary stacked monogram for the initials provided. Letters arranged vertically or horizontally compressed. Asymmetrical balance. Clean sans-serif letterforms. Active negative space. May be contained or freeform. High legibility. Flat solid background. No extraneous text or illustrations.', parameters: { letter_relationship: 'Stacked, compressed', symmetry: 'Asymmetrical', container: 'Optional — Suggested or None', legibility_target: 'High', form_language: 'Clean sans-serif', stroke_character: 'Blunt terminals, uniform weight', spatial_density: 'Spacious, breathing prioritized', abstraction_tolerance: 'Low', period_influence: 'Contemporary' } },
+          { id: 'mono-heraldic-crest', name: 'Heraldic Crest', type: PanelMode.MONOGRAM, category: 'Ceremonial', description: 'Ceremonial monogram. Strong containment (shield, seal). Letters secondary to frame. Ornamental terminals. Vintage authority.', prompt: 'Generate a ceremonial heraldic crest monogram for the initials provided. Strong shield or seal containment. Ornamental, decorative terminals. Letters integrated within frame — frame is dominant. Vintage, authoritative presence. Moderate legibility tolerance. Flat solid background. No extraneous text or illustrations.', parameters: { letter_relationship: 'Contained, integrated', symmetry: 'Vertical Mirror', container: 'Strict, shield or seal', legibility_target: 'Moderate', form_language: 'Ornamental serif', stroke_character: 'Sheared, decorative terminals', spatial_density: 'Frame-dominant, letters secondary', abstraction_tolerance: 'Moderate', period_influence: 'Heraldic / Victorian' } },
+          { id: 'mono-brutalist', name: 'Brutalist', type: PanelMode.MONOGRAM, category: 'Structural', description: 'Raw, structural monogram. Letters as architectural forms. Overlap, cutouts, heavy weights. Minimal decoration. High abstraction tolerance.', prompt: 'Generate a brutalist architectural monogram for the initials provided. Letters treated as raw, structural forms. Heavy weights. Stark overlaps and cutouts. No decoration. Unpolished, honest geometry. High abstraction tolerance — letters may resolve slowly. Flat solid background. No extraneous text or illustrations.', parameters: { letter_relationship: 'Overlapping, interlocking', symmetry: 'Asymmetrical', container: 'None — freeform', legibility_target: 'Low (Abstraction Tolerant)', form_language: 'Architectural, raw geometric', stroke_character: 'Blunt, heavy, uniform', spatial_density: 'Dense, compressed', abstraction_tolerance: 'High', period_influence: 'Brutalist / Anti-design' } },
+          { id: 'mono-heavy-modular-block', name: 'Heavy Modular Block', type: PanelMode.MONOGRAM, category: 'Structural', description: 'Interlocking geometric monochrome. Heavy angular forms. High density modular construction.', prompt: 'Heavy black geometric glyphs, interlocking angular monogram, sharp corner construction, negative space manipulation, blocky silhouette, solid monochrome fill, brutalist architectural influence.', parameters: { letter_relationship: 'Interlocking, geometric', symmetry: 'Asymmetrical', container: 'None — freeform', legibility_target: 'Low (Abstraction Tolerant)', form_language: 'Heavy modular block', stroke_character: 'Thick uniform weight', spatial_density: 'Dense, modular', abstraction_tolerance: 'High', period_influence: 'Brutalist / Architectural' } },
+          { id: 'mono-geometric-grid', name: 'Geometric Grid', type: PanelMode.MONOGRAM, category: 'Engineered', description: 'Constructed monogram. Letters built from modular units. Strict angles, circles, arcs. Engineered aesthetic. Monoline.', prompt: 'Generate a geometric grid-constructed monogram for the initials provided. Letters built from modular geometric units — strict angles, circles, arcs. Engineered, technical aesthetic. Monoline stroke weight. Suggested container or freeform. Moderate legibility tolerance. Flat solid background. No extraneous text or illustrations.', parameters: { letter_relationship: 'Modular, constructed', symmetry: 'Perfect Radial or Grid-based', container: 'Suggested, geometric', legibility_target: 'Moderate', form_language: 'Modular geometric', stroke_character: 'Rounded terminals, monoline', spatial_density: 'Grid-aligned, measured', abstraction_tolerance: 'Moderate', period_influence: 'Constructivist / Technical' } },
+          { id: 'mono-script-fusion', name: 'Script Fusion', type: PanelMode.MONOGRAM, category: 'Fluid', description: 'Fluid, connected monogram. Swashes and ligatures. Cursive or calligraphic base. Continuous stroke logic.', prompt: 'Generate a fluid script monogram for the initials provided. Letters connected through elegant swashes and ligatures. Cursive or calligraphic base. Continuous, flowing stroke logic. Freeform — no container. High legibility. Flat solid background. No extraneous text or illustrations.', parameters: { letter_relationship: 'Connected, flowing', symmetry: 'Dynamic, calligraphic rhythm', container: 'None — freeform', legibility_target: 'High', form_language: 'Cursive / Calligraphic', stroke_character: 'Tapered, variable weight', spatial_density: 'Flowing, rhythmic', abstraction_tolerance: 'Low', period_influence: 'Spencerian / Copperplate' } },
+          { id: 'mono-negative-space', name: 'Negative Space', type: PanelMode.MONOGRAM, category: 'Conceptual', description: 'Clever, minimalist monogram. Letterforms defined by absence rather than presence. Figure-ground reversal. High conceptual load.', prompt: 'Generate a negative space monogram for the initials provided. Letterforms revealed through figure-ground reversal — absence defines presence. Minimalist. Strict container. Moderate legibility tolerance. High conceptual impact. Flat solid background. No extraneous text or illustrations.', parameters: { letter_relationship: 'Figure-ground, embedded', symmetry: 'Asymmetrical', container: 'Strict, geometric', legibility_target: 'Moderate', form_language: 'Minimalist, conceptual', stroke_character: 'Blunt, uniform', spatial_density: 'Sparse, intentional', abstraction_tolerance: 'High', period_influence: 'Contemporary / Conceptual' } },
+          { id: 'mono-monoline-continuous', name: 'Monoline Continuous', type: PanelMode.MONOGRAM, category: 'Abstract', description: 'Single stroke weight. Letters flow into one continuous line. Abstract. Signature or kinetic sculpture feel.', prompt: 'Generate a continuous monoline monogram for the initials provided. Single, unbroken stroke weight throughout. Letters flow into one another as a continuous line. Abstract, sculptural quality. Freeform — no container. Moderate legibility tolerance. Flat solid background. No extraneous text or illustrations.', parameters: { letter_relationship: 'Continuous, unbroken', symmetry: 'Dynamic, kinetic', container: 'None — freeform', legibility_target: 'Moderate', form_language: 'Abstract, linear', stroke_character: 'Rounded terminals, uniform monoline', spatial_density: 'Flowing, spacious', abstraction_tolerance: 'High', period_influence: 'Futuristic / Sculptural' } },
+          { id: 'mono-art-deco', name: 'Art Deco', type: PanelMode.MONOGRAM, category: 'Glamorous', description: 'Bold geometric ornamentation. Stylized serifs. Stepped forms. Symmetrical. Contained. Glamorous authority.', prompt: 'Generate a glamorous Art Deco monogram for the initials provided. Bold geometric ornamentation. Stylized, stepped serifs. Symmetrical composition. Strict geometric container. High legibility. Rich, deep color palette. Flat solid background. No extraneous text or illustrations.', parameters: { letter_relationship: 'Block, contained', symmetry: 'Vertical Mirror', container: 'Strict, geometric', legibility_target: 'High', form_language: 'Geometric ornamental', stroke_character: 'Sheared, stepped terminals', spatial_density: 'Balanced, regal', abstraction_tolerance: 'Low', period_influence: 'Art Deco / Gatsby' } },
+          { id: 'mono-radial-symmetry', name: 'Radial Symmetry', type: PanelMode.MONOGRAM, category: 'Decorative', description: 'Letters arranged around a center point. Reads from multiple angles. Circular containment. Decorative or spiritual tone.', prompt: 'Generate a radially symmetrical monogram for the initials provided. Letters arranged around a central point. Reads equally from multiple orientations. Circular containment. Decorative or meditative tone. Moderate legibility tolerance. Flat solid background. No extraneous text or illustrations.', parameters: { letter_relationship: 'Radial arrangement', symmetry: 'Perfect Radial', container: 'Strict, circular', legibility_target: 'Moderate', form_language: 'Decorative geometric', stroke_character: 'Rounded or sheared', spatial_density: 'Circular, balanced', abstraction_tolerance: 'Moderate', period_influence: 'Rosette / Mandala' } },
+        ].map(p => p as MonogramPreset)
       },
       {
-        id: "lib-monogram-core",
-        title: "CLASSIC_STYLES",
-        mobileLabel: "CLASS_M",
+        id: "lib-monogram-expanded",
+        title: "EXPANDED_SYSTEMS",
+        mobileLabel: "EXP_M",
         type: PresetCategoryType.BUILT_IN,
         items: [
-          {
-            id: "mono-classic-interlocked",
-            name: "Classic Interlocked",
-            description: "Elegant interlocked geometric monogram",
-            type: PanelMode.MONOGRAM,
-            prompt: "elegant, interlocked geometric monogram with subtle negative space and radial symmetry",
-            category: "CLASSIC",
-            parameters: { layoutMode: 'interlocked', symmetry: 'Perfect Radial', container: 'Strict', densityRatio: '1:1', legibility: 'High', structureCreativity: 30, densitySpace: 50, traditionalModern: 20, strokeEnds: 'Blunt', style: 'Interlocked' }
-          } as MonogramPreset,
-          {
-            id: "mono-radial-fusion",
-            name: "Radial Fusion",
-            description: "Radial fused monogram with smooth strokes",
-            type: PanelMode.MONOGRAM,
-            prompt: "radial fused monogram with smooth strokes, balanced intersections, geometric cohesion",
-            category: "CLASSIC",
-            parameters: { layoutMode: 'interlocked', symmetry: 'Perfect Radial', container: 'Strict', densityRatio: '1:1', legibility: 'High', structureCreativity: 40, densitySpace: 60, traditionalModern: 30, strokeEnds: 'Rounded', style: 'Geometric' }
-          } as MonogramPreset,
-          {
-            id: "mono-block-seal",
-            name: "Block Seal",
-            description: "Geometric block monogram, compact",
-            type: PanelMode.MONOGRAM,
-            prompt: "geometric block monogram, compact, interlocking letters with precise symmetry",
-            category: "CLASSIC",
-            parameters: { layoutMode: 'block', symmetry: 'Perfect Radial', container: 'Strict', densityRatio: '1:1', legibility: 'High', structureCreativity: 20, densitySpace: 40, traditionalModern: 10, strokeEnds: 'Blunt', style: 'Geometric' }
-          } as MonogramPreset,
-          {
-            id: "mono-corporate",
-            name: "Corporate Seal",
-            description: "Symmetrical professional mark",
-            type: PanelMode.MONOGRAM,
-            prompt: "corporate seal monogram, clean lines, geometric symmetry, official document style",
-            category: "CLASSIC",
-            parameters: { layoutMode: 'interlocked', symmetry: 'Perfect Radial', container: 'Strict', densityRatio: '1:1', legibility: 'High', structureCreativity: 20, densitySpace: 80, traditionalModern: 30, strokeEnds: 'Blunt', style: 'Modern Minimal' }
-          } as MonogramPreset
-        ]
+          { id: 'mono-victorian-filigree', name: 'Victorian Filigree', type: PanelMode.MONOGRAM, category: 'Expanded', description: 'Ornate, decorative monogram. Heavy ornamentation. Flourishes, scrollwork. Formal, romantic.', prompt: 'Generate an ornate Victorian filigree monogram... Flat solid deep background.', parameters: { letter_relationship: 'Embedded in ornament', symmetry: 'Vertical Mirror', container: 'Strict, oval or shield', legibility_target: 'Moderate', form_language: 'Ornate Victorian', stroke_character: 'Tapered, decorative', spatial_density: 'Ornament-dominant', abstraction_tolerance: 'Moderate', period_influence: 'Victorian / Romantic' } },
+          { id: 'mono-bauhaus', name: 'Bauhaus', type: PanelMode.MONOGRAM, category: 'Expanded', description: 'Primary geometric forms. Circle, square, triangle construction. Minimal, functional. Sans-serif.', prompt: 'Generate a Bauhaus-inspired monogram... High legibility. Flat solid light background.', parameters: { letter_relationship: 'Geometric construction', symmetry: 'Grid-based', container: 'Suggested, geometric', legibility_target: 'High', form_language: 'Primary geometric', stroke_character: 'Blunt, uniform', spatial_density: 'Balanced, functional', abstraction_tolerance: 'Low', period_influence: 'Bauhaus / Modernist' } },
+          { id: 'mono-deconstructivist', name: 'Deconstructivist', type: PanelMode.MONOGRAM, category: 'Expanded', description: 'Fragmented, unstable compositions. Non-rectilinear. Controlled chaos.', prompt: 'Generate a deconstructivist monogram... Low legibility tolerance — abstract. Flat solid background.', parameters: { letter_relationship: 'Fragmented, dispersed', symmetry: 'Asymmetrical, unstable', container: 'None', legibility_target: 'Low (Abstraction Tolerant)', form_language: 'Fragmented geometric', stroke_character: 'Blunt, varied', spatial_density: 'Deliberately unbalanced', abstraction_tolerance: 'High', period_influence: 'Deconstructivist / Postmodern' } },
+          { id: 'mono-ribbon-banner', name: 'Ribbon & Banner', type: PanelMode.MONOGRAM, category: 'Expanded', description: 'Letters integrated within flowing banner forms. Celebration, achievement, institutional.', prompt: 'Generate a ribbon and banner monogram... High legibility. Flat solid background.', parameters: { letter_relationship: 'Banner-integrated', symmetry: 'Dynamic, flowing', container: 'Strict, banner/scroll', legibility_target: 'High', form_language: 'Ribbon, banner, scroll', stroke_character: 'Sheared or tapered', spatial_density: 'Banner-dominant', abstraction_tolerance: 'Low', period_influence: 'Fraternal / Institutional' } },
+          { id: 'mono-stencil', name: 'Stencil', type: PanelMode.MONOGRAM, category: 'Expanded', description: 'Cut-out letterforms with bridge connections. Industrial, utilitarian, street.', prompt: 'Generate a stencil monogram... High legibility. Flat solid background.', parameters: { letter_relationship: 'Independent with bridges', symmetry: 'Asymmetrical', container: 'Optional, geometric', legibility_target: 'High', form_language: 'Stencil, industrial', stroke_character: 'Blunt, uniform', spatial_density: 'Functional, open', abstraction_tolerance: 'Low', period_influence: 'Industrial / Military' } },
+          { id: 'mono-pixel-bitmap', name: 'Pixel / Bitmap', type: PanelMode.MONOGRAM, category: 'Expanded', description: 'Digital heritage. Letters constructed from pixel units. 8-bit, retro-digital.', prompt: 'Generate a pixel / bitmap monogram... High legibility. Flat solid background.', parameters: { letter_relationship: 'Modular grid units', symmetry: 'Grid-based', container: 'Suggested, square', legibility_target: 'High', form_language: 'Pixel, bitmap', stroke_character: 'Blunt, stepped', spatial_density: 'Grid-aligned', abstraction_tolerance: 'Low', period_influence: 'Retro-digital / 8-bit' } },
+          { id: 'mono-organic-fusion', name: 'Organic Fusion', type: PanelMode.MONOGRAM, category: 'Expanded', description: 'Biological, fluid forms. Letters grow into one another. Amoebic, natural.', prompt: 'Generate an organic fusion monogram... Moderate legibility tolerance. Flat solid background.', parameters: { letter_relationship: 'Fluid, growing', symmetry: 'Dynamic, organic', container: 'None', legibility_target: 'Moderate', form_language: 'Biological, amoebic', stroke_character: 'Rounded, tapered', spatial_density: 'Flowing, organic', abstraction_tolerance: 'Moderate', period_influence: 'Biomorphic / Natural' } },
+          { id: 'mono-lock-key', name: 'Lock & Key', type: PanelMode.MONOGRAM, category: 'Expanded', description: 'Interlocking mechanism aesthetic. Letters fit together like puzzle or mechanical joinery.', prompt: 'Generate a lock and key monogram... High legibility. Flat solid background.', parameters: { letter_relationship: 'Mechanical interlock', symmetry: 'Asymmetrical', container: 'Suggested, geometric', legibility_target: 'High', form_language: 'Mechanical, joinery', stroke_character: 'Sheared, precise', spatial_density: 'Tight, interlocked', abstraction_tolerance: 'Low', period_influence: 'Industrial / Craft' } },
+          { id: 'mono-shadow-volume', name: 'Shadow & Volume', type: PanelMode.MONOGRAM, category: 'Expanded', description: 'Strong dimensional presence. Drop shadows, inline cuts, extruded forms. Architectural weight.', prompt: 'Generate a shadow and volume monogram... High legibility. Flat solid background.', parameters: { letter_relationship: 'Layered, dimensional', symmetry: 'Asymmetrical', container: 'Optional', legibility_target: 'High', form_language: 'Dimensional, architectural', stroke_character: 'Sheared, volumetric', spatial_density: 'Weighted, substantial', abstraction_tolerance: 'Low', period_influence: 'Postmodern / Memphis' } },
+          { id: 'mono-knotwork', name: 'Knotwork', type: PanelMode.MONOGRAM, category: 'Expanded', description: 'Celtic-inspired interlacing. Continuous woven paths. Infinite, spiritual.', prompt: 'Generate a Celtic knotwork monogram... Moderate legibility tolerance. Flat solid deep background.', parameters: { letter_relationship: 'Woven, interlaced', symmetry: 'Radial or grid', container: 'Strict, circular or rectangular', legibility_target: 'Moderate', form_language: 'Celtic knotwork', stroke_character: 'Rounded, continuous', spatial_density: 'Dense, woven', abstraction_tolerance: 'Moderate', period_influence: 'Celtic / Insular' } },
+          { id: 'mono-minimal-bar', name: 'Minimal Bar', type: PanelMode.MONOGRAM, category: 'Expanded', description: 'Extreme reduction. Letters suggested by bars, lines, or dots. Almost abstract.', prompt: 'Generate a minimal bar monogram... Low legibility tolerance — conceptual. Flat solid background.', parameters: { letter_relationship: 'Suggested, implied', symmetry: 'Asymmetrical', container: 'Strict, geometric', legibility_target: 'Low (Abstraction Tolerant)', form_language: 'Bar, line, dot', stroke_character: 'Blunt, uniform', spatial_density: 'Sparse, minimal', abstraction_tolerance: 'Very High', period_influence: 'Contemporary / Minimalist' } },
+        ].map(p => p as MonogramPreset)
       },
       {
-        id: "lib-monogram-underground",
-        title: "UNDERGROUND_LABS",
-        mobileLabel: "VOID_M",
+        id: "lib-monogram-contemporary",
+        title: "CONTEMPORARY_STUDIO",
+        mobileLabel: "STUDIO_M",
         type: PresetCategoryType.BUILT_IN,
         items: [
-          {
-            id: 'mono-negative-lock',
-            name: 'Negative Space Lock',
-            category: 'UNDERGROUND',
-            description: 'Letters sharing negative space',
-            type: PanelMode.MONOGRAM,
-            prompt: 'monogram with negative space locking, letters share contours perfectly, works in positive/negative reversal, optical illusion effect, precise geometry',
-            parameters: { layoutMode: 'interlocked', symmetry: 'Asymmetrical', container: 'Strict', densityRatio: '1:1', legibility: 'Medium', structureCreativity: 90, densitySpace: 40, traditionalModern: 80, strokeEnds: 'Blunt', style: 'Geometric' }
-          } as MonogramPreset,
-          {
-            id: 'mono-kinetic',
-            name: 'Kinetic Monogram',
-            category: 'UNDERGROUND',
-            description: 'Letters in implied motion',
-            type: PanelMode.MONOGRAM,
-            prompt: 'kinetic monogram, letters captured in mid-transformation, implied motion, fluid transitions between forms, time-based aesthetic, dynamic energy',
-            parameters: { layoutMode: 'mirrored', symmetry: 'Dynamic', container: 'None', densityRatio: '2:1', legibility: 'Medium', structureCreativity: 85, densitySpace: 60, traditionalModern: 90, strokeEnds: 'Tapered', style: 'Futuristic' }
-          } as MonogramPreset,
-          {
-            id: 'mono-graffiti-interlock',
-            name: 'Graffiti Interlock',
-            category: 'GRAFFITI',
-            description: 'Wildstyle monogram fusion',
-            type: PanelMode.MONOGRAM,
-            prompt: 'graffiti wildstyle monogram, letters interlocked like puzzle pieces, 3D perspective, spray paint texture, urban street art meets heraldic tradition',
-            parameters: { layoutMode: 'interlocked', symmetry: 'Asymmetrical', container: 'None', densityRatio: '1:1', legibility: 'Low', structureCreativity: 95, densitySpace: 20, traditionalModern: 100, strokeEnds: 'Rounded', style: 'Brutalist' }
-          } as MonogramPreset,
-          {
-            id: 'mono-deconstruct',
-            name: 'Deconstructed Monogram',
-            category: 'UNDERGROUND',
-            description: 'Letters partially disassembled',
-            type: PanelMode.MONOGRAM,
-            prompt: 'deconstructed monogram, letters partially taken apart, floating elements, implied connections, brutalist aesthetic, architectural breakdown',
-            parameters: { layoutMode: 'block', symmetry: 'Asymmetrical', container: 'Weak', densityRatio: '1:1', legibility: 'Medium', structureCreativity: 80, densitySpace: 30, traditionalModern: 95, strokeEnds: 'Sheared', style: 'Brutalist' }
-          } as MonogramPreset,
-          {
-            id: 'mono-temporal',
-            name: 'Temporal Monogram',
-            category: 'UNDERGROUND',
-            description: 'Encodes time/date in form',
-            type: PanelMode.MONOGRAM,
-            prompt: 'temporal monogram design, letters arranged to represent specific time or date, clock face integration, calendar symbolism hidden in negative space',
-            parameters: { layoutMode: 'interlocked', symmetry: 'Perfect Radial', container: 'Strict', densityRatio: '1:1', legibility: 'High', structureCreativity: 75, densitySpace: 70, traditionalModern: 40, strokeEnds: 'Blunt', style: 'Geometric' }
-          } as MonogramPreset
-        ]
-      },
-      {
-        id: "lib-monogram-modern",
-        title: "MODERN_STYLES",
-        mobileLabel: "MOD_M",
-        type: PresetCategoryType.BUILT_IN,
-        items: [
-          {
-            id: "mono-stacked-modern",
-            name: "Stacked Modern",
-            description: "Stacked geometric monogram, modern minimal",
-            type: PanelMode.MONOGRAM,
-            prompt: "stacked geometric monogram, modern minimal style, radial symmetry enforced",
-            category: "MODERN",
-            parameters: { layoutMode: 'stacked', symmetry: 'Perfect Radial', container: 'Suggested', densityRatio: '1:2', legibility: 'Medium', structureCreativity: 60, densitySpace: 40, traditionalModern: 80, strokeEnds: 'Rounded', style: 'Modern Minimal' }
-          } as MonogramPreset,
-          {
-            id: "mono-abstract",
-            name: "Modern Block",
-            description: "Bold minimalist geometric forms",
-            type: PanelMode.MONOGRAM,
-            prompt: "modern abstract monogram, geometric interpretation, bold minimalist blocks",
-            category: "MODERN",
-            parameters: { layoutMode: 'block', symmetry: 'Asymmetrical', container: 'Weak', densityRatio: '1:1', legibility: 'Medium', structureCreativity: 80, densitySpace: 30, traditionalModern: 95, strokeEnds: 'Blunt', style: 'Geometric' }
-          } as MonogramPreset,
-          {
-            id: "mono-expanded-totem",
-            name: "Expanded Totem",
-            description: "Vertical totem-style monogram",
-            type: PanelMode.MONOGRAM,
-            prompt: "vertical totem-style monogram with extended aspect ratio and geometric interlocks",
-            category: "MODERN",
-            parameters: { layoutMode: 'stacked', symmetry: 'Vertical Mirror', container: 'Suggested', densityRatio: '1:3', legibility: 'Medium', structureCreativity: 70, densitySpace: 60, traditionalModern: 85, strokeEnds: 'Tapered', style: 'Futuristic' }
-          } as MonogramPreset
-        ]
+          { id: 'mono-memphis-milano', name: 'Memphis Milano', type: PanelMode.MONOGRAM, category: 'Contemporary', description: 'Playful, colorful, pattern-heavy. Dots, squiggles, geometric shapes. 1980s postmodern.', prompt: 'Generate a Memphis Milano style monogram... High legibility. Flat solid light background.', parameters: { letter_relationship: 'Pattern-integrated', symmetry: 'Asymmetrical, playful', container: 'Suggested, geometric', legibility_target: 'High', form_language: 'Postmodern, decorative', stroke_character: 'Blunt, varied', spatial_density: 'Playful, pattern-rich', abstraction_tolerance: 'Low', period_influence: 'Memphis / 1980s' } },
+          { id: 'mono-japanese-origami', name: 'Japanese Origami', type: PanelMode.MONOGRAM, category: 'Contemporary', description: 'Folded paper aesthetic. Clean folds, sharp creases. Minimal, precise.', prompt: 'Generate an origami-inspired monogram... High legibility. Flat solid light or neutral background.', parameters: { letter_relationship: 'Folded, faceted', symmetry: 'Asymmetrical', container: 'Suggested, geometric', legibility_target: 'High', form_language: 'Origami, folded', stroke_character: 'Sheared, sharp', spatial_density: 'Precise, clean', abstraction_tolerance: 'Low', period_influence: 'Japanese / Minimal' } },
+          { id: 'mono-vaporwave', name: 'Vaporwave', type: PanelMode.MONOGRAM, category: 'Contemporary', description: '1980s/90s retro-digital nostalgia. Glitch, grid, sunset palettes. Roman busts optional.', prompt: 'Generate a vaporwave monogram... Moderate legibility tolerance. Flat solid dark background.', parameters: { letter_relationship: 'Grid-integrated', symmetry: 'Vertical Mirror', container: 'Strict, geometric', legibility_target: 'Moderate', form_language: 'Retro-digital', stroke_character: 'Sheared, glitch-influenced', spatial_density: 'Grid-aligned', abstraction_tolerance: 'Moderate', period_influence: 'Vaporwave / 80s-90s' } },
+          { id: 'mono-scandinavian', name: 'Scandinavian', type: PanelMode.MONOGRAM, category: 'Contemporary', description: 'Clean, warm, humanist. Soft geometric. Approachable minimalism.', prompt: 'Generate a Scandinavian minimal monogram... High legibility. Flat solid warm neutral background.', parameters: { letter_relationship: 'Stacked, compressed', symmetry: 'Asymmetrical', container: 'None', legibility_target: 'High', form_language: 'Humanist sans-serif', stroke_character: 'Rounded, uniform', spatial_density: 'Spacious, breathing', abstraction_tolerance: 'Low', period_influence: 'Scandinavian / Humanist' } },
+        ].map(p => p as MonogramPreset)
       }
+    ]
+  },
+  EMBLEM_FORGE: {
+    libraries: [
+      { id: "lib-emblem-heraldic", title: "HERALDIC_SYSTEMS", mobileLabel: "HERALDRY", type: PresetCategoryType.BUILT_IN, items: [
+        { id: 'emblem-heraldic-crest', name: 'Heraldic Crest', type: PanelMode.EMBLEM_FORGE, description: 'Traditional shield containment. Ornamental borders. Central lion or eagle motif. Curved typography top/bottom. Vintage authority.', prompt: 'Generate a traditional heraldic crest emblem...', parameters: { containment: 'Shield (Heater or Escutcheon)', border: 'Ornamental scrollwork', illustration: 'Lion rampant or Eagle displayed', illustration_style: 'Traditional heraldic, flat color', typography_layout: 'Curved top/bottom', text_hierarchy: 'Primary dominant, subtext secondary', background: 'Flat Deep Navy (#0A0A1A) or Flat Burgundy (#2A0A0A)', period_influence: 'Medieval / Renaissance' } },
+        { id: 'emblem-baroque', name: 'Continental Baroque', type: PanelMode.EMBLEM_FORGE, description: 'Ornate, asymmetrical Rococo influence. Shellwork, foliate scrolls. Cartouche containment. Elegant, opulent.', prompt: 'Generate a Baroque cartouche emblem...', parameters: { containment: 'Cartouche (asymmetrical)', border: 'Shellwork, foliate scrolls', illustration: 'Griffin, stag, or floral arrangement', illustration_style: 'Ornate, decorative', typography_layout: 'Flowing, curved', text_hierarchy: 'Integrated within ornament', background: 'Flat Deep Warm Gray (#2A2A1A) or Flat Burgundy (#3A1A1A)', period_influence: 'Baroque / Rococo' } },
+        { id: 'emblem-gothic-revival', name: 'Gothic Revival', type: PanelMode.EMBLEM_FORGE, description: 'Pointed arches, quatrefoils, tracery. Ecclesiastical, collegiate. Vertical emphasis. Stained glass color logic.', prompt: 'Generate a Gothic Revival emblem...', parameters: { containment: 'Pointed arch / Lancet', border: 'Tracery, quatrefoil, foliate', illustration: 'Book, chalice, lily, or mitre', illustration_style: 'Stained glass influence, flat color', typography_layout: 'Vertical or curved', text_hierarchy: 'Primary dominant, Latin optional', background: 'Flat Deep Jewel (#1A2A3A) or Flat Burgundy (#2A1A2A)', period_influence: 'Gothic / Victorian' } },
+      ].map(p => p as EmblemPreset) },
+      { id: "lib-emblem-trade", title: "TRADE_GUILDS", mobileLabel: "GUILDS", type: PresetCategoryType.BUILT_IN, items: [
+        { id: 'emblem-barbershop', name: 'Barbershop', type: PanelMode.EMBLEM_FORGE, description: 'Circular form. Bold diagonal stripes. Central razor or scissors motif. Playful, masculine.', prompt: 'Generate a barbershop emblem...', parameters: { containment: 'Circle', border: 'Diagonal stripe pattern', illustration: 'Straight razor or scissors', illustration_style: 'Bold graphic, flat color', typography_layout: 'Curved top/bottom', text_hierarchy: 'Primary dominant', background: 'Flat White (#FFFFFF) or Flat Cream (#FAF0E6)', period_influence: 'Traditional / Americana' } },
+        { id: 'emblem-coffee-seal', name: 'Coffee Seal', type: PanelMode.EMBLEM_FORGE, description: 'Circular seal. Steam, coffee plant, or mountain motif. Rustic, artisanal typography. Warm, earthy palette.', prompt: 'Generate a coffee seal emblem...', parameters: { containment: 'Circle', border: 'Ornamental dot/line', illustration: 'Coffee plant, steam, mountain', illustration_style: 'Rustic, artisanal', typography_layout: 'Curved top/bottom', text_hierarchy: 'Primary + origin/date optional', background: 'Flat Warm Cream (#FAF3E0) or Flat Terracotta (#8B4C39)', period_influence: 'Artisanal / Craft' } },
+        { id: 'emblem-brewery', name: 'Brewery', type: PanelMode.EMBLEM_FORGE, description: 'Oval or barrel shape. Wheat, hop, or stein motif. Vintage slab-serif typography. Rustic, sturdy.', prompt: 'Generate a brewery emblem...', parameters: { containment: 'Oval / Barrel', border: 'Barley, hop vine', illustration: 'Wheat sheaf, hop cone, stein', illustration_style: 'Vintage, sturdy', typography_layout: 'Curved top/bottom or straight', text_hierarchy: 'Primary dominant, established date optional', background: 'Flat Warm Brown (#4A3A2A) or Flat Cream (#FAF0E6)', period_influence: 'Traditional / Rustic' } },
+        { id: 'emblem-butcher', name: 'Butcher / Charcuterie', type: PanelMode.EMBLEM_FORGE, description: 'Bold, graphic. Hog, cleaver, or sausage motif. Industrial, rustic. Heavy slab typography.', prompt: 'Generate a butcher or charcuterie emblem...', parameters: { containment: 'Oval / Shield', border: 'Bold graphic, rope optional', illustration: 'Hog, cleaver, sausage, bone', illustration_style: 'Bold, graphic, flat color', typography_layout: 'Curved or straight', text_hierarchy: 'Primary dominant, established optional', background: 'Flat White (#FFFFFF) or Flat Black (#000000)', period_influence: 'Industrial / Rustic' } },
+        { id: 'emblem-bakery', name: 'Bakery', type: PanelMode.EMBLEM_FORGE, description: 'Warm, inviting. Wheat sheaf, rolling pin, or pretzel motif. Script or slab typography. Hearth aesthetic.', prompt: 'Generate a bakery emblem...', parameters: { containment: 'Circle / Oval', border: 'Wheat, flour dust pattern', illustration: 'Wheat sheaf, rolling pin, pretzel, loaf', illustration_style: 'Warm, inviting', typography_layout: 'Curved or arched', text_hierarchy: 'Primary dominant, established optional', background: 'Flat Warm Cream (#FAF0E0) or Flat Terracotta (#8B5A4A)', period_influence: 'Traditional / Hearth' } },
+      ].map(p => p as EmblemPreset) },
+      { id: "lib-emblem-sports", title: "SPORTS_COMPETITION", mobileLabel: "SPORTS", type: PresetCategoryType.BUILT_IN, items: [
+        { id: 'emblem-sports-championship', name: 'Sports Championship', type: PanelMode.EMBLEM_FORGE, description: 'Shield form. Strong geometry. Star or laurel accents. Bold slab-serif. Dynamic, victorious.', prompt: 'Generate a sports championship emblem...', parameters: { containment: 'Shield (Modern athletic)', border: 'Geometric, star or laurel', illustration: 'Star, laurel, trophy, or mascot silhouette', illustration_style: 'Bold, dynamic', typography_layout: 'Curved top, straight bottom', text_hierarchy: 'Primary dominant, established optional', background: 'Flat Team Color (customizable base)', period_influence: 'Contemporary Athletic' } },
+        { id: 'emblem-esports', name: 'Esports', type: PanelMode.EMBLEM_FORGE, description: 'Aggressive, angular. Cyberpunk influence. Abstract animal/mascot. Glow effects. Futuristic.', prompt: 'Generate an esports emblem...', parameters: { containment: 'Hexagon / Angular shield', border: 'Geometric, tech-influenced', illustration: 'Abstract animal head (wolf, lion, eagle, dragon)', illustration_style: 'Aggressive, angular', typography_layout: 'Straight or slightly arched', text_hierarchy: 'Primary dominant, tagline optional', background: 'Flat Black (#000000) or Flat Dark Blue (#0A0A1A)', period_influence: 'Cyberpunk / Esports', effects: 'Subtle typography glow' } },
+        { id: 'emblem-olympic', name: 'Olympic Classic', type: PanelMode.EMBLEM_FORGE, description: 'Laurel wreath. Circular seal. Eternal, victorius. Minimal illustration. Timeless.', prompt: 'Generate a classic Olympic-style emblem...', parameters: { containment: 'Circle', border: 'Laurel wreath', illustration: 'Torch, olive branch, victory figure', illustration_style: 'Classical, minimal', typography_layout: 'Curved top/bottom', text_hierarchy: 'Primary + location/date optional', background: 'Flat White (#FFFFFF) or Flat Navy (#1A1A2A)', period_influence: 'Classical / Eternal' } },
+      ].map(p => p as EmblemPreset) },
+      { id: "lib-emblem-institutional", title: "MILITARY_INSTITUTIONAL", mobileLabel: "INST.", type: PresetCategoryType.BUILT_IN, items: [
+        { id: 'emblem-military', name: 'Military', type: PanelMode.EMBLEM_FORGE, description: 'Formal. Eagle, anchor, sword, or crossed rifles. Ribbon banner. Serif caps. Authority.', prompt: 'Generate a military emblem...', parameters: { containment: 'Shield / Circle / Star', border: 'Rope, laurel, or geometric', illustration: 'Eagle, anchor, sword, crossed rifles', illustration_style: 'Formal, authoritative', typography_layout: 'Ribbon banner, curved or straight', text_hierarchy: 'Unit + motto', background: 'Flat Navy (#1A1A2A) or Flat Black (#000000)', period_influence: 'Traditional Military' } },
+        { id: 'emblem-law-enforcement', name: 'Law Enforcement', type: PanelMode.EMBLEM_FORGE, description: 'Shield star. Eagle, badge, or torch. Thin blue line optional. Authoritative, protective.', prompt: 'Generate a law enforcement emblem...', parameters: { containment: 'Star / Shield', border: 'Geometric, rope optional', illustration: 'Eagle, badge, torch, thin blue line', illustration_style: 'Authoritative', typography_layout: 'Curved top/bottom', text_hierarchy: 'Department + motto', background: 'Flat Navy (#1A1A2A) or Flat Blue (#0A1A2A)', period_influence: 'Contemporary Authority' } },
+        { id: 'emblem-fire-dept', name: 'Fire Department', type: PanelMode.EMBLEM_FORGE, description: 'Maltese cross. Axe, ladder, hydrant, or dalmatian. Bold, heroic.', prompt: 'Generate a fire department emblem...', parameters: { containment: 'Maltese cross', border: 'Rope, geometric', illustration: 'Crossed axes, ladder, hydrant, dalmatian', illustration_style: 'Bold, heroic', typography_layout: 'Curved or straight', text_hierarchy: 'Department + established', background: 'Flat Red (#8B1A1A) or Flat Black (#000000)', period_influence: 'Traditional / Heroic' } },
+        { id: 'emblem-university', name: 'University Seal', type: PanelMode.EMBLEM_FORGE, description: 'Traditional circular seal. Book, torch, or lamp motif. Latin optional. Academic, established.', prompt: 'Generate a university seal...', parameters: { containment: 'Circle', border: 'Ornamental, laurel, geometric', illustration: 'Open book, torch, lamp, column', illustration_style: 'Academic, traditional', typography_layout: 'Curved top/bottom', text_hierarchy: 'Institution + motto + established', background: 'Flat Navy (#1A1A2A) or Flat Burgundy (#2A1A1A)', period_influence: 'Academic / Classical' } },
+      ].map(p => p as EmblemPreset) },
+      { id: "lib-emblem-lodge", title: "LODGE_SOCIETY", mobileLabel: "LODGE", type: PresetCategoryType.BUILT_IN, items: [
+        { id: 'emblem-masonic', name: 'Masonic', type: PanelMode.EMBLEM_FORGE, description: 'Square and compass. All-seeing eye. Esoteric geometry. Fraternal authority.', prompt: 'Generate a Masonic fraternal emblem...', parameters: { containment: 'Circle / Geometric', border: 'Rope, geometric', illustration: 'Square and compass, all-seeing eye, pillar', illustration_style: 'Esoteric, geometric', typography_layout: 'Curved top/bottom', text_hierarchy: 'Lodge name + established', background: 'Flat Navy (#1A1A2A) or Flat Black (#000000)', period_influence: 'Fraternal / Esoteric' } },
+        { id: 'emblem-knights-columbus', name: 'Knights of Columbus', type: PanelMode.EMBLEM_FORGE, description: 'Shield, cross, sword. Columbian motif. Catholic fraternal.', prompt: 'Generate a Knights of Columbus style emblem...', parameters: { containment: 'Shield', border: 'Ornamental, geometric', illustration: 'Cross, sword, dove, globe', illustration_style: 'Traditional, fraternal', typography_layout: 'Curved top/bottom', text_hierarchy: 'Order + established', background: 'Flat Navy (#1A1A2A) or Flat Burgundy (#2A1A1A)', period_influence: 'Catholic Fraternal' } },
+        { id: 'emblem-fraternal-order', name: 'Elks / Moose / Eagles', type: PanelMode.EMBLEM_FORGE, description: 'Fraternal animal head. Antlers, tusks. Banners. Civic pride.', prompt: 'Generate a fraternal order emblem (Elks, Moose, Eagles)...', parameters: { containment: 'Circle / Shield', border: 'Rope, laurel', illustration: 'Elk head, moose head, eagle head', illustration_style: 'Fraternal, proud', typography_layout: 'Curved top, banner bottom', text_hierarchy: 'Order + lodge + established', background: 'Flat Navy (#1A1A2A) or Flat Forest (#1A2A1A)', period_influence: 'Fraternal / Civic' } },
+      ].map(p => p as EmblemPreset) },
+      { id: "lib-emblem-contemporary", title: "CONTEMPORARY_SEALS", mobileLabel: "SEALS", type: PresetCategoryType.BUILT_IN, items: [
+        { id: 'emblem-tech-startup', name: 'Tech Startup', type: PanelMode.EMBLEM_FORGE, description: 'Clean, geometric. Circuit, hexagon, or node motif. Sans-serif. Modern, innovative.', prompt: 'Generate a technology startup emblem...', parameters: { containment: 'Hexagon / Circle / Geometric', border: 'Clean, minimal', illustration: 'Circuit, hexagon network, node diagram', illustration_style: 'Clean, geometric', typography_layout: 'Straight or curved', text_hierarchy: 'Brand name + established optional', background: 'Flat White (#FFFFFF) or Flat Black (#000000)', period_influence: 'Contemporary / Tech' } },
+        { id: 'emblem-craft-artisanal', name: 'Craft / Artisanal', type: PanelMode.EMBLEM_FORGE, description: 'Organic, hand-drawn feel. Tool, leaf, or vessel motif. Warm, authentic.', prompt: 'Generate a craft or artisanal emblem...', parameters: { containment: 'Circle / Oval / Organic', border: 'Hand-drawn, imperfect', illustration: 'Tool, leaf, vessel, hand', illustration_style: 'Hand-drawn, authentic', typography_layout: 'Curved or straight', text_hierarchy: 'Maker + trade + established', background: 'Flat Warm Cream (#FAF3E0) or Flat Terracotta (#8B5A4A)', period_influence: 'Contemporary Craft' } },
+        { id: 'emblem-music-recording', name: 'Music / Recording', type: PanelMode.EMBLEM_FORGE, description: 'Vinyl, cassette, waveform, or instrument motif. Retro or modern. Energetic.', prompt: 'Generate a music or recording emblem...', parameters: { containment: 'Circle / Square / Geometric', border: 'Minimal, groove, or wave', illustration: 'Vinyl, cassette, waveform, instrument', illustration_style: 'Retro or modern', typography_layout: 'Curved or straight', text_hierarchy: 'Label + established', background: 'Flat Black (#000000) or Flat White (#FFFFFF)', period_influence: 'Music / Audio' } },
+        { id: 'emblem-cannabis', name: 'Cannabis / Apothecary', type: PanelMode.EMBLEM_FORGE, description: 'Leaf, jar, or botanical motif. Vintage pharmaceutical or contemporary organic.', prompt: 'Generate a cannabis or apothecary emblem...', parameters: { containment: 'Circle / Diamond / Hexagon', border: 'Botanical, geometric', illustration: 'Leaf, jar, mortar and pestle, botanical', illustration_style: 'Vintage or contemporary organic', typography_layout: 'Curved or straight', text_hierarchy: 'Brand + established', background: 'Flat Forest (#1A3A1A) or Flat Earth (#4A3A2A)', period_influence: 'Apothecary / Contemporary' } },
+        { id: 'emblem-restaurant', name: 'Restaurant / Culinary', type: PanelMode.EMBLEM_FORGE, description: 'Chef\'s hat, knife/fork, pan, or ingredient motif. Warm, inviting.', prompt: 'Generate a restaurant or culinary emblem...', parameters: { containment: 'Circle / Oval / Shield', border: 'Minimal, botanical, geometric', illustration: 'Chef\'s hat, knife/fork, pan, ingredient', illustration_style: 'Warm, appetizing', typography_layout: 'Curved or straight', text_hierarchy: 'Restaurant + established + cuisine', background: 'Flat Warm Cream (#FAF0E0) or Flat Terracotta (#8B4A3A)', period_influence: 'Culinary / Traditional' } },
+        { id: 'emblem-wedding', name: 'Wedding / Event', type: PanelMode.EMBLEM_FORGE, description: 'Elegant, romantic. Rings, hearts, florals, or knot motif. Script typography.', prompt: 'Generate a wedding or event emblem...', parameters: { containment: 'Circle / Heart / Lozenge', border: 'Floral, elegant', illustration: 'Rings, hearts, florals, knot', illustration_style: 'Elegant, romantic', typography_layout: 'Curved or flowing', text_hierarchy: 'Couple + date', background: 'Flat White (#FFFFFF) or Flat Blush (#FAF0F0)', period_influence: 'Romantic / Contemporary' } },
+        { id: 'emblem-law', name: 'Law / Legal', type: PanelMode.EMBLEM_FORGE, description: 'Scales, column, gavel. Authoritative, traditional. Serif typography.', prompt: 'Generate a law or legal emblem...', parameters: { containment: 'Circle / Shield / Octagon', border: 'Geometric, laurel', illustration: 'Scales, column, gavel, torch', illustration_style: 'Authoritative, traditional', typography_layout: 'Curved top/bottom', text_hierarchy: 'Firm + established + practice', background: 'Flat Navy (#1A1A2A) or Flat Burgundy (#2A1A1A)', period_influence: 'Legal / Traditional' } },
+      ].map(p => p as EmblemPreset) },
+      { id: "lib-emblem-art-nouveau-deco", title: "ART_NOUVEAU_DECO", mobileLabel: "ART", type: PresetCategoryType.BUILT_IN, items: [
+        { id: 'emblem-art-nouveau', name: 'Art Nouveau', type: PanelMode.EMBLEM_FORGE, description: 'Organic, flowing borders. Floral ornamentation. Whiplash curves. Elegant, feminine.', prompt: 'Generate an Art Nouveau emblem...', parameters: { containment: 'Organic / Asymmetrical', border: 'Floral, whiplash curves', illustration: 'Orchid, peacock, or feminine figure', illustration_style: 'Elegant, organic', typography_layout: 'Flowing, curved', text_hierarchy: 'Integrated within ornament', background: 'Flat Soft Green (#E8F0E0) or Flat Deep Teal (#1A3A3A)', period_influence: 'Art Nouveau / 1900' } },
+        { id: 'emblem-art-deco', name: 'Art Deco', type: PanelMode.EMBLEM_FORGE, description: 'Geometric, stepped, sunburst. Zigzag, fan motifs. Glamorous, modern.', prompt: 'Generate an Art Deco emblem...', parameters: { containment: 'Geometric / Stepped', border: 'Sunburst, zigzag, fan', illustration: 'Fountain, skyscraper, or deer', illustration_style: 'Geometric, glamorous', typography_layout: 'Curved or stepped', text_hierarchy: 'Primary dominant', background: 'Flat Black (#000000) or Flat Navy (#0A0A1A)', period_influence: 'Art Deco / 1920s' } },
+        { id: 'emblem-arts-crafts', name: 'Arts & Crafts', type: PanelMode.EMBLEM_FORGE, description: 'Medieval revival. Gothic, floral, guild aesthetic. Honest, handcrafted.', prompt: 'Generate an Arts & Crafts emblem...', parameters: { containment: 'Medieval / Organic', border: 'Gothic floral, vine', illustration: 'Tree, bird, or handcrafted tool', illustration_style: 'Honest, handcrafted', typography_layout: 'Straight or curved', text_hierarchy: 'Guild + established', background: 'Flat Earth (#4A3A2A) or Flat Warm Cream (#FAF0E0)', period_influence: 'Arts & Crafts / 1900' } },
+      ].map(p => p as EmblemPreset) },
+      { id: "lib-emblem-cultural", title: "CULTURAL_ETHNIC", mobileLabel: "CULTURE", type: PresetCategoryType.BUILT_IN, items: [
+        { id: 'emblem-celtic', name: 'Celtic', type: PanelMode.EMBLEM_FORGE, description: 'Knotwork, crosses, spirals. Infinite, spiritual. Green, earth, jewel tones.', prompt: 'Generate a Celtic emblem...', parameters: { containment: 'Circle / Knotwork', border: 'Celtic knotwork', illustration: 'Celtic cross, triskele, or spiral', illustration_style: 'Interlaced, spiritual', typography_layout: 'Curved or straight', text_hierarchy: 'Clan + established', background: 'Flat Forest (#1A3A1A) or Flat Navy (#1A1A3A)', period_influence: 'Celtic / Insular' } },
+        { id: 'emblem-aztec-mayan', name: 'Aztec / Mayan', type: PanelMode.EMBLEM_FORGE, description: 'Geometric, stepped fret. Sun stone, pyramid, eagle motif. Earthy, monumental.', prompt: 'Generate an Aztec or Mayan emblem...', parameters: { containment: 'Geometric / Stepped', border: 'Stepped fret, sun pattern', illustration: 'Sun stone, pyramid, eagle, jaguar', illustration_style: 'Monumental, geometric', typography_layout: 'Straight or stepped', text_hierarchy: 'Primary + established', background: 'Flat Terracotta (#8B4A3A) or Flat Stone (#4A4A4A)', period_influence: 'Pre-Columbian' } },
+        { id: 'emblem-nordic-viking', name: 'Nordic / Viking', type: PanelMode.EMBLEM_FORGE, description: 'Runic, dragon heads, longships. Bold, aggressive. Deep sea, storm colors.', prompt: 'Generate a Nordic or Viking emblem...', parameters: { containment: 'Circle / Shield / Longship', border: 'Runic, dragon heads', illustration: 'Longship, raven, wolf, Mjolnir', illustration_style: 'Bold, aggressive', typography_layout: 'Curved or straight', text_hierarchy: 'Clan + established', background: 'Flat Deep Blue (#1A2A3A) or Flat Black (#000000)', period_influence: 'Viking / Norse' } },
+      ].map(p => p as EmblemPreset) }
     ]
   },
   FILTERS: {

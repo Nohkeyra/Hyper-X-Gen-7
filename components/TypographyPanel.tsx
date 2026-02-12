@@ -1,7 +1,6 @@
-
 // FINAL – LOCKED - REFINED V7.1.3
 import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react';
-import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, TypographyPreset, Preset, LatticeBuffer, TypographyStyle } from '../types.ts';
+import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, TypographyPreset, Preset, LatticeBuffer, TypographyDna, isTypographyPreset } from '../types.ts';
 import { getMobileCategories } from '../presets/index.ts';
 import { synthesizeTypoStyle, refineTextPrompt } from '../services/geminiService.ts';
 import { useDevourer } from '../hooks/useDevourer.ts';
@@ -56,11 +55,6 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
   const [activePresetId, setActivePresetId] = useState<string | null>(initialData?.id || null);
   const [activePreset, setActivePreset] = useState<PresetItem | null>(initialData || null);
   
-  const [style, setStyle] = useState<TypographyStyle>('Modern');
-  const [weight, setWeight] = useState<'Light' | 'Regular' | 'Bold' | 'Heavy'>('Bold');
-  const [spacing, setSpacing] = useState<'Tight' | 'Normal' | 'Wide'>('Normal');
-  const [effect, setEffect] = useState<'Shadow' | 'Glow' | 'Outline' | 'None'>('None');
-
   const [isRefining, setIsRefining] = useState(false);
   const processingRef = useRef(false);
 
@@ -76,9 +70,9 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
       uploadedImage,
       dna,
       name: prompt || 'Typography Synthesis',
-      settings: { fontStyle: style, weight, spacing, effect }
+      settings: (activePreset as TypographyPreset)?.parameters || {}
     });
-  }, [prompt, generatedOutput, uploadedImage, dna, onStateUpdate, style, weight, spacing, effect]);
+  }, [prompt, generatedOutput, uploadedImage, dna, onStateUpdate, activePreset]);
 
   const handleSelectPreset = useCallback((id: string) => {
     if (isProcessing) return;
@@ -96,15 +90,7 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
     if (!item) return;
 
     setActivePreset(item);
-
-    if (item.type === PanelMode.TYPOGRAPHY) {
-      const params = (item as TypographyPreset).parameters;
-      if (params.fontStyle) setStyle(params.fontStyle);
-      if (params.weight) setWeight(params.weight);
-      if (params.spacing) setSpacing(params.spacing);
-      if (params.effect) setEffect(params.effect);
-    }
-
+    
     if (item.dna) {
       setDna(item.dna);
       transition("DNA_LINKED");
@@ -117,22 +103,33 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
   const handleGenerate = useCallback(async () => {
     if (processingRef.current) return;
     
+    // FIX: Imported isTypographyPreset type guard to correctly validate the active preset.
+    if (!activePreset || !isTypographyPreset(activePreset)) {
+        addLog("TYPO_ERROR: No valid typography preset selected.", 'error');
+        return;
+    }
+    
+    const params = activePreset.parameters;
     const userText = prompt.trim() || 'HYPERX';
-    const finalPrompt = `"${userText}" typography art. Design Style: ${style}. ${activePreset?.prompt || ""}`;
+    const finalPrompt = `Synthesize the text "${userText}" using the following artistic direction: ${activePreset.prompt}`;
     
     processingRef.current = true;
     transition(dna || globalDna ? 'DNA_STYLIZE_ACTIVE' : 'DEVOURING_BUFFER', true);
 
     const extraDirectives = [
-      `[WORD_AS_ART_PROTOCOL_V2]`,
+      `[TYPOGRAPHY_ART_SYNTAX_V3]`,
       `TEXT_CONTENT: "${userText}"`,
-      `DESIGN_STYLE: ${style.toUpperCase()}`,
-      `FONT_WEIGHT: ${weight.toUpperCase()}`,
-      `LETTER_SPACING: ${spacing.toUpperCase()}`,
-      `VISUAL_EFFECT: ${effect.toUpperCase()}`,
-      `COMPOSITION: Focused, centered typographic construct.`,
+      `LETTERFORM_STYLE: ${params.letterform_style}`,
+      `LAYOUT: ${params.layout}`,
+      `SPACING: ${params.spacing}`,
+      `EFFECTS: ${params.effects}`,
+      `BACKGROUND: ${params.background}`,
+      `COLOR_LOGIC: ${params.color_logic}`,
+      `TEXTURE: ${params.texture}`,
+      `ORNAMENTATION: ${params.ornamentation}`,
       activePreset?.styleDirective || ""
     ].join('\n');
+
 
     try {
       const result = await synthesizeTypoStyle(
@@ -160,7 +157,7 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
         prompt: userText,
         dna: dna || globalDna,
         imageUrl: result,
-        parameters: { fontStyle: style, weight, spacing, effect },
+        parameters: params,
         category: 'Synthesis',
         description: 'User-generated typography'
       } as TypographyPreset);
@@ -171,7 +168,7 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
       processingRef.current = false;
       transition('LATTICE_ACTIVE');
     }
-  }, [prompt, uploadedImage, activePreset, style, weight, spacing, effect, kernelConfig, dna, globalDna, transition, addLog, onSaveToHistory, historyIndex]);
+  }, [prompt, uploadedImage, activePreset, kernelConfig, dna, globalDna, transition, addLog, onSaveToHistory, historyIndex]);
 
   const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
@@ -225,76 +222,10 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
         <>
           <SidebarHeader moduleNumber="Module_02" title="Typography_Engine" version="Kinetic Word Art v7.1" colorClass="text-brandBlue" borderColorClass="border-brandBlue" />
           <div className="space-y-6 px-1">
-             <div className="space-y-4">
-                <h4 className="text-[10px] font-black uppercase text-brandCharcoal/40 dark:text-white/40 tracking-widest italic border-b border-white/5 pb-2">Aesthetic_Controls</h4>
-                
-                <div className="space-y-3">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[8px] font-black uppercase text-brandCharcoal/60 dark:text-white/40">Design_Style</label>
-                    <select 
-                      value={style} 
-                      onChange={(e) => setStyle(e.target.value as TypographyStyle)} 
-                      className="bg-brandCharcoal/40 dark:bg-black/40 border border-white/10 text-[10px] p-2 text-brandCharcoal dark:text-white outline-none focus:border-brandBlue transition-colors"
-                    >
-                      <option value="Modern">Modern</option>
-                      <option value="Minimalist">Minimalist</option>
-                      <option value="Geometric">Geometric</option>
-                      <option value="Organic">Organic</option>
-                      <option value="Grunge">Grunge</option>
-                      <option value="Neon">Neon</option>
-                      <option value="Cyberpunk">Cyberpunk</option>
-                      <option value="Art Deco">Art Deco</option>
-                      <option value="Retro">Retro</option>
-                      <option value="Vintage">Vintage</option>
-                      <option value="Watercolor">Watercolor</option>
-                      <option value="Handwritten">Handwritten</option>
-                      <option value="3D">3D</option>
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[8px] font-black uppercase text-brandCharcoal/60 dark:text-white/40">Font_Weight</label>
-                    <select 
-                      value={weight} 
-                      onChange={(e) => setWeight(e.target.value as any)} 
-                      className="bg-brandCharcoal/40 dark:bg-black/40 border border-white/10 text-[10px] p-2 text-brandCharcoal dark:text-white outline-none focus:border-brandBlue transition-colors"
-                    >
-                      <option value="Light">Light</option>
-                      <option value="Regular">Regular</option>
-                      <option value="Bold">Bold</option>
-                      <option value="Heavy">Heavy</option>
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[8px] font-black uppercase text-brandCharcoal/60 dark:text-white/40">Letter_Spacing</label>
-                    <select 
-                      value={spacing} 
-                      onChange={(e) => setSpacing(e.target.value as any)} 
-                      className="bg-brandCharcoal/40 dark:bg-black/40 border border-white/10 text-[10px] p-2 text-brandCharcoal dark:text-white outline-none focus:border-brandBlue transition-colors"
-                    >
-                      <option value="Tight">Tight</option>
-                      <option value="Normal">Normal</option>
-                      <option value="Wide">Wide</option>
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[8px] font-black uppercase text-brandCharcoal/60 dark:text-white/40">Visual_Effect</label>
-                    <select 
-                      value={effect} 
-                      onChange={(e) => setEffect(e.target.value as any)} 
-                      className="bg-brandCharcoal/40 dark:bg-black/40 border border-white/10 text-[10px] p-2 text-brandCharcoal dark:text-white outline-none focus:border-brandBlue transition-colors"
-                    >
-                      <option value="None">None</option>
-                      <option value="Shadow">Shadow</option>
-                      <option value="Glow">Glow</option>
-                      <option value="Outline">Outline</option>
-                    </select>
-                  </div>
-                </div>
-             </div>
-
+            <div className="p-3 bg-brandBlue/5 dark:bg-brandYellow/5 border border-brandBlue/20 dark:border-brandYellow/20 rounded-sm mb-6">
+                <span className="text-[8px] font-black text-brandBlue dark:text-brandYellow uppercase tracking-widest block mb-1">Instruction:</span>
+                <p className="text-[9px] text-brandCharcoalMuted dark:text-white/60 leading-tight">Enter text. Select an authoritative style preset. Each preset is a complete, opinionated artistic direction, not a starting point. The engine handles all synthesis parameters.</p>
+            </div>
              <div className="space-y-4 pt-4 border-t border-white/5">
                 <h4 className="text-[10px] font-black uppercase text-brandCharcoal/40 dark:text-white/40 tracking-widest italic border-b border-white/5 pb-2">Style_Library</h4>
                 {PRESETS.map(cat => (

@@ -1,9 +1,10 @@
 
+
+
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import { ExtractionResult, KernelConfig, PanelMode, StyleCategory } from "../types.ts";
 import { injectAntiCensor } from '../utils/antiCensor.ts';
 import { ERROR_MESSAGES, APP_CONSTANTS } from '../constants.ts';
-import { PRESET_REGISTRY } from '../presets/index.ts';
 
 // Helper function to extract pure base64 data
 function getPureBase64Data(dataUrl: string | null | undefined): string | null {
@@ -56,137 +57,62 @@ async function reliableRequest<T>(requestFn: () => Promise<T>, retries: number =
 }
 
 /**
- * DETERMINISTIC STYLE CLASSIFIER
+ * AI-POWERED STYLE CLASSIFIER
  * Analyzes architectural design DNA to route to the correct synthesis module.
  */
-export class StyleClassifier {
-  static classifyStyle(styleDescription: string, features?: any): {
-    category: StyleCategory;
-    confidence: number;
-    recommendedPanel: PanelMode;
-    matchingPresets: string[];
-  } {
-    const keywords = this.extractKeywords(styleDescription.toLowerCase());
-    
-    // 1. Check for Graffiti Specificity (Master Rules Override)
-    const graffitiScore = this.calculateGraffitiScore(keywords);
-    if (graffitiScore > 50) {
-      return {
-        category: StyleCategory.GRAFFITI,
-        confidence: graffitiScore,
-        recommendedPanel: PanelMode.TYPOGRAPHY,
-        matchingPresets: this.findMatchingPresets(StyleCategory.TYPOGRAPHY, keywords)
-      };
-    }
-
-    // 2. Standard Architectural Scores
-    const monogramScore = this.calculateMonogramScore(keywords, features);
-    const typographyScore = this.calculateTypographyScore(keywords, features);
-    const vectorScore = this.calculateVectorScore(keywords, features);
-    
-    // Determine winner
-    const scores = [
-      { category: StyleCategory.MONOGRAM, score: monogramScore },
-      { category: StyleCategory.TYPOGRAPHY, score: typographyScore },
-      { category: StyleCategory.VECTOR, score: vectorScore }
-    ];
-    
-    scores.sort((a, b) => b.score - a.score);
-    const winner = scores[0] || { category: StyleCategory.UNKNOWN, score: 0 };
-    
-    return {
-      category: winner.category as StyleCategory,
-      confidence: winner.score,
-      recommendedPanel: this.mapCategoryToPanel(winner.category as StyleCategory),
-      matchingPresets: this.findMatchingPresets(winner.category as StyleCategory, keywords)
-    };
+export async function classifyStyleWithAI(
+  styleDescription: string,
+  features?: any,
+  config: KernelConfig = DEFAULT_CONFIG
+): Promise<{
+  category: StyleCategory;
+  confidence: number;
+  recommendedPanel: PanelMode;
+}> {
+  validateModuleAccess(config.model);
+  const ai = createAIInstance();
+  if (!ai) {
+    // Fallback to a very basic classifier if AI is not available
+    if (styleDescription.toLowerCase().includes('monogram')) return { category: StyleCategory.MONOGRAM, confidence: 80, recommendedPanel: PanelMode.MONOGRAM };
+    if (styleDescription.toLowerCase().includes('emblem')) return { category: StyleCategory.EMBLEM, confidence: 80, recommendedPanel: PanelMode.EMBLEM_FORGE };
+    if (styleDescription.toLowerCase().includes('typo') || styleDescription.toLowerCase().includes('graffiti')) return { category: StyleCategory.TYPOGRAPHY, confidence: 80, recommendedPanel: PanelMode.TYPOGRAPHY };
+    return { category: StyleCategory.VECTOR, confidence: 70, recommendedPanel: PanelMode.VECTOR };
   }
 
-  private static calculateGraffitiScore(keywords: string[]): number {
-    let score = 0;
-    if (keywords.some(k => ['graffiti', 'wildstyle', 'throwup', 'tag', 'streetart'].includes(k))) score += 60;
-    if (keywords.some(k => ['spray', 'urban', 'hiphop', 'drip', 'stencil'].includes(k))) score += 40;
-    if (keywords.some(k => ['bubble', 'block', 'burner', 'piece'].includes(k))) score += 30;
-    return Math.min(score, 100);
-  }
-  
-  private static calculateMonogramScore(keywords: string[], features?: any): number {
-    let score = 0;
-    if (keywords.some(k => ['monogram', 'logo', 'seal', 'emblem', 'initials', 'letter', 'interlocked', 'shield', 'crest'].includes(k))) score += 50;
-    if (keywords.some(k => ['stacked', 'radial', 'symmetry', 'mirror', 'radial', 'centered'].includes(k))) score += 30;
-    if (features) {
-      if (features.hasSymmetry) score += 20;
-      if (features.usesNegativeSpace) score += 10;
+  const featureString = features ? `ADDITIONAL_FEATURES_DETECTED: ${JSON.stringify(features)}` : '';
+  const textPrompt = `Analyze the following style description and classify it.
+  DESCRIPTION: "${styleDescription}"
+  ${featureString}
+  Based on this, determine the primary style category and the most appropriate synthesis panel.`;
+
+  const response: GenerateContentResponse = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: { parts: [{ text: textPrompt }] },
+    config: {
+      systemInstruction: `You are an expert Art Director. Your task is to analyze a style description and classify it into ONE of the following categories: MONOGRAM, TYPOGRAPHY, VECTOR, EMBLEM, GRAFFITI. Provide a confidence score and recommend the best synthesis panel (monogram, typography, vector, emblem_forge).`,
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          category: { type: Type.STRING, enum: Object.values(StyleCategory).filter(c => c !== StyleCategory.UNKNOWN && c !== StyleCategory.FILTER) },
+          confidence: { type: Type.NUMBER, description: "Confidence score from 0 to 100" },
+          recommendedPanel: { type: Type.STRING, enum: [PanelMode.MONOGRAM, PanelMode.TYPOGRAPHY, PanelMode.VECTOR, PanelMode.EMBLEM_FORGE] },
+        },
+        required: ['category', 'confidence', 'recommendedPanel']
+      }
     }
-    return Math.min(score, 100);
-  }
+  });
   
-  private static calculateTypographyScore(keywords: string[], features?: any): number {
-    let score = 0;
-    if (keywords.some(k => ['typography', 'font', 'typeface', 'lettering', 'text', 'word', 'glyph', 'characters'].includes(k))) score += 50;
-    if (keywords.some(k => ['grunge', 'neon', 'vintage', 'artdeco', 'retro', 'cursive', 'stencil', 'cyberpunk'].includes(k))) score += 30;
-    if (features?.hasLetters) score += 40;
-    return Math.min(score, 100);
-  }
+  const result = JSON.parse(response.text || "{}");
   
-  private static calculateVectorScore(keywords: string[], features?: any): number {
-    let score = 0;
-    if (keywords.some(k => ['vector', 'illustration', 'flat', 'icon', 'sticker', 'lineart', 'silhouette'].includes(k))) score += 50;
-    if (keywords.some(k => ['minimal', 'geometric', 'organic', 'abstract', 'flatdesign', 'modernist'].includes(k))) score += 30;
-    if (features?.isAbstract || features?.isGeometric) score += 10;
-    return Math.min(score, 100);
-  }
-  
-  public static extractKeywords(text: string): string[] {
-    const stopWords = ['the', 'and', 'for', 'with', 'style', 'design', 'art', 'image', 'photo', 'picture', 'draw', 'look', 'shows', 'contains', 'background'];
-    const visualSubjects = ['cat', 'dog', 'person', 'human', 'man', 'woman', 'tree', 'car', 'animal', 'nature', 'object', 'thing', 'bird', 'fish', 'landscape', 'mountain', 'face', 'body', 'hand', 'flower', 'fruit', 'food', 'drink', 'bottle'];
-    
-    const words = text
-      .toLowerCase()
-      .replace(/[^\w\s]/g, ' ')
-      .split(/\s+/)
-      .filter(word => 
-        word.length > 2 && 
-        !stopWords.includes(word) && 
-        !visualSubjects.includes(word)
-      );
-    return [...new Set(words)];
-  }
-  
-  private static findMatchingPresets(category: StyleCategory, keywords: string[]): string[] {
-    const panelMode = this.mapCategoryToPanel(category);
-    const registry = PRESET_REGISTRY[panelMode.toUpperCase()];
-    if (!registry) return [];
-    
-    const matches: { id: string; score: number }[] = [];
-    const allPresets = registry.libraries.flatMap(lib => lib.items);
-    
-    allPresets.forEach(preset => {
-      let score = 0;
-      const presetText = `${preset.name} ${preset.description} ${preset.prompt}`.toLowerCase();
-      keywords.forEach(keyword => {
-        if (presetText.includes(keyword)) score += 25;
-      });
-      if (score > 15) matches.push({ id: preset.id, score });
-    });
-    
-    return matches
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 3)
-      .map(m => m.id);
-  }
-  
-  private static mapCategoryToPanel(category: StyleCategory): PanelMode {
-    switch (category) {
-      case StyleCategory.MONOGRAM: return PanelMode.MONOGRAM;
-      case StyleCategory.TYPOGRAPHY: return PanelMode.TYPOGRAPHY;
-      case StyleCategory.VECTOR: return PanelMode.VECTOR;
-      case StyleCategory.FILTER: return PanelMode.FILTERS;
-      case StyleCategory.GRAFFITI: return PanelMode.TYPOGRAPHY;
-      default: return PanelMode.VECTOR;
-    }
-  }
+  // Ensure the returned types match our enums, with a fallback.
+  return {
+      category: Object.values(StyleCategory).includes(result.category) ? result.category : StyleCategory.VECTOR,
+      confidence: result.confidence || 75,
+      recommendedPanel: Object.values(PanelMode).includes(result.recommendedPanel) ? result.recommendedPanel : PanelMode.VECTOR,
+  };
 }
+
 
 export async function extractStyleFromImage(
   base64Image: string, 
@@ -258,7 +184,6 @@ async function performSynthesis(
   prompt: string, mode: PanelMode, base64Image?: string, config: KernelConfig = DEFAULT_CONFIG,
   dna?: ExtractionResult, extraDirectives?: string
 ): Promise<string> {
-  // Use gemini-2.5-flash-image for image generation tasks
   validateModuleAccess('gemini-2.5-flash-image'); 
   const ai = createAIInstance();
   if (!ai) return "";
@@ -288,6 +213,7 @@ async function performSynthesis(
 export const synthesizeVectorStyle = (p: string, i?: string, c?: KernelConfig, d?: ExtractionResult, e?: string) => performSynthesis(p, PanelMode.VECTOR, i, c, d, e);
 export const synthesizeTypoStyle = (p: string, i?: string, c?: KernelConfig, d?: ExtractionResult, e?: string) => performSynthesis(p, PanelMode.TYPOGRAPHY, i, c, d, e);
 export const synthesizeMonogramStyle = (p: string, i?: string, c?: KernelConfig, d?: ExtractionResult, e?: string) => performSynthesis(p, PanelMode.MONOGRAM, i, c, d, e);
+export const synthesizeEmblemStyle = (p: string, i?: string, c?: KernelConfig, d?: ExtractionResult, e?: string) => performSynthesis(p, PanelMode.EMBLEM_FORGE, i, c, d, e);
 
 export async function refineTextPrompt(prompt: string, mode: PanelMode, config: KernelConfig = DEFAULT_CONFIG, dna?: ExtractionResult): Promise<string> {
   const ai = createAIInstance();

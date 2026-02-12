@@ -1,7 +1,6 @@
-
 // FINAL – LOCKED - REFINED V7.2.5
 import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react';
-import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, MonogramPreset, Preset, LatticeBuffer, MonogramStyle } from '../types.ts';
+import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, MonogramPreset, Preset, LatticeBuffer, MonogramDna } from '../types.ts';
 import { getMobileCategories } from '../presets/index.ts';
 import { synthesizeMonogramStyle, refineTextPrompt } from '../services/geminiService.ts';
 import { useDevourer } from '../hooks/useDevourer.ts';
@@ -41,18 +40,8 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
   const [activePresetId, setActivePresetId] = useState<string | null>(initialData?.id || null);
   const [activePreset, setActivePreset] = useState<PresetItem | null>(initialData || null);
   
-  // FIX: Added missing isRefining state
   const [isRefining, setIsRefining] = useState(false);
   
-  const [structureCreativity, setStructureCreativity] = useState(50);
-  const [densitySpace, setDensitySpace] = useState(50);
-  const [traditionalModern, setTraditionalModern] = useState(50);
-
-  const [symmetryType, setSymmetryType] = useState('Perfect Radial');
-  const [containmentType, setContainmentType] = useState('Suggested');
-  const [strokeEnds, setStrokeEnds] = useState('Rounded');
-  const [style, setStyle] = useState<MonogramStyle>('Modern Minimal');
-
   const processingRef = useRef(false);
 
   // History for Undo/Redo
@@ -66,17 +55,9 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
       dna,
       uploadedImage,
       generatedOutput,
-      settings: { 
-        structureCreativity,
-        densitySpace,
-        traditionalModern,
-        symmetryType,
-        containmentType,
-        strokeEnds,
-        style
-      }
+      settings: (activePreset as MonogramPreset)?.parameters || {}
     });
-  }, [onStateUpdate, prompt, dna, uploadedImage, generatedOutput, structureCreativity, densitySpace, traditionalModern, symmetryType, containmentType, strokeEnds, style]);
+  }, [onStateUpdate, prompt, dna, uploadedImage, generatedOutput, activePreset]);
 
   const handleSelectPreset = useCallback((id: string) => {
     if (isProcessing) return;
@@ -94,18 +75,7 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
     if (!item) return;
 
     setActivePreset(item);
-
-    if (item.type === PanelMode.MONOGRAM) {
-      const params = (item as MonogramPreset).parameters;
-      if (params.structureCreativity !== undefined) setStructureCreativity(params.structureCreativity);
-      if (params.densitySpace !== undefined) setDensitySpace(params.densitySpace);
-      if (params.traditionalModern !== undefined) setTraditionalModern(params.traditionalModern);
-      if (params.symmetry) setSymmetryType(params.symmetry);
-      if (params.container) setContainmentType(params.container);
-      if (params.strokeEnds) setStrokeEnds(params.strokeEnds);
-      if (params.style) setStyle(params.style);
-    }
-
+    
     if (item.dna) {
       setDna(item.dna);
       transition("DNA_LINKED");
@@ -116,34 +86,39 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
   }, [PRESETS, isProcessing, transition, activePresetId, onSetGlobalDna, addLog]);
 
   const handleGenerate = useCallback(async () => {
-    if (processingRef.current) return;
+    if (processingRef.current || !activePreset) {
+      if(!activePreset) addLog("MONOGRAM_ERROR: No preset selected.", 'error');
+      return;
+    }
+
     const userInitials = prompt.trim() || "HXG";
-    const styleDir = activePreset?.styleDirective || "";
+    const presetParams = (activePreset as MonogramPreset).parameters;
     
-    const finalPrompt = `Initials "${userInitials}". Monogram logo design. Design Style: ${style}. ${activePreset?.prompt || ""}`;
+    const finalPrompt = `A monogram of the initials "${userInitials}". The style is "${(activePreset as MonogramPreset).name}". ${activePreset?.prompt || ""}`;
     
     processingRef.current = true;
     transition(dna || globalDna ? "DNA_STYLIZE_ACTIVE" : "DEVOURING_BUFFER", true);
 
-    const extraParams = [
-      `[CRITICAL_TEXT_LOCK_ACTIVE]`,
-      `1. PERMITTED_ALPHANUMERIC: "${userInitials}" ONLY.`,
-      `2. SYMMETRY_ENGINE: ${symmetryType}`,
-      `3. CONTAINER_TYPE: ${containmentType}`,
-      `4. CREATIVITY_INDEX: ${structureCreativity}%`,
-      `5. DENSITY_RATIO: ${densitySpace}%`,
-      `6. AESTHETIC_BIAS: ${traditionalModern}%`,
-      `7. GEOMETRY_END: ${strokeEnds.toUpperCase()}`,
-      `8. DESIGN_STYLE: ${style.toUpperCase()}`,
-      `9. COMPOSITION_RULE: Do not generate any words or sentences. ONLY render the visual symbol formed by "${userInitials}".`,
+    const extraDirectives = [
+      `[DIRECTIVE: REFINED_MONOGRAM_V8]`,
+      `PERMITTED_ALPHANUMERIC: "${userInitials}" ONLY.`,
+      `LETTER_RELATIONSHIP: ${presetParams.letter_relationship}`,
+      `SYMMETRY: ${presetParams.symmetry}`,
+      `CONTAINER: ${presetParams.container}`,
+      `LEGIBILITY_TARGET: ${presetParams.legibility_target}`,
+      `FORM_LANGUAGE: ${presetParams.form_language}`,
+      `STROKE_CHARACTER: ${presetParams.stroke_character}`,
+      `SPATIAL_DENSITY: ${presetParams.spatial_density}`,
+      `ABSTRACTION_TOLERANCE: ${presetParams.abstraction_tolerance}`,
+      `PERIOD_INFLUENCE: ${presetParams.period_influence}`,
+      `FUSION_MANDATE: Letters must interlock, overlap, or connect.`,
       activePreset?.styleDirective || ""
-    ].join('\n');
+    ].filter(Boolean).join('\n');
 
     try {
-      const result = await synthesizeMonogramStyle(finalPrompt, uploadedImage || undefined, kernelConfig, dna || globalDna || undefined, extraParams);
+      const result = await synthesizeMonogramStyle(finalPrompt, uploadedImage || undefined, kernelConfig, dna || globalDna || undefined, extraDirectives);
       setGeneratedOutput(result);
       
-      // Update History
       setHistory(prev => {
         const nextHistory = prev.slice(0, historyIndex + 1);
         return [...nextHistory, result];
@@ -157,11 +132,11 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
         prompt: userInitials, 
         dna: dna || globalDna, 
         imageUrl: result,
-        parameters: { structureCreativity, densitySpace, traditionalModern, symmetryType, containmentType, strokeEnds, style },
+        parameters: presetParams,
         category: 'Synthesis',
         description: 'User-generated monogram'
       } as any);
-      addLog(`MONOGRAM_CREATED: "${userInitials}" with ${style} style`, 'success');
+      addLog(`MONOGRAM_CREATED: "${userInitials}" with ${presetParams.period_influence} style`, 'success');
     } catch (e: any) { 
       transition("LATTICE_FAIL"); 
       addLog(`MONOGRAM_ERROR: ${e.message}`, 'error'); 
@@ -169,7 +144,7 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
       processingRef.current = false; 
       transition("LATTICE_ACTIVE"); 
     }
-  }, [prompt, activePreset, dna, globalDna, kernelConfig, uploadedImage, structureCreativity, densitySpace, traditionalModern, symmetryType, containmentType, strokeEnds, style, transition, onSaveToHistory, addLog, historyIndex]);
+  }, [prompt, activePreset, dna, globalDna, kernelConfig, uploadedImage, transition, onSaveToHistory, addLog, historyIndex]);
 
   const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
@@ -221,65 +196,12 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
     <PanelLayout 
       sidebar={
         <>
-          <SidebarHeader moduleNumber="Module_03" title="Monogram_Engine" version="Refined Elegance v7.2" colorClass="text-brandRed" borderColorClass="border-brandRed" />
+          <SidebarHeader moduleNumber="Module_03" title="Monogram_Engine" version="Identity Mark Synthesis v8.0" colorClass="text-brandRed" borderColorClass="border-brandRed" />
           <div className="space-y-6 px-1">
-             <div className="space-y-4">
-                <h4 className="text-[10px] font-black uppercase text-brandCharcoal/40 dark:text-white/40 tracking-widest italic border-b border-white/5 pb-2">User_Controls</h4>
-                
-                <div className="space-y-3">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[8px] font-black uppercase text-white/40">Design_Style</label>
-                    <select 
-                      value={style} 
-                      onChange={(e) => setStyle(e.target.value as MonogramStyle)} 
-                      className="bg-brandCharcoal/40 dark:bg-black/40 border border-white/10 text-[10px] p-2 text-white outline-none focus:border-brandRed transition-colors"
-                    >
-                      <option value="Modern Minimal">Modern Minimal</option>
-                      <option value="Classic Heraldic">Classic Heraldic</option>
-                      <option value="Interlocked">Interlocked</option>
-                      <option value="Geometric">Geometric</option>
-                      <option value="Calligraphic">Calligraphic</option>
-                      <option value="Brutalist">Brutalist</option>
-                      <option value="Futuristic">Futuristic</option>
-                    </select>
-                  </div>
-
-                  {[
-                    { label: 'Structure Creativity', val: structureCreativity, set: setStructureCreativity },
-                    { label: 'Density Space', val: densitySpace, set: setDensitySpace },
-                    { label: 'Traditional Modern', val: traditionalModern, set: setTraditionalModern }
-                  ].map(s => (
-                    <div key={s.label} className="space-y-2">
-                      <div className="flex justify-between text-[9px] font-black uppercase">
-                        <span className="text-white/40">{s.label.split(' ')[0]}</span>
-                        <span className="text-brandRed">{s.label.split(' ')[1]}</span>
-                      </div>
-                      <input type="range" min="0" max="100" value={s.val} onChange={(e) => s.set(parseInt(e.target.value))} className="w-full accent-brandRed" />
-                    </div>
-                  ))}
-                </div>
-
-                <div className="pt-4 space-y-3">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[8px] font-black uppercase text-white/40">Symmetry_Type</label>
-                    <select value={symmetryType} onChange={(e) => setSymmetryType(e.target.value)} className="bg-brandCharcoal/40 dark:bg-black/40 border border-white/10 text-[10px] p-2 text-white outline-none">
-                      <option>Perfect Radial</option><option>Vertical Mirror</option><option>Asymmetrical</option><option>Dynamic</option>
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[8px] font-black uppercase text-white/40">Container_Mode</label>
-                    <select value={containmentType} onChange={(e) => setContainmentType(e.target.value)} className="bg-brandCharcoal/40 dark:bg-black/40 border border-white/10 text-[10px] p-2 text-white outline-none">
-                      <option>Strict</option><option>Suggested</option><option>Weak</option><option>None</option>
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[8px] font-black uppercase text-white/40">Stroke_Ends</label>
-                    <select value={strokeEnds} onChange={(e) => setStrokeEnds(e.target.value)} className="bg-brandCharcoal/40 dark:bg-black/40 border border-white/10 text-[10px] p-2 text-white outline-none">
-                      <option>Rounded</option><option>Blunt</option><option>Sheared</option><option>Tapered</option>
-                    </select>
-                  </div>
-                </div>
-             </div>
+             <div className="p-3 bg-brandRed/5 dark:bg-brandYellow/5 border border-brandRed/20 dark:border-brandYellow/20 rounded-sm mb-6">
+                <span className="text-[8px] font-black text-brandRed dark:text-brandYellow uppercase tracking-widest block mb-1">Instruction:</span>
+                <p className="text-[9px] text-brandCharcoalMuted dark:text-white/60 leading-tight">Enter initials. Select an authoritative style preset. Each preset is a complete aesthetic system that dictates how letters fuse, align, and resolve into a finished identity mark. No manual adjustments are available.</p>
+            </div>
 
              <div className="space-y-4 pt-4 border-t border-white/5">
                 <h4 className="text-[10px] font-black uppercase text-brandCharcoal/40 dark:text-white/40 tracking-widest italic border-b border-white/5 pb-2">Style_Library</h4>
@@ -314,7 +236,7 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
         <div className="space-y-4">
           <PresetCarousel categories={PRESETS} activeId={activePresetId} onSelect={handleSelectPreset} />
           <GenerationBar 
-            prompt={prompt} setPrompt={setPrompt} onGenerate={handleGenerate} isProcessing={isProcessing} 
+            prompt={prompt} setPrompt={setPrompt} onGenerate={handleGenerate} isProcessing={isProcessing || !activePreset} 
             activePresetName={activePreset?.name || dna?.name || globalDna?.name} placeholder="Enter initials (e.g. HXG)..." 
             bridgedThumbnail={initialData?.category === 'LATTICE_BRIDGE' ? initialData.imageUrl : null}
             onClearBridge={() => { if (onClearLattice) onClearLattice(); setUploadedImage(null); }}

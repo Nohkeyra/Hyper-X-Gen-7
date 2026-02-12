@@ -1,4 +1,5 @@
 
+
 // ===================== LOCAL STORAGE KEYS =====================
 export const LS_KEYS = {
   THEME: 'hyperxgen_theme_v1',
@@ -85,7 +86,8 @@ export const SUCCESS_MESSAGES = {
   IMAGE_GENERATED: 'Identity synthesized successfully.',
   STYLE_EXTRACTED: 'Style DNA harvested successfully.',
   SETTINGS_UPDATED: 'Settings updated successfully.',
-  HISTORY_CLEARED: 'History purged successfully.'
+  HISTORY_CLEARED: 'History purged successfully.',
+  VAULT_CLEARED: 'Vault cleared successfully.'
 } as const;
 
 // ===================== VALIDATION CONSTANTS =====================

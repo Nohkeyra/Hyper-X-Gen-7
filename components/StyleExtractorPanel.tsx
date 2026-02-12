@@ -1,6 +1,8 @@
 
+
+
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { KernelConfig, ExtractionResult, PanelMode, StyleCategory, Preset } from '../types.ts';
+import { KernelConfig, ExtractionResult, PanelMode, StyleCategory, Preset, VectorPreset, TypographyPreset, MonogramPreset, EmblemPreset } from '../types.ts';
 import { EnhancedStyleExtractor } from '../services/styleExtractor.ts';
 import { StyleExtractionResult } from './StyleExtractionResult.tsx';
 import { PresetCard } from './PresetCard.tsx';
@@ -89,13 +91,11 @@ export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
   const handleSavePreset = async () => {
     if (!extractedDna) return;
     
-    // Generate a unique ID with a small hex component
     const hex = Math.random().toString(16).substring(2, 6).toUpperCase();
     const uniqueId = `user-${Date.now()}-${hex}`;
     
     const preset: any = {
       id: uniqueId,
-      // Use the edited custom name, the descriptive name from DNA or fall back to a short-hash name
       name: customName.trim() || extractedDna.name || `STYLE_DNA_${hex}`,
       type: selectedPanel,
       category: 'USER_VAULT',
@@ -106,13 +106,57 @@ export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
       timestamp: new Date().toISOString()
     };
 
-    // Initialize module-specific parameters
+    // Initialize module-specific parameters with intelligence from extracted DNA
     if (selectedPanel === PanelMode.VECTOR) {
-      preset.parameters = { complexity: 'Standard', outline: 'None', mood: 'Professional', background: 'White', colorCount: 6, strokeWeight: 0, style: 'Flat Design' };
+      preset.parameters = {
+        detail_fidelity: 'Moderate',
+        edge_quality: 'Clean, refined',
+        palette_strategy: `Extracted Palette (${extractedDna.palette.length} colors)`,
+        color_direction: extractedDna.mood?.join(', ') || 'Communicative',
+        background: 'Flat White (#FFFFFF)',
+        form_language: extractedDna.formLanguage || 'Geometric, illustrative',
+        stroke_preset: extractedDna.features?.strokeBased ? 'Uniform Thin' : 'None',
+      } as VectorPreset['parameters'];
     } else if (selectedPanel === PanelMode.TYPOGRAPHY) {
-      preset.parameters = { fontStyle: 'Modern', weight: 'Bold', spacing: 'Normal', effect: 'None' };
+      const params: Partial<TypographyPreset['parameters']> = {
+        letterform_style: 'Modern Sans',
+        layout: 'Horizontal, optically centered',
+        spacing: 'Balanced, professional',
+        effects: 'None',
+        background: 'Flat Black (#000000)',
+        color_logic: 'Extracted Palette',
+        texture: 'None',
+        ornamentation: 'None',
+      };
+      if (extractedDna.formLanguage?.toLowerCase().includes('geometric')) {
+        params.letterform_style = 'Geometric Sans';
+      } else if (extractedDna.formLanguage?.toLowerCase().includes('script') || extractedDna.formLanguage?.toLowerCase().includes('organic')) {
+        params.letterform_style = 'Flowing Script';
+      }
+      preset.parameters = params;
     } else if (selectedPanel === PanelMode.MONOGRAM) {
-      preset.parameters = { layoutMode: 'interlocked', symmetry: 'Perfect Radial', container: 'Suggested', densityRatio: '1:1', legibility: 'High', structureCreativity: 50, densitySpace: 50, traditionalModern: 50, strokeEnds: 'Rounded' };
+      preset.parameters = {
+        letter_relationship: 'Interlocked, geometric',
+        symmetry: extractedDna.features?.hasSymmetry ? 'Perfect Radial' : 'Asymmetrical',
+        container: 'None — freeform',
+        legibility_target: 'Moderate',
+        form_language: extractedDna.formLanguage || 'Geometric',
+        stroke_character: 'Uniform weight',
+        spatial_density: 'Balanced',
+        abstraction_tolerance: 'Moderate',
+        period_influence: extractedDna.category || 'Contemporary',
+      } as MonogramPreset['parameters'];
+    } else if (selectedPanel === PanelMode.EMBLEM_FORGE) {
+      preset.parameters = {
+        containment: 'Circle',
+        border: 'Clean, minimal',
+        illustration: 'Central Motif based on DNA',
+        illustration_style: extractedDna.technique || 'Clean, geometric',
+        typography_layout: 'Curved top/bottom',
+        text_hierarchy: 'Primary dominant',
+        background: 'Flat Black (#000000)',
+        period_influence: extractedDna.category || 'Contemporary'
+      } as EmblemPreset['parameters'];
     }
     
     onSaveToPresets(preset);
@@ -196,6 +240,7 @@ export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
                     <option value={PanelMode.VECTOR}>Vector Art Engine</option>
                     <option value={PanelMode.TYPOGRAPHY}>Typography Engine</option>
                     <option value={PanelMode.MONOGRAM}>Monogram Engine</option>
+                    <option value={PanelMode.EMBLEM_FORGE}>Emblem Forge</option>
                   </select>
                 </div>
               </div>

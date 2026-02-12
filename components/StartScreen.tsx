@@ -1,6 +1,7 @@
+
 import React, { useMemo } from 'react';
 import { PanelMode } from '../types';
-import { VectorIcon, TypographyIcon, MonogramIcon, ExtractorIcon, FilterIcon, PulseIcon, BoxIcon } from './Icons'; 
+import { VectorIcon, TypographyIcon, MonogramIcon, ExtractorIcon, FilterIcon, EmblemIcon, BoxIcon } from './Icons'; 
 import { PageLayout } from './Layouts.tsx';
 
 interface StartScreenProps {
@@ -48,7 +49,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onSelectMode = (_mode)
     { title: "Mono", subtitle: "Visual core", Icon: MonogramIcon, mode: PanelMode.MONOGRAM, borderColor: 'border-brandYellow', darkBorderColor: 'dark:border-brandYellow' },
     { title: "Filter", subtitle: "Spectral unit", Icon: FilterIcon, mode: PanelMode.FILTERS, borderColor: 'border-brandRed', darkBorderColor: 'dark:border-brandRed' },
     { title: "Typo", subtitle: "Kinetic engine", Icon: TypographyIcon, mode: PanelMode.TYPOGRAPHY, borderColor: 'border-brandBlue', darkBorderColor: 'dark:border-brandBlue' },
-    { title: "Audit", subtitle: "Compliance", Icon: PulseIcon, mode: PanelMode.AUDIT, borderColor: 'border-brandRed', darkBorderColor: 'dark:border-brandRed' }
+    { title: "Emblem", subtitle: "Heraldic forge", Icon: EmblemIcon, mode: PanelMode.EMBLEM_FORGE, borderColor: 'border-brandRed', darkBorderColor: 'dark:border-brandRed' }
   ], []);
 
   const visibleCardConfigs = useMemo(() => {
@@ -80,7 +81,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onSelectMode = (_mode)
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 w-full">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 w-full">
           {visibleCardConfigs.map((config, index) => (
             <ModeCard 
               key={config.mode}
