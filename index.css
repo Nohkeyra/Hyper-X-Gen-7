@@ -128,6 +128,14 @@ body {
   mask-image: linear-gradient(to right, black 85%, transparent 100%);
 }
 
+/* PERFORMANCE OPTIMIZATIONS: Content Visibility & Containment */
+/* Speed Optimization 5: Intelligent Lazy Rendering */
+aside, section, .history-item, .preset-category {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 100px;
+  contain: content;
+}
+
 /* Performance Optimized Canvas Stages */
 .canvas-stage {
   will-change: transform, box-shadow;

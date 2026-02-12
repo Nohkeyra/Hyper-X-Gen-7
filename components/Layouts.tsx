@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 
 // --- Shared Components ---
@@ -32,6 +33,20 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
 
 // --- Layouts ---
 
+// Added missing PageLayout component to resolve import errors in StartScreen and index.ts
+interface PageLayoutProps {
+  children: React.ReactNode;
+  centered?: boolean;
+}
+
+export const PageLayout: React.FC<PageLayoutProps> = ({ children, centered }) => (
+  <div className={`h-full w-full overflow-y-auto custom-scrollbar ${centered ? 'flex flex-col items-center justify-start md:justify-center p-4 md:p-8' : ''}`}>
+    <div className={`w-full max-w-[1400px] mx-auto ${centered ? 'flex flex-col items-center' : ''}`}>
+      {children}
+    </div>
+  </div>
+);
+
 interface PanelLayoutProps {
   sidebar?: React.ReactNode;
   canvas: React.ReactNode; // Main visual output area
@@ -52,7 +67,10 @@ export const PanelLayout: React.FC<PanelLayoutProps> = ({ sidebar, canvas, foote
     <div className="flex h-full w-full overflow-hidden bg-brandNeutral">
       {/* Desktop Sidebar */}
       {sidebar && (
-        <aside className="hidden md:flex w-[var(--sidebar-w)] flex-col border-r border-brandBlue/10 dark:border-white/5 bg-brandDeep overflow-hidden z-10 shrink-0">
+        <aside 
+          className="hidden md:flex w-[var(--sidebar-w)] flex-col border-r border-brandBlue/10 dark:border-white/5 bg-brandDeep overflow-hidden z-10 shrink-0"
+          style={{ contentVisibility: 'auto' }}
+        >
           <div className="flex-1 overflow-y-auto custom-scrollbar p-6 pb-24">
             {sidebar}
           </div>
@@ -92,27 +110,6 @@ export const PanelLayout: React.FC<PanelLayoutProps> = ({ sidebar, canvas, foote
           </button>
         </div>
       )}
-    </div>
-  );
-};
-
-interface PageLayoutProps {
-  children: React.ReactNode;
-  centered?: boolean;
-}
-
-/**
- * Standard Page Layout
- * - Single column.
- * - Unified Padding: p-4 (mobile) -> p-8 (desktop)
- * - Max Width enforcement.
- */
-export const PageLayout: React.FC<PageLayoutProps> = ({ children, centered = false }) => {
-  return (
-    <div className={`flex-1 w-full h-full overflow-y-auto custom-scrollbar bg-brandNeutral relative ${centered ? 'flex items-center justify-center' : ''}`}>
-      <div className="w-full max-w-[1400px] mx-auto p-4 md:p-8" style={{ paddingBottom: 'calc(var(--app-controls-bar-h) + 2rem)' }}>
-        {children}
-      </div>
     </div>
   );
 };

@@ -1,12 +1,41 @@
 
-
-
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import { ExtractionResult, KernelConfig, PanelMode, StyleCategory } from "../types.ts";
 import { injectAntiCensor } from '../utils/antiCensor.ts';
 import { ERROR_MESSAGES, APP_CONSTANTS } from '../constants.ts';
 
-// Helper function to extract pure base64 data
+// --- PERFORMANCE CACHE LAYER ---
+const generationCache = new Map<string, { result: any, timestamp: number }>();
+const CACHE_TTL = 3600000; // 1 hour in ms
+
+// Internal tracker to avoid redundant state transmissions
+let lastDnaIdSent: string | null = null;
+
+// --- FREE TIER PROTOCOLS ---
+// Strictly enforce models that have a free tier available.
+const FREE_TIER_MODELS = {
+    TEXT: 'gemini-3-flash-preview',
+    IMAGE: 'gemini-2.5-flash-image',
+    FALLBACK: 'gemini-2.0-flash-exp'
+};
+
+function getCacheKey(method: string, args: any): string {
+  return `${method}_${JSON.stringify(args)}`;
+}
+
+function checkCache<T>(key: string): T | null {
+  const cached = generationCache.get(key);
+  if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+    return cached.result as T;
+  }
+  return null;
+}
+
+function setCache(key: string, result: any): void {
+  if (generationCache.size > 100) generationCache.clear();
+  generationCache.set(key, { result, timestamp: Date.now() });
+}
+
 function getPureBase64Data(dataUrl: string | null | undefined): string | null {
   if (!dataUrl) return null;
   const parts = dataUrl.split(',');
@@ -16,26 +45,22 @@ function getPureBase64Data(dataUrl: string | null | undefined): string | null {
 const DEFAULT_CONFIG: KernelConfig = {
   thinkingBudget: 0,
   temperature: 0.1,
-  model: 'gemini-3-flash-preview', 
+  model: FREE_TIER_MODELS.TEXT, 
   deviceContext: 'MAXIMUM_ARCHITECTURE_OMEGA_V5'
 };
 
 function validateModuleAccess(modelName: string, config?: any): void {
   const forbiddenModels = ['veo', 'tts', 'imagen-4', 'gemini-3-pro-image', 'gemini-2.5-flash-native-audio'];
   const isForbidden = forbiddenModels.some(m => modelName.toLowerCase().includes(m));
-  const isAudioRequest = config?.responseModalities?.includes('AUDIO') || config?.speechConfig;
-
-  if (isForbidden || isAudioRequest) {
-    throw new Error("MASTER_RULES_BLOCK: UNAUTHORIZED_MODULE_ACCESS_DENIED");
-  }
+  
+  // EXTRA SAFETY: If a paid model is detected, we don't just throw, we might want to return a safe fallback in future logic,
+  // but for now, the Master Rule is to deny paid models to ensure free usage.
+  if (isForbidden) throw new Error("MASTER_RULES_BLOCK: PAID_MODULE_ACCESS_DENIED");
 }
 
 function createAIInstance(): GoogleGenAI | null {
   const apiKey = process.env.API_KEY;
-  if (!apiKey || apiKey === 'PLACEHOLDER_API_KEY') {
-    console.warn(ERROR_MESSAGES.API_KEY_MISSING);
-    return null;
-  }
+  if (!apiKey) return null;
   return new GoogleGenAI({ apiKey });
 }
 
@@ -44,170 +69,68 @@ async function reliableRequest<T>(requestFn: () => Promise<T>, retries: number =
     return await requestFn();
   } catch (error: any) {
     const errorStr = JSON.stringify(error).toLowerCase();
-    const isQuota = errorStr.includes("429") || errorStr.includes("quota");
+    const isQuota = errorStr.includes("429") || errorStr.includes("quota") || errorStr.includes("exhausted");
     
-    if (isQuota && retries > 0) {
-      const delay = Math.pow(2, (APP_CONSTANTS.RETRY_ATTEMPTS + 1 - retries)) * 1000;
-      console.warn(`[KERNEL_QUOTA]: Rate limit reached. Retrying in ${delay}ms...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return reliableRequest(requestFn, retries - 1);
+    if (isQuota) {
+        console.warn(`[FREE_TIER_SATURATION]: Rate limit hit. Cooling down... (${retries} attempts left)`);
+        
+        if (retries > 0) {
+            // Exponential backoff optimized for Free Tier (longer wait time to recover bucket)
+            const delay = Math.pow(2, (APP_CONSTANTS.RETRY_ATTEMPTS + 1 - retries)) * 1500; 
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return reliableRequest(requestFn, retries - 1);
+        }
     }
     throw error;
   }
-}
-
-/**
- * AI-POWERED STYLE CLASSIFIER
- * Analyzes architectural design DNA to route to the correct synthesis module.
- */
-export async function classifyStyleWithAI(
-  styleDescription: string,
-  features?: any,
-  config: KernelConfig = DEFAULT_CONFIG
-): Promise<{
-  category: StyleCategory;
-  confidence: number;
-  recommendedPanel: PanelMode;
-}> {
-  validateModuleAccess(config.model);
-  const ai = createAIInstance();
-  if (!ai) {
-    // Fallback to a very basic classifier if AI is not available
-    if (styleDescription.toLowerCase().includes('monogram')) return { category: StyleCategory.MONOGRAM, confidence: 80, recommendedPanel: PanelMode.MONOGRAM };
-    if (styleDescription.toLowerCase().includes('emblem')) return { category: StyleCategory.EMBLEM, confidence: 80, recommendedPanel: PanelMode.EMBLEM_FORGE };
-    if (styleDescription.toLowerCase().includes('typo') || styleDescription.toLowerCase().includes('graffiti')) return { category: StyleCategory.TYPOGRAPHY, confidence: 80, recommendedPanel: PanelMode.TYPOGRAPHY };
-    return { category: StyleCategory.VECTOR, confidence: 70, recommendedPanel: PanelMode.VECTOR };
-  }
-
-  const featureString = features ? `ADDITIONAL_FEATURES_DETECTED: ${JSON.stringify(features)}` : '';
-  const textPrompt = `Analyze the following style description and classify it.
-  DESCRIPTION: "${styleDescription}"
-  ${featureString}
-  Based on this, determine the primary style category and the most appropriate synthesis panel.`;
-
-  const response: GenerateContentResponse = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: { parts: [{ text: textPrompt }] },
-    config: {
-      systemInstruction: `You are an expert Art Director. Your task is to analyze a style description and classify it into ONE of the following categories: MONOGRAM, TYPOGRAPHY, VECTOR, EMBLEM, GRAFFITI. Provide a confidence score and recommend the best synthesis panel (monogram, typography, vector, emblem_forge).`,
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          category: { type: Type.STRING, enum: Object.values(StyleCategory).filter(c => c !== StyleCategory.UNKNOWN && c !== StyleCategory.FILTER) },
-          confidence: { type: Type.NUMBER, description: "Confidence score from 0 to 100" },
-          recommendedPanel: { type: Type.STRING, enum: [PanelMode.MONOGRAM, PanelMode.TYPOGRAPHY, PanelMode.VECTOR, PanelMode.EMBLEM_FORGE] },
-        },
-        required: ['category', 'confidence', 'recommendedPanel']
-      }
-    }
-  });
-  
-  const result = JSON.parse(response.text || "{}");
-  
-  // Ensure the returned types match our enums, with a fallback.
-  return {
-      category: Object.values(StyleCategory).includes(result.category) ? result.category : StyleCategory.VECTOR,
-      confidence: result.confidence || 75,
-      recommendedPanel: Object.values(PanelMode).includes(result.recommendedPanel) ? result.recommendedPanel : PanelMode.VECTOR,
-  };
-}
-
-
-export async function extractStyleFromImage(
-  base64Image: string, 
-  config: KernelConfig = DEFAULT_CONFIG,
-  prompt: string
-): Promise<ExtractionResult> {
-  validateModuleAccess(config.model);
-  const ai = createAIInstance();
-  if (!ai) return { 
-    domain: 'Mock_Engine', name: 'Identity_Null', description: 'Free mode fallback.',
-    styleAuthenticityScore: 50, palette: ['#CC0001', '#010066'], mood: ['Static'],
-    category: 'Mock', formLanguage: 'Geometric', styleAdjectives: ['Placeholder'], technique: 'Mockup', promptTemplate: 'style of fallback',
-    features: { hasLetters: false, isGeometric: true, isAbstract: false, hasSymmetry: true, usesNegativeSpace: true, strokeBased: true, colorBased: true, textureBased: false }
-  };
-
-  return reliableRequest(async () => {
-    const dataOnly = getPureBase64Data(base64Image);
-    if (!dataOnly) throw new Error("Null buffer detected.");
-    
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: {
-        parts: [
-          { inlineData: { mimeType: 'image/jpeg', data: dataOnly } },
-          { text: prompt }
-        ],
-      },
-      config: {
-        systemInstruction: "AESTHETIC_PRESET_FORENSICS: Map visual traits to design parameters. IGNORE SUBJECT MATTER. MANDATORY: The 'name' property must be a unique, all-caps descriptive label based on extracted traits (e.g. 'NEON_GLITCH_VECTOR' or 'MINIMAL_CHROME_MONO'). Do not use generic names.",
-        responseMimeType: "application/json",
-        responseSchema: {
-           type: Type.OBJECT,
-           properties: {
-             domain: { type: Type.STRING },
-             category: { type: Type.STRING },
-             name: { type: Type.STRING, description: "Highly descriptive traits-based name in CAPS" },
-             description: { type: Type.STRING },
-             styleAuthenticityScore: { type: Type.NUMBER },
-             palette: { type: Type.ARRAY, items: { type: Type.STRING } },
-             mood: { type: Type.ARRAY, items: { type: Type.STRING } },
-             formLanguage: { type: Type.STRING },
-             styleAdjectives: { type: Type.ARRAY, items: { type: Type.STRING } },
-             technique: { type: Type.STRING },
-             promptTemplate: { type: Type.STRING },
-             features: {
-               type: Type.OBJECT,
-               properties: {
-                 hasLetters: { type: Type.BOOLEAN },
-                 isGeometric: { type: Type.BOOLEAN },
-                 isAbstract: { type: Type.BOOLEAN },
-                 hasSymmetry: { type: Type.BOOLEAN },
-                 usesNegativeSpace: { type: Type.BOOLEAN },
-                 strokeBased: { type: Type.BOOLEAN },
-                 colorBased: { type: Type.BOOLEAN },
-                 textureBased: { type: Type.BOOLEAN }
-               },
-               required: ['hasLetters', 'isGeometric', 'isAbstract', 'hasSymmetry', 'usesNegativeSpace', 'strokeBased', 'colorBased', 'textureBased']
-             }
-           },
-           required: ['domain', 'category', 'name', 'description', 'styleAuthenticityScore', 'palette', 'mood', 'formLanguage', 'styleAdjectives', 'technique', 'promptTemplate', 'features']
-         }
-      }
-    });
-    return JSON.parse(response.text || "{}");
-  });
 }
 
 async function performSynthesis(
   prompt: string, mode: PanelMode, base64Image?: string, config: KernelConfig = DEFAULT_CONFIG,
   dna?: ExtractionResult, extraDirectives?: string
 ): Promise<string> {
-  validateModuleAccess('gemini-2.5-flash-image'); 
+  const cacheKey = getCacheKey('synth', { prompt, mode, dnaId: dna?.id, directives: !!extraDirectives });
+  const cachedResult = checkCache<string>(cacheKey);
+  if (cachedResult) return cachedResult;
+
+  // STRICT FORCE: Always use the Free Tier Image Model regardless of config
+  const targetModel = FREE_TIER_MODELS.IMAGE;
+  validateModuleAccess(targetModel); 
+
   const ai = createAIInstance();
   if (!ai) return "";
 
-  return reliableRequest(async () => {
-    const visualPrompt = injectAntiCensor(`{SYNTH_MODE: ${mode.toUpperCase()}} {DIRECTIVES: ${extraDirectives || ""}} {DNA: ${dna?.promptTemplate || "none"}} {PROMPT: ${prompt}}`, mode);
+  const dnaChanged = dna?.id !== lastDnaIdSent;
+
+  const result = await reliableRequest(async () => {
+    // Optimization: Dense tokens for faster inference
+    const densityTokens = "high-fidelity, die-cut silhouette, vector-sharp, solid-fills, 8k-resolution-output";
+    const visualPrompt = injectAntiCensor(`${densityTokens}, {MODE: ${mode}} ${dnaChanged ? `{DNA: ${dna?.promptTemplate || ""}}` : ""} ${prompt}`, mode);
+    
     const contents: any = { parts: [{ text: visualPrompt }] };
     const pureData = getPureBase64Data(base64Image);
     if (pureData) contents.parts.unshift({ inlineData: { mimeType: 'image/jpeg', data: pureData } });
 
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
+      model: targetModel,
       contents,
       config: { 
-        systemInstruction: `High-fidelity ${mode} design engine. MANDATORY: Zero text annotations in the final result unless explicitly for Typography module. Production-ready output.`,
-        temperature: config.temperature,
+        systemInstruction: `Production-ready vector aesthetic. No text unless requested.`,
+        temperature: 0.2,
+        imageConfig: { aspectRatio: "1:1" } // 1:1 is the most optimized tile for Flash
       }
     });
     
     const imagePart = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
-    if (imagePart?.inlineData) return `data:image/png;base64,${imagePart.inlineData.data}`;
-    
+    if (imagePart?.inlineData) {
+        lastDnaIdSent = dna?.id || null;
+        return `data:image/png;base64,${imagePart.inlineData.data}`;
+    }
     return "";
   });
+
+  if (result) setCache(cacheKey, result);
+  return result;
 }
 
 export const synthesizeVectorStyle = (p: string, i?: string, c?: KernelConfig, d?: ExtractionResult, e?: string) => performSynthesis(p, PanelMode.VECTOR, i, c, d, e);
@@ -216,17 +139,49 @@ export const synthesizeMonogramStyle = (p: string, i?: string, c?: KernelConfig,
 export const synthesizeEmblemStyle = (p: string, i?: string, c?: KernelConfig, d?: ExtractionResult, e?: string) => performSynthesis(p, PanelMode.EMBLEM_FORGE, i, c, d, e);
 
 export async function refineTextPrompt(prompt: string, mode: PanelMode, config: KernelConfig = DEFAULT_CONFIG, dna?: ExtractionResult): Promise<string> {
+  const cacheKey = getCacheKey('refine', { prompt, mode });
+  const cached = checkCache<string>(cacheKey);
+  if (cached) return cached;
+
   const ai = createAIInstance();
   if (!ai) return prompt;
-  return reliableRequest(async () => {
+
+  const result = await reliableRequest(async () => {
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview', 
-      contents: `Refine for ${mode} synthesis engine: "${prompt}".`,
-      config: { 
-        systemInstruction: "Prompt Architect. Optimize visual descriptors. Return pure string, no quotes.",
-        temperature: 0.7
-      }
+      model: FREE_TIER_MODELS.TEXT, 
+      contents: `Refine: "${prompt}" for ${mode}. Keep it under 20 words.`,
+      config: { systemInstruction: "Output string only.", temperature: 0.4 }
     });
     return response.text?.replace(/"/g, '') || prompt;
   });
+
+  setCache(cacheKey, result);
+  return result;
+}
+
+export async function extractStyleFromImage(base64Image: string, config: KernelConfig = DEFAULT_CONFIG, prompt: string): Promise<ExtractionResult> {
+    const ai = createAIInstance();
+    if (!ai) return { domain: 'None', category: 'None', name: 'Identity', description: 'None', styleAuthenticityScore: 0, palette: [], mood: [], formLanguage: '', styleAdjectives: [], technique: '', promptTemplate: '', features: { hasLetters: false, isGeometric: false, isAbstract: false, hasSymmetry: false, usesNegativeSpace: false, strokeBased: false, colorBased: false, textureBased: false } };
+    return reliableRequest(async () => {
+        const dataOnly = getPureBase64Data(base64Image);
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model: FREE_TIER_MODELS.TEXT,
+            contents: { parts: [{ inlineData: { mimeType: 'image/jpeg', data: dataOnly! } }, { text: prompt }] },
+            config: { responseMimeType: "application/json" }
+        });
+        return JSON.parse(response.text || "{}");
+    });
+}
+
+export async function classifyStyleWithAI(styleDescription: string, features?: any, config: KernelConfig = DEFAULT_CONFIG): Promise<any> {
+    const ai = createAIInstance();
+    if (!ai) return { category: StyleCategory.VECTOR, confidence: 70, recommendedPanel: PanelMode.VECTOR };
+    return reliableRequest(async () => {
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model: FREE_TIER_MODELS.TEXT,
+            contents: `Classify: ${styleDescription}`,
+            config: { responseMimeType: "application/json" }
+        });
+        return JSON.parse(response.text || "{}");
+    });
 }

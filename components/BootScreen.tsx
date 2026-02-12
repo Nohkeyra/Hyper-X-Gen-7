@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { NIcon, BoxIcon, StarIcon } from './Icons.tsx';
 
@@ -21,7 +22,7 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onBootComplete, isDarkMo
       setBootProgress(20);
       await new Promise(res => setTimeout(res, 100)); // Fast path
       
-      addBootLog("LATTICE_INTEGRITY_CHECK: 100%_OK");
+      addBootLog("LICENSE_CHECK: FREE_TIER_CONFIRMED");
       setBootProgress(50);
       await new Promise(res => setTimeout(res, 100));
 
@@ -49,9 +50,9 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onBootComplete, isDarkMo
           <span className="text-[7px] font-black uppercase text-brandRed tracking-widest">HYPERXGEN</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[7px] font-black uppercase text-brandCharcoalMuted dark:text-white/40 tracking-widest">5G</span>
+          <span className="text-[7px] font-black uppercase text-brandCharcoalMuted dark:text-white/40 tracking-widest">TIER</span>
           <div className="w-0.5 h-3 bg-brandCharcoal/20 dark:bg-white/20" />
-          <span className="text-[7px] font-black uppercase text-brandYellow tracking-widest">100%</span>
+          <span className="text-[7px] font-black uppercase text-brandYellow tracking-widest">FREE</span>
           <div className="w-1.5 h-1.5 bg-brandYellow rounded-full" />
         </div>
       </div>

@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { 
   PanelMode, 
@@ -103,8 +101,17 @@ export const App: React.FC = () => {
           addLog("INITIATING: OMEGA_KERNEL_BOOT", 'info');
           await vaultDb.init();
           
-          const response = await fetch('/config.json');
-          const appConfig = await response.json();
+          // SPEED OPTIMIZATION: Fire all data retrieval requests in parallel
+          const [appConfigRes, dbPresets, dbRecent, dbConfig, dbLogs, dbDna] = await Promise.all([
+            fetch('/config.json'),
+            vaultDb.getAll<Preset>('presets'),
+            vaultDb.getAll<Preset>('recent'),
+            vaultDb.getItem<KernelConfig>('config', 'kernel'),
+            vaultDb.getItem<LogEntry[]>('logs', 'entries'),
+            vaultDb.getItem<ExtractionResult | null>('global_dna', 'dna')
+          ]);
+
+          const appConfig = await appConfigRes.json();
           
           const configuredModes: PanelMode[] = appConfig.panels.enabled.map(panelName => {
             switch (panelName) {
@@ -117,19 +124,14 @@ export const App: React.FC = () => {
               default: return PanelMode.START;
             }
           }).filter(mode => (mode as PanelMode) !== PanelMode.START);
+          
           setEnabledModes(configuredModes);
-
-          setSavedPresets(await vaultDb.getAll<Preset>('presets'));
-          setRecentWorks(await vaultDb.getAll<Preset>('recent'));
+          setSavedPresets(dbPresets);
+          setRecentWorks(dbRecent);
           
-          const storedConfig = await vaultDb.getItem<KernelConfig>('config', 'kernel');
-          if (storedConfig) setKernelConfig(prev => ({...prev, ...storedConfig}));
-          
-          const storedLogs = await vaultDb.getItem<LogEntry[]>('logs', 'entries');
-          if (storedLogs) setLogs(storedLogs);
-
-          const storedDna = await vaultDb.getItem<ExtractionResult | null>('global_dna', 'dna');
-          if (typeof storedDna !== 'undefined') setGlobalDna(storedDna);
+          if (dbConfig) setKernelConfig(prev => ({...prev, ...dbConfig, thinkingBudget: 0}));
+          if (dbLogs) setLogs(dbLogs);
+          if (typeof dbDna !== 'undefined') setGlobalDna(dbDna);
           
           setHasInitialized(true);
           addLog("ARCHITECTURE: MASTER_PROTOCOL_ACTIVE", 'success');
@@ -144,6 +146,7 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     if (hasInitialized) {
+      // Lazy save using debouncing if this grows, but for now standard persistence
       vaultDb.saveAll('presets', savedPresets);
       vaultDb.saveAll('recent', recentWorks.slice(0, 15));
       vaultDb.saveItem('config', 'kernel', kernelConfig);
@@ -180,7 +183,6 @@ export const App: React.FC = () => {
         newPreset = { ...basePreset, type: PanelMode.VECTOR, parameters: settings as VectorPreset['parameters'] };
         break;
       case PanelMode.TYPOGRAPHY:
-        // FIX: Removed 'styleUsed' property which does not exist on TypographyPreset type.
         newPreset = { ...basePreset, type: PanelMode.TYPOGRAPHY, parameters: settings as TypographyPreset['parameters'] };
         break;
       case PanelMode.MONOGRAM:

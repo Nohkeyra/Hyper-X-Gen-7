@@ -1,5 +1,4 @@
 
-
 // ===================== LOCAL STORAGE KEYS =====================
 export const LS_KEYS = {
   THEME: 'hyperxgen_theme_v1',
@@ -39,8 +38,8 @@ export const APP_CONSTANTS = {
   SUPPORTED_IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/webp'],
   DEFAULT_IMAGE_RESOLUTION: 1024,
   COLOR_PALETTE_SIZE: 8,
-  RETRY_ATTEMPTS: 5,
-  REQUEST_TIMEOUT_MS: 30000,
+  RETRY_ATTEMPTS: 8, // Increased for Free Tier stability
+  REQUEST_TIMEOUT_MS: 60000, // Increased to 60s to handle lower priority Free Tier processing
   DEBOUNCE_DELAY_MS: 300
 } as const;
 
