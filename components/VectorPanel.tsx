@@ -1,3 +1,4 @@
+
 // FINAL – LOCKED - REFINED V8.0.0
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { SparkleIcon } from './Icons.tsx';
@@ -46,6 +47,7 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
   }, [savedPresets]);
 
   const [command, setCommand] = useState(() => initialData?.prompt || '');
+  const [generationNonce, setGenerationNonce] = useState(0); // Add generationNonce
 
   const [generatedOutput, setGeneratedOutput] = useState<string | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(initialData?.imageUrl || null);
@@ -91,6 +93,7 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
       setActivePreset(null);
       setDna(null);
       onSetGlobalDna?.(null);
+      setGenerationNonce(0); // Reset nonce if preset is deselected
       return;
     }
 
@@ -108,9 +111,14 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
         setDna(null);
         onSetGlobalDna?.(null);
     }
-
+    setGenerationNonce(0); // Reset nonce on new preset selection
     addLog(`STYLE_DNA_LOCKED: ${item.name}`, 'info');
   }, [PRESETS, isProcessing, transition, activePresetId, onSetGlobalDna, addLog]);
+
+  const setCommandAndResetNonce = useCallback((value: string) => {
+    setCommand(value);
+    setGenerationNonce(0); // Reset nonce if command changes
+  }, []);
 
   const handleGenerate = useCallback(async () => {
     if (processingRef.current) return;
@@ -126,6 +134,7 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
     
     processingRef.current = true;
     transition('DEVOURING_BUFFER', true);
+    setGenerationNonce(prev => prev + 1); // Increment nonce for new generation attempt
     
     const userCommand = command.trim();
     const finalPrompt = `Vectorize the provided image using the aesthetic of "${activePreset.prompt}". ${userCommand ? `Execute the following command during vectorization: "${userCommand}".` : 'Perform a standard high-fidelity vectorization according to the style preset.'}`;
@@ -155,7 +164,8 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
         uploadedImage, 
         kernelConfig, 
         dna || globalDna || undefined, 
-        finalDirectives
+        finalDirectives,
+        generationNonce // Pass generationNonce
       );
       
       if (!result) throw new Error("Synthesis returned a null buffer.");
@@ -186,7 +196,7 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
       processingRef.current = false; 
       transition('LATTICE_ACTIVE'); 
     }
-  }, [command, uploadedImage, activePreset, kernelConfig, dna, globalDna, transition, addLog, onSaveToHistory, historyIndex]);
+  }, [command, uploadedImage, activePreset, kernelConfig, dna, globalDna, transition, addLog, onSaveToHistory, historyIndex, generationNonce]); // Add generationNonce as dependency
 
   const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
@@ -215,6 +225,7 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
       setHistory([base64]);
       setHistoryIndex(0);
       transition('BUFFER_LOADED');
+      setGenerationNonce(0); // Reset nonce on file upload
       addLog("SOURCE_BUFFER_LOADED: Ready for vectorization", "info");
     }; 
     r.readAsDataURL(f); 
@@ -225,7 +236,7 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
     setIsRefining(true);
     try {
       const refined = await refineTextPrompt(command, PanelMode.VECTOR, kernelConfig, dna || globalDna || undefined);
-      setCommand(refined);
+      setCommandAndResetNonce(refined); // Use new setter
       addLog("COMMAND_REFINED: Architecture optimized", "success");
     } catch {
       addLog("COMMAND_REFINE_FAIL: Kernel drift detected", "error");
@@ -284,6 +295,7 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
             setHistoryIndex(-1); 
             transition('STARVING'); 
             onClearLattice?.();
+            setGenerationNonce(0); // Reset nonce on clear
           }} 
           onFileUpload={handleFileUpload}
           onUndo={handleUndo}
@@ -298,13 +310,13 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
           <PresetCarousel categories={PRESETS} activeId={activePresetId} onSelect={handleSelectPreset} />
           <GenerationBar 
             prompt={command} 
-            setPrompt={setCommand} 
+            setPrompt={setCommandAndResetNonce} // Use new setter
             onGenerate={handleGenerate} 
             isProcessing={!canGenerate}
             activePresetName={activePreset?.name || dna?.name || globalDna?.name} 
             placeholder="Enter optional command (e.g. remove background)..." 
             bridgedThumbnail={initialData?.category === 'LATTICE_BRIDGE' ? initialData.imageUrl : null}
-            onClearBridge={() => { if (onClearLattice) onClearLattice(); setUploadedImage(null); }}
+            onClearBridge={() => { if (onClearLattice) onClearLattice(); setUploadedImage(null); setGenerationNonce(0); }}
             refineButton={
               <button
                 onClick={handleRefine}

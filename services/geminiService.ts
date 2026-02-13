@@ -87,9 +87,9 @@ async function reliableRequest<T>(requestFn: () => Promise<T>, retries: number =
 
 async function performSynthesis(
   prompt: string, mode: PanelMode, base64Image?: string, config: KernelConfig = DEFAULT_CONFIG,
-  dna?: ExtractionResult, extraDirectives?: string
+  dna?: ExtractionResult, extraDirectives?: string, generationSeed?: number // Added generationSeed
 ): Promise<string> {
-  const cacheKey = getCacheKey('synth', { prompt, mode, dnaId: dna?.id, directives: !!extraDirectives });
+  const cacheKey = getCacheKey('synth', { prompt, mode, dnaId: dna?.id, directives: !!extraDirectives, generationSeed }); // Include generationSeed in cache key
   const cachedResult = checkCache<string>(cacheKey);
   if (cachedResult) return cachedResult;
 
@@ -133,10 +133,10 @@ async function performSynthesis(
   return result;
 }
 
-export const synthesizeVectorStyle = (p: string, i?: string, c?: KernelConfig, d?: ExtractionResult, e?: string) => performSynthesis(p, PanelMode.VECTOR, i, c, d, e);
-export const synthesizeTypoStyle = (p: string, i?: string, c?: KernelConfig, d?: ExtractionResult, e?: string) => performSynthesis(p, PanelMode.TYPOGRAPHY, i, c, d, e);
-export const synthesizeMonogramStyle = (p: string, i?: string, c?: KernelConfig, d?: ExtractionResult, e?: string) => performSynthesis(p, PanelMode.MONOGRAM, i, c, d, e);
-export const synthesizeEmblemStyle = (p: string, i?: string, c?: KernelConfig, d?: ExtractionResult, e?: string) => performSynthesis(p, PanelMode.EMBLEM_FORGE, i, c, d, e);
+export const synthesizeVectorStyle = (p: string, i?: string, c?: KernelConfig, d?: ExtractionResult, e?: string, gs?: number) => performSynthesis(p, PanelMode.VECTOR, i, c, d, e, gs);
+export const synthesizeTypoStyle = (p: string, i?: string, c?: KernelConfig, d?: ExtractionResult, e?: string, gs?: number) => performSynthesis(p, PanelMode.TYPOGRAPHY, i, c, d, e, gs);
+export const synthesizeMonogramStyle = (p: string, i?: string, c?: KernelConfig, d?: ExtractionResult, e?: string, gs?: number) => performSynthesis(p, PanelMode.MONOGRAM, i, c, d, e, gs);
+export const synthesizeEmblemStyle = (p: string, i?: string, c?: KernelConfig, d?: ExtractionResult, e?: string, gs?: number) => performSynthesis(p, PanelMode.EMBLEM_FORGE, i, c, d, e, gs);
 
 export async function refineTextPrompt(prompt: string, mode: PanelMode, config: KernelConfig = DEFAULT_CONFIG, dna?: ExtractionResult): Promise<string> {
   const cacheKey = getCacheKey('refine', { prompt, mode });

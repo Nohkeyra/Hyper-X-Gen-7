@@ -1,3 +1,4 @@
+
 // FINAL – LOCKED - REFINED V7.1.3
 import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react';
 import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, TypographyPreset, Preset, LatticeBuffer, TypographyDna, isTypographyPreset } from '../types.ts';
@@ -49,6 +50,7 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
   const { status, isProcessing, transition } = useDevourer(initialData?.dna || globalDna ? 'DNA_LINKED' : 'STARVING');
 
   const [prompt, setPrompt] = useState(initialData?.prompt || '');
+  const [generationNonce, setGenerationNonce] = useState(0); // Add generationNonce
   const [generatedOutput, setGeneratedOutput] = useState<string | null>(initialData?.imageUrl || null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(initialData?.imageUrl && initialData?.category === 'LATTICE_BRIDGE' ? initialData.imageUrl : null);
   const [dna, setDna] = useState<ExtractionResult | null>(initialData?.dna || globalDna || null);
@@ -82,6 +84,7 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
       setActivePreset(null);
       setDna(null);
       onSetGlobalDna?.(null);
+      setGenerationNonce(0); // Reset nonce if preset is deselected
       return;
     }
 
@@ -96,9 +99,14 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
       transition("DNA_LINKED");
       onSetGlobalDna?.(item.dna);
     }
-
+    setGenerationNonce(0); // Reset nonce on new preset selection
     addLog(`TYPO_RECALL: ${item.name}`, 'info');
   }, [PRESETS, isProcessing, transition, activePresetId, onSetGlobalDna, addLog]);
+
+  const setPromptAndResetNonce = useCallback((value: string) => {
+    setPrompt(value);
+    setGenerationNonce(0); // Reset nonce if prompt changes
+  }, []);
 
   const handleGenerate = useCallback(async () => {
     if (processingRef.current) return;
@@ -115,6 +123,7 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
     
     processingRef.current = true;
     transition(dna || globalDna ? 'DNA_STYLIZE_ACTIVE' : 'DEVOURING_BUFFER', true);
+    setGenerationNonce(prev => prev + 1); // Increment nonce for new generation attempt
 
     const extraDirectives = [
       `[TYPOGRAPHY_ART_SYNTAX_V3]`,
@@ -137,7 +146,8 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
         uploadedImage || undefined,
         kernelConfig,
         dna || globalDna || undefined,
-        extraDirectives
+        extraDirectives,
+        generationNonce // Pass generationNonce
       );
 
       setGeneratedOutput(result);
@@ -168,7 +178,7 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
       processingRef.current = false;
       transition('LATTICE_ACTIVE');
     }
-  }, [prompt, uploadedImage, activePreset, kernelConfig, dna, globalDna, transition, addLog, onSaveToHistory, historyIndex]);
+  }, [prompt, uploadedImage, activePreset, kernelConfig, dna, globalDna, transition, addLog, onSaveToHistory, historyIndex, generationNonce]); // Add generationNonce as dependency
 
   const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
@@ -197,6 +207,7 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
       setHistory([base64]);
       setHistoryIndex(0);
       transition('BUFFER_LOADED');
+      setGenerationNonce(0); // Reset nonce on file upload
       addLog("SOURCE_BUFFER_LOADED: Ready for synthesis", "info");
     };
     r.readAsDataURL(f);
@@ -207,7 +218,7 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
     setIsRefining(true);
     try {
       const refined = await refineTextPrompt(prompt, PanelMode.TYPOGRAPHY, kernelConfig, dna || globalDna || undefined);
-      setPrompt(refined);
+      setPromptAndResetNonce(refined); // Use new setter
       addLog("PROMPT_REFINED", "success");
     } catch {
       addLog("PROMPT_REFINE_FAIL", "error");
@@ -263,6 +274,7 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
             setHistoryIndex(-1); 
             transition('STARVING'); 
             onClearLattice?.();
+            setGenerationNonce(0); // Reset nonce on clear
           }} 
           onFileUpload={handleFileUpload}
           onUndo={handleUndo}
@@ -278,13 +290,13 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
           <PresetCarousel categories={PRESETS} activeId={activePresetId} onSelect={handleSelectPreset} />
           <GenerationBar 
             prompt={prompt} 
-            setPrompt={setPrompt} 
+            setPrompt={setPromptAndResetNonce} // Use new setter
             onGenerate={handleGenerate} 
             isProcessing={isProcessing} 
             activePresetName={activePreset?.name || dna?.name || globalDna?.name} 
             placeholder="Enter words (1-3 ideal)..." 
             bridgedThumbnail={initialData?.category === 'LATTICE_BRIDGE' ? initialData.imageUrl : null}
-            onClearBridge={() => { if (onClearLattice) onClearLattice(); setUploadedImage(null); }}
+            onClearBridge={() => { if (onClearLattice) onClearLattice(); setUploadedImage(null); setGenerationNonce(0); }}
             refineButton={
               <button
                 onClick={handleRefine}

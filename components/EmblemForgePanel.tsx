@@ -1,3 +1,4 @@
+
 // FINAL – LOCKED - REFINED V8.0.0
 import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react';
 import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, EmblemPreset, Preset, LatticeBuffer, isEmblemPreset } from '../types.ts';
@@ -34,6 +35,7 @@ export const EmblemForgePanel: React.FC<EmblemForgePanelProps> = ({
 
   const [primaryText, setPrimaryText] = useState(initialData?.prompt || '');
   const [subText, setSubText] = useState('');
+  const [generationNonce, setGenerationNonce] = useState(0); // Add generationNonce
   const [generatedOutput, setGeneratedOutput] = useState<string | null>(initialData?.imageUrl || null);
   const [dna, setDna] = useState<ExtractionResult | null>(initialData?.dna || globalDna || null);
   const [activePresetId, setActivePresetId] = useState<string | null>(initialData?.id || null);
@@ -59,6 +61,7 @@ export const EmblemForgePanel: React.FC<EmblemForgePanelProps> = ({
       setActivePreset(null);
       setDna(null);
       onSetGlobalDna?.(null);
+      setGenerationNonce(0); // Reset nonce if preset is deselected
       return;
     }
     setActivePresetId(id);
@@ -70,8 +73,20 @@ export const EmblemForgePanel: React.FC<EmblemForgePanelProps> = ({
       transition("DNA_LINKED");
       onSetGlobalDna?.(item.dna);
     }
+    setGenerationNonce(0); // Reset nonce on new preset selection
     addLog(`EMBLEM_RECALL: ${item.name}`, 'info');
   }, [PRESETS, isProcessing, transition, activePresetId, onSetGlobalDna, addLog]);
+
+  const setPrimaryTextAndResetNonce = useCallback((value: string) => {
+    setPrimaryText(value);
+    setGenerationNonce(0); // Reset nonce if primary text changes
+  }, []);
+
+  const setSubTextAndResetNonce = useCallback((value: string) => {
+    setSubText(value);
+    setGenerationNonce(0); // Reset nonce if subtext changes
+  }, []);
+
 
   const handleGenerate = useCallback(async () => {
     if (processingRef.current || !activePreset || !isEmblemPreset(activePreset)) {
@@ -86,6 +101,7 @@ export const EmblemForgePanel: React.FC<EmblemForgePanelProps> = ({
     
     processingRef.current = true;
     transition(dna || globalDna ? 'DNA_STYLIZE_ACTIVE' : 'DEVOURING_BUFFER', true);
+    setGenerationNonce(prev => prev + 1); // Increment nonce for new generation attempt
     
     const emblemParams = activePreset.parameters;
     const directives = [`[DIRECTIVE: EMBLEM_FORGE_V1]`];
@@ -101,7 +117,7 @@ export const EmblemForgePanel: React.FC<EmblemForgePanelProps> = ({
     const extraDirectives = directives.join('\n');
 
     try {
-      const result = await synthesizeEmblemStyle(finalPrompt, undefined, kernelConfig, dna || globalDna || undefined, extraDirectives);
+      const result = await synthesizeEmblemStyle(finalPrompt, undefined, kernelConfig, dna || globalDna || undefined, extraDirectives, generationNonce); // Pass generationNonce
       setGeneratedOutput(result);
       addLog(`EMBLEM_SYNTHESIS: "${userPrimaryText}" forged`, 'success');
       onSaveToHistory({
@@ -122,7 +138,7 @@ export const EmblemForgePanel: React.FC<EmblemForgePanelProps> = ({
       processingRef.current = false;
       transition('LATTICE_ACTIVE');
     }
-  }, [primaryText, subText, activePreset, kernelConfig, dna, globalDna, transition, addLog, onSaveToHistory]);
+  }, [primaryText, subText, activePreset, kernelConfig, dna, globalDna, transition, addLog, onSaveToHistory, generationNonce]); // Add generationNonce as dependency
   
   const canGenerate = !isProcessing && !!activePresetId;
 
@@ -162,6 +178,7 @@ export const EmblemForgePanel: React.FC<EmblemForgePanelProps> = ({
             setPrimaryText('');
             setSubText('');
             transition('STARVING'); 
+            setGenerationNonce(0); // Reset nonce on clear
           }} 
           onFileUpload={() => {}}
         />
@@ -176,7 +193,7 @@ export const EmblemForgePanel: React.FC<EmblemForgePanelProps> = ({
                     <input
                         type="text"
                         value={primaryText}
-                        onChange={e => setPrimaryText(e.target.value)}
+                        onChange={e => setPrimaryTextAndResetNonce(e.target.value)} // Use new setter
                         placeholder="Primary Text (e.g. HYPERXGEN)"
                         disabled={isProcessing}
                         className="w-full px-3 py-3 md:px-5 md:py-4 bg-brandCharcoal/10 dark:bg-black/20 border-b md:border-b-0 md:border-r border-brandBlue/30 dark:border-brandYellow/30 text-brandYellow dark:text-brandYellow font-mono text-xs md:text-sm focus:outline-none placeholder-brandCharcoalMuted/40 dark:placeholder-white/30 min-w-0 caret-brandRed dark:caret-brandYellow"
@@ -184,7 +201,7 @@ export const EmblemForgePanel: React.FC<EmblemForgePanelProps> = ({
                     <input
                         type="text"
                         value={subText}
-                        onChange={e => setSubText(e.target.value)}
+                        onChange={e => setSubTextAndResetNonce(e.target.value)} // Use new setter
                         placeholder="Subtext (e.g. EST. 2024)"
                         disabled={isProcessing}
                         className="w-full px-3 py-3 md:px-5 md:py-4 bg-brandCharcoal/5 dark:bg-black/10 border-brandBlue/20 dark:border-brandYellow/20 text-brandYellow dark:text-brandYellow/80 font-mono text-xs md:text-sm focus:outline-none placeholder-brandCharcoalMuted/30 dark:placeholder-white/20 min-w-0 caret-brandRed dark:caret-brandYellow"

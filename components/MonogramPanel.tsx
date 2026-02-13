@@ -1,3 +1,4 @@
+
 // FINAL – LOCKED - REFINED V7.2.5
 import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react';
 import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, MonogramPreset, Preset, LatticeBuffer, MonogramDna } from '../types.ts';
@@ -34,6 +35,7 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
 
   const { status, isProcessing, transition } = useDevourer(initialData?.dna || globalDna ? 'DNA_LINKED' : 'STARVING');
   const [prompt, setPrompt] = useState(initialData?.prompt || '');
+  const [generationNonce, setGenerationNonce] = useState(0); // Add generationNonce
   const [generatedOutput, setGeneratedOutput] = useState<string | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(initialData?.imageUrl && initialData?.category === 'LATTICE_BRIDGE' ? initialData.imageUrl : null);
   const [dna, setDna] = useState<ExtractionResult | null>(initialData?.dna || globalDna || null);
@@ -67,6 +69,7 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
       setActivePreset(null);
       setDna(null);
       onSetGlobalDna?.(null);
+      setGenerationNonce(0); // Reset nonce if preset is deselected
       return;
     }
 
@@ -81,9 +84,14 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
       transition("DNA_LINKED");
       onSetGlobalDna?.(item.dna);
     }
-
+    setGenerationNonce(0); // Reset nonce on new preset selection
     addLog(`REFINED_RECALL: ${item.name}`, 'info');
   }, [PRESETS, isProcessing, transition, activePresetId, onSetGlobalDna, addLog]);
+
+  const setPromptAndResetNonce = useCallback((value: string) => {
+    setPrompt(value);
+    setGenerationNonce(0); // Reset nonce if prompt changes
+  }, []);
 
   const handleGenerate = useCallback(async () => {
     if (processingRef.current || !activePreset) {
@@ -98,6 +106,7 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
     
     processingRef.current = true;
     transition(dna || globalDna ? "DNA_STYLIZE_ACTIVE" : "DEVOURING_BUFFER", true);
+    setGenerationNonce(prev => prev + 1); // Increment nonce for new generation attempt
 
     const extraDirectives = [
       `[DIRECTIVE: REFINED_MONOGRAM_V8]`,
@@ -116,7 +125,7 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
     ].filter(Boolean).join('\n');
 
     try {
-      const result = await synthesizeMonogramStyle(finalPrompt, uploadedImage || undefined, kernelConfig, dna || globalDna || undefined, extraDirectives);
+      const result = await synthesizeMonogramStyle(finalPrompt, uploadedImage || undefined, kernelConfig, dna || globalDna || undefined, extraDirectives, generationNonce); // Pass generationNonce
       setGeneratedOutput(result);
       
       setHistory(prev => {
@@ -144,7 +153,7 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
       processingRef.current = false; 
       transition("LATTICE_ACTIVE"); 
     }
-  }, [prompt, activePreset, dna, globalDna, kernelConfig, uploadedImage, transition, onSaveToHistory, addLog, historyIndex]);
+  }, [prompt, activePreset, dna, globalDna, kernelConfig, uploadedImage, transition, onSaveToHistory, addLog, historyIndex, generationNonce]); // Add generationNonce as dependency
 
   const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
@@ -173,6 +182,7 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
       setHistory([base64]);
       setHistoryIndex(0);
       transition('BUFFER_LOADED');
+      setGenerationNonce(0); // Reset nonce on file upload
       addLog("MONO_SOURCE_LOADED", "info");
     }; 
     r.readAsDataURL(f); 
@@ -183,7 +193,7 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
     setIsRefining(true);
     try {
       const refined = await refineTextPrompt(prompt, PanelMode.MONOGRAM, kernelConfig, dna || globalDna || undefined);
-      setPrompt(refined);
+      setPromptAndResetNonce(refined); // Use new setter
       addLog("PROMPT_REFINED", "success");
     } catch {
       addLog("PROMPT_REFINE_FAIL", "error");
@@ -223,7 +233,7 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
           generatedOutput={generatedOutput} 
           isProcessing={isProcessing} 
           hudContent={<DevourerHUD devourerStatus={status} />} 
-          onClear={() => { setGeneratedOutput(null); setUploadedImage(null); setDna(null); setHistory([]); setHistoryIndex(-1); transition('STARVING'); }} 
+          onClear={() => { setGeneratedOutput(null); setUploadedImage(null); setDna(null); setHistory([]); setHistoryIndex(-1); transition('STARVING'); setGenerationNonce(0); }} // Reset nonce on clear
           onFileUpload={handleFileUpload}
           onUndo={handleUndo}
           onRedo={handleRedo}
@@ -236,10 +246,10 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
         <div className="space-y-4">
           <PresetCarousel categories={PRESETS} activeId={activePresetId} onSelect={handleSelectPreset} />
           <GenerationBar 
-            prompt={prompt} setPrompt={setPrompt} onGenerate={handleGenerate} isProcessing={isProcessing || !activePreset} 
+            prompt={prompt} setPrompt={setPromptAndResetNonce} onGenerate={handleGenerate} isProcessing={isProcessing || !activePreset} 
             activePresetName={activePreset?.name || dna?.name || globalDna?.name} placeholder="Enter initials (e.g. HXG)..." 
             bridgedThumbnail={initialData?.category === 'LATTICE_BRIDGE' ? initialData.imageUrl : null}
-            onClearBridge={() => { if (onClearLattice) onClearLattice(); setUploadedImage(null); }}
+            onClearBridge={() => { if (onClearLattice) onClearLattice(); setUploadedImage(null); setGenerationNonce(0); }}
             refineButton={
               <button
                 onClick={handleRefine}
