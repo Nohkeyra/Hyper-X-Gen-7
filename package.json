@@ -11,7 +11,7 @@
     "type-check": "tsc --noEmit",
     "lint": "eslint . --ext ts,tsx",
     "security-check": "npm audit",
-    "setup:android": "echo \"Run 'android_build_pack/setup-env.sh' (for Linux/macOS) or 'android_build_pack\\\\setup-env.bat' (for Windows) to check your environment.\""
+    "setup:android": "echo \"Run 'app/setup-env.sh' (for Linux/macOS) or 'app\\\\setup-env.bat' (for Windows) to check your environment.\""
   },
   "dependencies": {
     "react": "^19.2.4",

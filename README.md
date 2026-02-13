@@ -7,7 +7,7 @@ Built with React, TypeScript, and wrapped for Android using Capacitor.
 ## 📦 What's Included
 - ✅ Complete React/TypeScript source code
 - ✅ Pre-built web application (`Appsgeyser` folder)
-- ✅ Android project wrapper and setup scripts (`android_build_pack` folder)
+- ✅ Android project wrapper and setup scripts (`app` folder)
 - ✅ All dependencies configuration files
 - ✅ Build scripts and configurations
 
@@ -63,10 +63,10 @@ Before you can build the APK, you must install the required development tools on
    Run the verification script from the project root:
    ```bash
    # For macOS / Linux
-   ./android_build_pack/setup-env.sh
+   ./app/setup-env.sh
    
    # For Windows (CMD or PowerShell)
-   .\android_build_pack\setup-env.bat
+   .\app\setup-env.bat
    ```
    If the script reports success, you are ready to build! If not, follow the error messages to fix your setup. You can also run `npm run setup:android` for a hint.
 
@@ -81,21 +81,21 @@ With the environment configured, you can now build the APK.
    ```bash
    npm run build
    ```
-   This command places the necessary web assets into the `Appsgeyser` directory. These assets need to be manually or script-copied into `android_build_pack/app/src/main/assets/www`. (For this package, the assets are pre-compiled and included.)
+   This command places the necessary web assets into the `Appsgeyser` directory. These assets need to be manually or script-copied into `app/src/main/assets/www`. (For this package, the assets are pre-compiled and included.)
 
 **2. Build the APK:**
    You can now build the APK using either Android Studio or the command line.
 
    **Option A: Using Android Studio (Recommended)**
-   1.  **Open Project:** Launch Android Studio, select "Open", and navigate to the `android_build_pack` folder within this project.
+   1.  **Open Project:** Launch Android Studio, select "Open", and navigate to the `app` folder within this project.
    2.  **Gradle Sync:** Wait for Android Studio to index files and sync the project with Gradle. This can take several minutes on the first open.
    3.  **Build APK:** From the menu bar, go to `Build` → `Build Bundle(s) / APK(s)` → `Build APK(s)`.
-   4.  **Locate APK:** Once the build is complete, a notification will appear. Click "locate" or find the file at `android_build_pack/app/build/outputs/apk/debug/app-debug.apk`.
+   4.  **Locate APK:** Once the build is complete, a notification will appear. Click "locate" or find the file at `app/build/outputs/apk/debug/app-debug.apk`.
 
    **Option B: Using the Command Line**
-   1.  **Navigate to Folder:** Open your terminal and change the directory to the `android_build_pack` folder:
+   1.  **Navigate to Folder:** Open your terminal and change the directory to the `app` folder:
        ```bash
-       cd android_build_pack
+       cd app
        ```
    2.  **Run Build Command (and make gradlew executable if needed):**
        ```bash
@@ -108,7 +108,7 @@ With the environment configured, you can now build the APK.
        # For Windows
        .\gradlew.bat assembleDebug
        ```
-   3.  **Find APK:** The generated file will be at `android_build_pack/app/build/outputs/apk/debug/app-debug.apk`.
+   3.  **Find APK:** The generated file will be at `app/build/outputs/apk/debug/app-debug.apk`.
 
 ---
 
@@ -120,7 +120,7 @@ You can install the generated `app-debug.apk` on an Android device or emulator.
 2.  **Connect Device:** Connect your device to your computer via USB.
 3.  **Install via ADB:** Open a terminal and run:
     ```bash
-    adb install android_build_pack/app/build/outputs/apk/debug/app-debug.apk
+    adb install app/build/outputs/apk/debug/app-debug.apk
     ```
     Alternatively, you can drag-and-drop the APK file onto an open Android Emulator window.
 
@@ -131,7 +131,7 @@ You can install the generated `app-debug.apk` on an Android device or emulator.
 1.  **Modify Web App:** Make changes to the React source code in the root directory.
 2.  **Test Locally:** Run `npm run dev` to see your changes in a web browser.
 3.  **Build Web Assets:** Run `npm run build`. This compiles the web app into the `Appsgeyser` directory.
-4.  **Sync to Android:** **Manually copy** the contents of `Appsgeyser/` into the `android_build_pack/app/src/main/assets/www/` directory, overwriting existing files.
+4.  **Sync to Android:** **Manually copy** the contents of `Appsgeyser/` into the `app/src/main/assets/www/` directory, overwriting existing files.
 5.  **Rebuild APK:** Use Android Studio or the command line to build a new APK with the updated code.
 
 ## 📄 License

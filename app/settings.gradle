@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "HYPERXGEN"
-include ':app'
+rootProject.name = "HyperXGenApp"
+// include ':app' // Removed for single-module project structure

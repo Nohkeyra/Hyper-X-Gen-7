@@ -62,4 +62,4 @@ echo ""
 
 echo -e "${GREEN}--- Environment Check Complete ---${NC}"
 echo "All dependencies seem to be correctly configured."
-echo "You can now proceed to build the APK as per the README.md instructions."
+echo "You can now proceed to build the APK as per the README.md instructions.
