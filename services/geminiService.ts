@@ -1,61 +1,55 @@
 
+
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
-import { ExtractionResult, KernelConfig, PanelMode, StyleCategory } from "../types.ts";
+import { ExtractionResult, KernelConfig, PanelMode, StyleCategory, ImageEngine } from "../types.ts";
 import { injectAntiCensor } from '../utils/antiCensor.ts';
-import { ERROR_MESSAGES, APP_CONSTANTS } from '../constants.ts';
+import { ERROR_MESSAGES, APP_CONSTANTS, ENV } from '../constants.ts';
+import { generateWithFluxHF } from './fluxService.ts';
 
-// --- PERFORMANCE CACHE LAYER ---
+// --- UTILITY FUNCTIONS ---
+const getPureBase64Data = (dataUrl: string | null | undefined): string | null => {
+  if (!dataUrl) return null;
+  const parts = dataUrl.split(',');
+  return parts.length > 1 ? parts[1] : null;
+};
+
+// --- SERVICE CONFIGURATION ---
 const generationCache = new Map<string, { result: any, timestamp: number }>();
-const CACHE_TTL = 3600000; // 1 hour in ms
-
-// Internal tracker to avoid redundant state transmissions
+const CACHE_TTL = 3600000;
 let lastDnaIdSent: string | null = null;
 
-// --- FREE TIER PROTOCOLS ---
-// Strictly enforce models that have a free tier available.
 const FREE_TIER_MODELS = {
     TEXT: 'gemini-3-flash-preview',
     IMAGE: 'gemini-2.5-flash-image',
     FALLBACK: 'gemini-2.0-flash-exp'
 };
 
-function getCacheKey(method: string, args: any): string {
-  return `${method}_${JSON.stringify(args)}`;
-}
-
+// --- CACHING & HELPERS ---
+function getCacheKey(method: string, args: any): string { return `${method}_${JSON.stringify(args)}`; }
 function checkCache<T>(key: string): T | null {
   const cached = generationCache.get(key);
-  if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
-    return cached.result as T;
-  }
+  if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) { return cached.result as T; }
   return null;
 }
-
 function setCache(key: string, result: any): void {
   if (generationCache.size > 100) generationCache.clear();
   generationCache.set(key, { result, timestamp: Date.now() });
 }
 
-function getPureBase64Data(dataUrl: string | null | undefined): string | null {
-  if (!dataUrl) return null;
-  const parts = dataUrl.split(',');
-  return parts.length > 1 ? parts[1] : null;
-}
-
 const DEFAULT_CONFIG: KernelConfig = {
-  thinkingBudget: 0,
-  temperature: 0.1,
-  model: FREE_TIER_MODELS.TEXT, 
-  deviceContext: 'MAXIMUM_ARCHITECTURE_OMEGA_V5'
+  thinkingBudget: 0, temperature: 0.1, model: FREE_TIER_MODELS.TEXT, 
+  deviceContext: 'MAXIMUM_ARCHITECTURE_OMEGA_V5', imageEngine: ImageEngine.GEMINI
 };
 
-function validateModuleAccess(modelName: string, config?: any): void {
-  const forbiddenModels = ['veo', 'tts', 'imagen-4', 'gemini-3-pro-image', 'gemini-2.5-flash-native-audio'];
-  const isForbidden = forbiddenModels.some(m => modelName.toLowerCase().includes(m));
-  
-  // EXTRA SAFETY: If a paid model is detected, we don't just throw, we might want to return a safe fallback in future logic,
-  // but for now, the Master Rule is to deny paid models to ensure free usage.
-  if (isForbidden) throw new Error("MASTER_RULES_BLOCK: PAID_MODULE_ACCESS_DENIED");
+function isQuotaError(error: any): boolean {
+  const errorStr = JSON.stringify(error).toLowerCase();
+  return ["429", "402", "quota", "exhausted", "limit", "billing", "resource has been exhausted", "rate limit"].some(k => errorStr.includes(k));
+}
+
+function validateModuleAccess(modelName: string): void {
+  if (['veo', 'tts', 'gemini-3-pro-image', 'gemini-2.5-flash-native-audio'].some(m => modelName.toLowerCase().includes(m))) {
+    throw new Error("MASTER_RULES_BLOCK: PAID_MODULE_ACCESS_DENIED");
+  }
 }
 
 function createAIInstance(): GoogleGenAI | null {
@@ -65,69 +59,71 @@ function createAIInstance(): GoogleGenAI | null {
 }
 
 async function reliableRequest<T>(requestFn: () => Promise<T>, retries: number = APP_CONSTANTS.RETRY_ATTEMPTS): Promise<T> {
-  try {
-    return await requestFn();
-  } catch (error: any) {
-    const errorStr = JSON.stringify(error).toLowerCase();
-    const isQuota = errorStr.includes("429") || errorStr.includes("quota") || errorStr.includes("exhausted");
-    
-    if (isQuota) {
-        console.warn(`[FREE_TIER_SATURATION]: Rate limit hit. Cooling down... (${retries} attempts left)`);
-        
-        if (retries > 0) {
-            // Exponential backoff optimized for Free Tier (longer wait time to recover bucket)
-            const delay = Math.pow(2, (APP_CONSTANTS.RETRY_ATTEMPTS + 1 - retries)) * 1500; 
-            await new Promise(resolve => setTimeout(resolve, delay));
-            return reliableRequest(requestFn, retries - 1);
-        }
+  try { return await requestFn(); } catch (error: any) {
+    if (isQuotaError(error) && retries > 0) {
+      console.warn(`[FREE_TIER_SATURATION]: Rate limit hit. Cooling down... (${retries} attempts left)`);
+      const delay = Math.pow(2, (APP_CONSTANTS.RETRY_ATTEMPTS + 1 - retries)) * 1500;
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return reliableRequest(requestFn, retries - 1);
     }
     throw error;
   }
 }
 
+// --- Synthesis Dispatcher ---
 async function performSynthesis(
   prompt: string, mode: PanelMode, base64Image?: string, config: KernelConfig = DEFAULT_CONFIG,
-  dna?: ExtractionResult, extraDirectives?: string, generationSeed?: number // Added generationSeed
+  dna?: ExtractionResult, extraDirectives?: string, generationSeed?: number
 ): Promise<string> {
-  const cacheKey = getCacheKey('synth', { prompt, mode, dnaId: dna?.id, directives: !!extraDirectives, generationSeed }); // Include generationSeed in cache key
+  const cacheKey = getCacheKey('synth', { prompt, mode, dnaId: dna?.id, directives: !!extraDirectives, generationSeed, engine: config.imageEngine });
   const cachedResult = checkCache<string>(cacheKey);
   if (cachedResult) return cachedResult;
 
-  // STRICT FORCE: Always use the Free Tier Image Model regardless of config
-  const targetModel = FREE_TIER_MODELS.IMAGE;
-  validateModuleAccess(targetModel); 
-
   const ai = createAIInstance();
-  if (!ai) return "";
 
-  const dnaChanged = dna?.id !== lastDnaIdSent;
-
-  const result = await reliableRequest(async () => {
-    // Optimization: Dense tokens for faster inference
+  const generateWithGemini = async (): Promise<string> => {
+    if (!ai) return "";
+    const targetModel = FREE_TIER_MODELS.IMAGE;
+    validateModuleAccess(targetModel);
+    const dnaChanged = dna?.id !== lastDnaIdSent;
     const densityTokens = "high-fidelity, die-cut silhouette, vector-sharp, solid-fills, 8k-resolution-output";
-    const visualPrompt = injectAntiCensor(`${densityTokens}, {MODE: ${mode}} ${dnaChanged ? `{DNA: ${dna?.promptTemplate || ""}}` : ""} ${prompt}`, mode);
-    
+    const fullPrompt = [densityTokens, `{MODE: ${mode}}`, dnaChanged ? `{DNA: ${dna?.promptTemplate || ""}}` : "", prompt, extraDirectives || ""].filter(Boolean).join('\n\n');
+    const visualPrompt = injectAntiCensor(fullPrompt, mode);
     const contents: any = { parts: [{ text: visualPrompt }] };
     const pureData = getPureBase64Data(base64Image);
     if (pureData) contents.parts.unshift({ inlineData: { mimeType: 'image/jpeg', data: pureData } });
-
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: targetModel,
-      contents,
-      config: { 
-        systemInstruction: `Production-ready vector aesthetic. No text unless requested.`,
-        temperature: 0.2,
-        imageConfig: { aspectRatio: "1:1" } // 1:1 is the most optimized tile for Flash
-      }
+      model: targetModel, contents, config: { systemInstruction: `Production-ready vector aesthetic. No text unless requested.`, temperature: 0.2, imageConfig: { aspectRatio: "1:1" } }
     });
-    
     const imagePart = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
     if (imagePart?.inlineData) {
-        lastDnaIdSent = dna?.id || null;
-        return `data:image/png;base64,${imagePart.inlineData.data}`;
+      lastDnaIdSent = dna?.id || null;
+      return `data:image/png;base64,${imagePart.inlineData.data}`;
     }
-    return "";
-  });
+    throw new Error("Gemini synthesis returned no image data.");
+  };
+  
+  let result = "";
+  let primaryEngineFn: () => Promise<string>;
+
+  switch(config.imageEngine) {
+    case ImageEngine.HF:
+      if (base64Image) throw new Error("The HF engine does not support image-to-image synthesis.");
+      primaryEngineFn = () => generateWithFluxHF(prompt, mode, config, extraDirectives);
+      break;
+    default:
+      primaryEngineFn = generateWithGemini;
+  }
+  
+  try { result = await primaryEngineFn(); } catch (primaryError) {
+    if (isQuotaError(primaryError) && config.imageEngine !== ImageEngine.GEMINI) {
+      console.warn(`[${config.imageEngine.toUpperCase()}_QUOTA_EXHAUSTED]: Falling back to Gemini engine.`);
+      try { result = await generateWithGemini(); } catch (geminiError) {
+        if (isQuotaError(geminiError)) { throw new Error("Daily free generation limit reached on all available engines."); }
+        throw geminiError;
+      }
+    } else { throw primaryError; }
+  }
 
   if (result) setCache(cacheKey, result);
   return result;
@@ -142,10 +138,8 @@ export async function refineTextPrompt(prompt: string, mode: PanelMode, config: 
   const cacheKey = getCacheKey('refine', { prompt, mode });
   const cached = checkCache<string>(cacheKey);
   if (cached) return cached;
-
   const ai = createAIInstance();
   if (!ai) return prompt;
-
   const result = await reliableRequest(async () => {
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: FREE_TIER_MODELS.TEXT, 
@@ -154,7 +148,6 @@ export async function refineTextPrompt(prompt: string, mode: PanelMode, config: 
     });
     return response.text?.replace(/"/g, '') || prompt;
   });
-
   setCache(cacheKey, result);
   return result;
 }

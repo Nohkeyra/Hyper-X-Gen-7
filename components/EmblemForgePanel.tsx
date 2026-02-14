@@ -1,9 +1,8 @@
-
 // FINAL – LOCKED - REFINED V8.0.0
-import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useCallback, useState } from 'react';
 import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, EmblemPreset, Preset, LatticeBuffer, isEmblemPreset } from '../types.ts';
 import { getMobileCategories } from '../presets/index.ts';
-import { synthesizeEmblemStyle, refineTextPrompt } from '../services/geminiService.ts';
+import { synthesizeEmblemStyle } from '../services/geminiService.ts';
 import { useDevourer } from '../hooks/useDevourer.ts';
 import { PresetCard } from './PresetCard.tsx';
 import { PresetCarousel } from './PresetCarousel.tsx';
@@ -41,8 +40,6 @@ export const EmblemForgePanel: React.FC<EmblemForgePanelProps> = ({
   const [activePresetId, setActivePresetId] = useState<string | null>(initialData?.id || null);
   const [activePreset, setActivePreset] = useState<PresetItem | null>(initialData || null);
   
-  const processingRef = useRef(false);
-
   useEffect(() => {
     onStateUpdate?.({
       type: PanelMode.EMBLEM_FORGE,
@@ -89,7 +86,7 @@ export const EmblemForgePanel: React.FC<EmblemForgePanelProps> = ({
 
 
   const handleGenerate = useCallback(async () => {
-    if (processingRef.current || !activePreset || !isEmblemPreset(activePreset)) {
+    if (isProcessing || !activePreset || !isEmblemPreset(activePreset)) {
       addLog("EMBLEM_ERROR: No valid preset selected.", 'error');
       return;
     }
@@ -99,7 +96,6 @@ export const EmblemForgePanel: React.FC<EmblemForgePanelProps> = ({
     
     const finalPrompt = `Primary Text: "${userPrimaryText}". ${userSubText ? `Subtext: "${userSubText}".` : ''} The style is a ${activePreset.name}. ${activePreset.prompt || ''}`;
     
-    processingRef.current = true;
     transition(dna || globalDna ? 'DNA_STYLIZE_ACTIVE' : 'DEVOURING_BUFFER', true);
     setGenerationNonce(prev => prev + 1); // Increment nonce for new generation attempt
     
@@ -135,10 +131,9 @@ export const EmblemForgePanel: React.FC<EmblemForgePanelProps> = ({
       addLog(`EMBLEM_ERROR: ${e.message}`, 'error');
       transition('LATTICE_FAIL');
     } finally {
-      processingRef.current = false;
       transition('LATTICE_ACTIVE');
     }
-  }, [primaryText, subText, activePreset, kernelConfig, dna, globalDna, transition, addLog, onSaveToHistory, generationNonce]); // Add generationNonce as dependency
+  }, [primaryText, subText, activePreset, kernelConfig, dna, globalDna, transition, addLog, onSaveToHistory, generationNonce, isProcessing]); // Add isProcessing as dependency
   
   const canGenerate = !isProcessing && !!activePresetId;
 

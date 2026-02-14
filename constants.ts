@@ -1,4 +1,5 @@
 
+
 // ===================== LOCAL STORAGE KEYS =====================
 export const LS_KEYS = {
   THEME: 'hyperxgen_theme_v1',
@@ -9,6 +10,7 @@ export const LS_KEYS = {
 export const ENV = {
   // Obtained exclusively from environment variable
   API_KEY: process.env.API_KEY || '',
+  HUGGING_FACE_API_KEY: process.env.HUGGING_FACE_API_KEY || '',
   API_BASE_URL: 'https://generativelanguage.googleapis.com',
   APP_VERSION: '7.6.1',
   NODE_ENV: 'production'

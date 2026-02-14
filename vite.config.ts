@@ -23,6 +23,7 @@ export default defineConfig(({ mode }) => {
       // The system handles process.env.API_KEY injection safely.
       define: {
         'process.env.APP_VERSION': JSON.stringify(process.env.npm_package_version),
+        'process.env.HUGGING_FACE_API_KEY': JSON.stringify(env.HUGGING_FACE_API_KEY || ''),
       },
       resolve: {
         alias: {
@@ -43,10 +44,9 @@ export default defineConfig(({ mode }) => {
           output: {
             chunkFileNames: 'assets/[name]-[hash].js',
             entryFileNames: 'assets/[name]-[hash].js',
-            assetFileNames: 'assets/[name]-[hash].[ext]'
+            assetFileNames: 'assets/[name]-[hash].[ext]',
           }
         }
-      },
-      envPrefix: ['VITE_'], // Only expose VITE_ prefixed environment variables to client
+      }
     };
 });

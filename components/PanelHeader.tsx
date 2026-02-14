@@ -1,6 +1,8 @@
 
+
 import React, { memo } from 'react';
 import { ThemeToggle } from './PanelShared';
+import { SettingsIcon } from './Icons';
 
 interface PanelHeaderProps {
   title?: string;
@@ -8,6 +10,7 @@ interface PanelHeaderProps {
   isDarkMode?: boolean;
   onToggleTheme?: () => void;
   onToggleLogViewer?: () => void; 
+  onToggleSettings?: () => void;
   latticeStatus?: 'IDLE' | 'SYNCED' | 'DRIFT' | 'LOCKED';
 }
 
@@ -17,6 +20,7 @@ export const PanelHeader: React.FC<PanelHeaderProps> = memo(({
   isDarkMode,
   onToggleTheme,
   onToggleLogViewer,
+  onToggleSettings,
   latticeStatus = 'IDLE'
 }) => {
   return (
@@ -61,6 +65,16 @@ export const PanelHeader: React.FC<PanelHeaderProps> = memo(({
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="group-hover:translate-y-px transition-transform md:w-[18px] md:h-[18px]"><path d="M12 20h9M12 4h9M4 12h17M4 12l-3-3m3 3l-3 3"/></svg>
                 </button>
              )}
+            
+             {onToggleSettings && (
+                <button
+                  onClick={onToggleSettings}
+                  className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center border border-white/10 bg-white/5 text-white hover:border-brandYellow hover:text-brandYellow transition-all rounded-sm group shadow-sm hover:shadow-lg"
+                  title="System Configuration"
+                >
+                  <SettingsIcon className="group-hover:rotate-45 transition-transform duration-300 w-4 h-4 md:w-5 md:h-5" />
+                </button>
+              )}
 
              {onToggleTheme && (
                 <div className="ml-1 md:ml-2 border-l border-white/10 pl-2 md:pl-4">

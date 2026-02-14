@@ -1,22 +1,7 @@
 
 import React, { useState, memo, useMemo } from 'react';
-import { PanelMode } from '../types';
+import { PanelMode, Preset } from '../types';
 import { VectorIcon, TypographyIcon, MonogramIcon, ExtractorIcon, FilterIcon, StarIcon, BoxIcon, EmblemIcon, TrashIcon } from './Icons'; 
-
-interface HistoryItem {
-  id: string;
-  name: string;
-  type: PanelMode;
-  // Fix: make timestamp optional to match Preset type in types.ts which extends BasePreset
-  timestamp?: string;
-}
-
-interface PresetItem {
-  id: string;
-  name: string;
-  type: PanelMode;
-  description: string;
-}
 
 interface AppModeMenuProps {
   visibleModes: { id: PanelMode; label: string; Icon: React.ElementType }[];
@@ -52,12 +37,12 @@ const AppModeMenu: React.FC<AppModeMenuProps> = memo(({ visibleModes, activeMode
 
 
 interface AppControlsBarProps {
-  recentWorks?: HistoryItem[];
-  savedPresets?: PresetItem[];
+  recentWorks?: Preset[];
+  savedPresets?: Preset[];
   isSaving?: boolean;
   activeMode?: PanelMode;
   onSwitchMode?: (mode: PanelMode) => void;
-  onLoadHistoryItem?: (item: any) => void;
+  onLoadHistoryItem?: (item: Preset) => void;
   onForceSave?: () => void;
   onClearRecentWorks?: () => void;
   onClearSavedPresets?: () => void;
@@ -95,8 +80,8 @@ export const AppControlsBar: React.FC<AppControlsBarProps> = memo(({
     }
   };
 
-  const renderHistoryItem = (item: any) => {
-    const isDna = (item.type === PanelMode.EXTRACTOR || item.mode === PanelMode.EXTRACTOR) && !!item.dna;
+  const renderHistoryItem = (item: Preset) => {
+    const isDna = item.type === PanelMode.EXTRACTOR && !!item.dna;
     
     let iconComponent: React.ElementType = BoxIcon;
     let iconColorClass = 'text-brandRed';
@@ -105,7 +90,7 @@ export const AppControlsBar: React.FC<AppControlsBarProps> = memo(({
       iconComponent = StarIcon;
       iconColorClass = 'text-brandRed';
     } else {
-      switch (item.type || item.mode) {
+      switch (item.type) {
         case PanelMode.VECTOR: iconComponent = VectorIcon; iconColorClass = 'text-brandRed'; break;
         case PanelMode.TYPOGRAPHY: iconComponent = TypographyIcon; iconColorClass = 'text-brandYellow'; break;
         case PanelMode.MONOGRAM: iconComponent = MonogramIcon; iconColorClass = 'text-brandBlue'; break;
@@ -124,7 +109,7 @@ export const AppControlsBar: React.FC<AppControlsBarProps> = memo(({
           </div>
           <div className="history-info min-w-0 truncate">
             <span className="history-word truncate block text-[9px] font-black text-brandBlue dark:text-brandNeutral group-hover:text-brandRed transition-colors uppercase tracking-tight">{item.name}</span>
-            <span className="text-[6px] text-brandCharcoalMuted dark:text-white/30 uppercase font-black tracking-widest">{item.timestamp || 'BLUEPRINT'}</span>
+            <span className="text-[6px] text-brandCharcoalMuted dark:text-white/30 uppercase font-black tracking-widest">{item.timestamp ? new Date(item.timestamp).toLocaleTimeString() : 'BLUEPRINT'}</span>
           </div>
         </div>
         <button onClick={(e) => { e.stopPropagation(); onLoadHistoryItem(item); }} className={`shrink-0 px-2 py-0.5 border border-brandBlue/10 dark:border-white/5 text-[7px] font-black text-brandBlue dark:text-white/40 hover:bg-brandRed hover:text-white transition-all uppercase rounded-sm`}>

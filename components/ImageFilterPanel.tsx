@@ -1,12 +1,13 @@
-import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { PanelMode, KernelConfig, FilterPreset, LatticeBuffer, PresetCategory } from '../types.ts';
-import { PRESET_REGISTRY, getMobileCategories } from '../presets/index.ts';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { PanelMode, KernelConfig, FilterPreset, LatticeBuffer, PresetCategory, FilterType } from '../types.ts';
+import { getMobileCategories } from '../presets/index.ts';
 import { GenerationBar } from './GenerationBar.tsx';
 import { PresetCarousel } from './PresetCarousel.tsx';
 import { CanvasStage } from './CanvasStage.tsx';
 import { FilterHUD } from './HUD.tsx';
 import { PanelLayout, SidebarHeader } from './Layouts.tsx';
 import { PresetCard } from './PresetCard.tsx';
+import { useDevourer } from '../hooks/useDevourer.ts';
 
 interface ImageFilterPanelProps {
   initialData?: any;
@@ -50,19 +51,16 @@ const applyFiltersToImage = (imageUrl: string, filterCss: string): Promise<strin
 };
 
 export const ImageFilterPanel: React.FC<ImageFilterPanelProps> = ({ 
-  initialData, onSaveToHistory, integrity, refinementLevel = 0, uiRefined, kernelConfig, onStateUpdate, addLog, latticeBuffer, savedPresets = []
+  initialData, onSaveToHistory, uiRefined, onStateUpdate, addLog, latticeBuffer, savedPresets = []
 }) => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(initialData?.imageUrl || null);
   const [filteredImage, setFilteredImage] = useState<string | null>(initialData?.imageUrl || null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [filterStatus, setFilterStatus] = useState(initialData?.imageUrl ? "LATTICE_LINKED" : "IDLE");
+  const { status, isProcessing, transition } = useDevourer(initialData?.imageUrl ? 'BUFFER_LOADED' : 'STARVING');
   const [brightness, setBrightness] = useState(100);
   const [contrast, setContrast] = useState(100);
   const [saturation, setSaturation] = useState(100);
   const [activeFilterId, setActiveFilterId] = useState<string | null>(initialData?.id || null);
   
-  const processingRef = useRef(false);
-
   const PRESETS: PresetCategory[] = useMemo(() => {
     return getMobileCategories(PanelMode.FILTERS, savedPresets);
   }, [savedPresets]);
@@ -82,35 +80,56 @@ export const ImageFilterPanel: React.FC<ImageFilterPanelProps> = ({
   }, [onStateUpdate, uploadedImage, filteredImage, brightness, contrast, saturation, activeFilterId, activeFilter]);
 
   const handleApplyFilter = useCallback(async () => {
-    if (processingRef.current || !uploadedImage) return;
-    setIsProcessing(true);
-    processingRef.current = true;
-    setFilterStatus("APPLYING_TRANSFORMATION...");
+    if (isProcessing || !uploadedImage) return;
+    transition("REFINING_LATTICE", true);
     try {
       const filterCss = buildFilterString(brightness, contrast, saturation, activeFilter?.parameters);
       const result = await applyFiltersToImage(uploadedImage, filterCss);
       setFilteredImage(result);
-      setFilterStatus("TRANSFORMATION_COMPLETE");
+
+      onSaveToHistory?.({
+        id: `filter-${Date.now()}`,
+        name: `Filtered: ${activeFilter?.name || 'Custom'}`,
+        type: PanelMode.FILTERS,
+        prompt: '',
+        imageUrl: result,
+        parameters: {
+          intensity: activeFilter?.parameters.intensity || 100,
+          brightness,
+          contrast,
+          saturation,
+          hue: activeFilter?.parameters.hue || 0,
+          filterType: activeFilter?.parameters.filterType || 'Custom',
+        },
+        category: 'Synthesis',
+        description: 'Image processed with spectral filters.'
+      } as FilterPreset);
+
+      transition("LATTICE_ACTIVE");
       addLog(`SPECTRAL_TRANSFORM: Applied ${activeFilter?.name || 'custom'} filters`, 'success');
     } catch (e) {
       console.error(e);
-      setFilterStatus("TRANSFORMATION_FAILED");
+      transition("LATTICE_FAIL");
       addLog(`FILTER_ERROR: Failed to process image lattice`, 'error');
-    } finally { setIsProcessing(false); processingRef.current = false; }
-  }, [uploadedImage, brightness, contrast, saturation, activeFilter, addLog]);
+    }
+  }, [uploadedImage, brightness, contrast, saturation, activeFilter, addLog, isProcessing, transition, onSaveToHistory]);
 
   const handleClear = useCallback(() => {
     if(isProcessing) return;
-    setUploadedImage(null); setFilteredImage(null); setActiveFilterId(null); setFilterStatus("IDLE"); addLog("BUFFER_PURGED", "warning");
-  }, [isProcessing, addLog]);
+    setUploadedImage(null); setFilteredImage(null); setActiveFilterId(null);
+    transition("STARVING");
+    addLog("BUFFER_PURGED", "warning");
+  }, [isProcessing, addLog, transition]);
 
   const handleFileUpload = useCallback((f: File) => {
     if(isProcessing) return;
     const r = new FileReader(); r.onload = (e) => {
-        const base64 = e.target?.result as string; setUploadedImage(base64); setFilteredImage(base64); setFilterStatus("BUFFER_LOADED"); addLog("ASSET_INJECTED: Raw buffer loaded", "info");
+        const base64 = e.target?.result as string; setUploadedImage(base64); setFilteredImage(base64);
+        transition("BUFFER_LOADED");
+        addLog("ASSET_INJECTED: Raw buffer loaded", "info");
     }; 
     r.readAsDataURL(f);
-  }, [isProcessing, addLog]);
+  }, [isProcessing, addLog, transition]);
 
   return (
     <PanelLayout
@@ -135,7 +154,7 @@ export const ImageFilterPanel: React.FC<ImageFilterPanelProps> = ({
       canvas={
         <CanvasStage
           uploadedImage={uploadedImage} generatedOutput={filteredImage} isProcessing={isProcessing}
-          hudContent={<FilterHUD filterStatus={filterStatus} />} isValidationError={false} uiRefined={uiRefined} refinementLevel={refinementLevel}
+          hudContent={<FilterHUD filterStatus={status} />} isValidationError={false} uiRefined={uiRefined}
           onClear={handleClear} onGenerate={handleApplyFilter} onFileUpload={handleFileUpload} downloadFilename={`hyperxgen_filter_${Date.now()}.png`}
           bridgeSource={initialData?.category === 'LATTICE_BRIDGE' ? latticeBuffer?.sourceMode : null}
         />

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { 
   PanelMode, 
@@ -15,7 +16,8 @@ import {
   FilterPreset,
   EmblemPreset,
   BasePreset,
-  LatticeStatus
+  LatticeStatus,
+  ImageEngine
 } from './types.ts';
 import { BootScreen } from './components/BootScreen.tsx';
 import { StartScreen } from './components/StartScreen.tsx';
@@ -24,6 +26,7 @@ import { AppControlsBar } from './components/AppControlsBar.tsx';
 import { LogViewer } from './components/LogViewer.tsx';
 import { LoadingSpinner } from './components/Loading.tsx';
 import { DeviceBadge } from './components/DeviceDetector.tsx';
+import { SettingsPanel } from './components/SettingsPanel.tsx';
 import { LS_KEYS, SUCCESS_MESSAGES } from './constants.ts';
 import { vaultDb } from './services/dbService.ts';
 
@@ -44,6 +47,7 @@ export const App: React.FC = () => {
   const [enabledModes, setEnabledModes] = useState<PanelMode[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [showLogViewer, setShowLogViewer] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [currentPanelState, setCurrentPanelState] = useState<PanelState | null>(null);
 
   // LATTICE_LINK
@@ -54,7 +58,8 @@ export const App: React.FC = () => {
     thinkingBudget: 0,
     temperature: 0.1,
     model: 'gemini-3-flash-preview',
-    deviceContext: 'MAXIMUM_ARCHITECTURE_OMEGA_V5'
+    deviceContext: 'MAXIMUM_ARCHITECTURE_OMEGA_V5',
+    imageEngine: ImageEngine.GEMINI
   });
 
   const [recentWorks, setRecentWorks] = useState<Preset[]>([]);
@@ -194,6 +199,10 @@ export const App: React.FC = () => {
       case PanelMode.EMBLEM_FORGE:
         newPreset = { ...basePreset, type: PanelMode.EMBLEM_FORGE, parameters: settings as EmblemPreset['parameters'] };
         break;
+      // Fix: Add a case for PanelMode.EXTRACTOR to handle saving presets from this panel.
+      case PanelMode.EXTRACTOR:
+        newPreset = { ...basePreset, type: PanelMode.EXTRACTOR, parameters: {} };
+        break;
       default:
         addLog(`COMMIT_FAIL: Unsupported panel type "${type}" for vault commit.`, 'error');
         return;
@@ -281,6 +290,7 @@ export const App: React.FC = () => {
         isDarkMode={isDarkMode}
         onToggleTheme={toggleTheme}
         onToggleLogViewer={() => setShowLogViewer(p => !p)}
+        onToggleSettings={() => setShowSettings(p => !p)}
         latticeStatus={latticeStatus}
       />
       <main className="flex-1 overflow-hidden" style={{ paddingTop: 'var(--header-h)', paddingBottom: 'var(--app-controls-bar-h)' }}>
@@ -306,6 +316,15 @@ export const App: React.FC = () => {
         enabledModes={enabledModes}
       />
       <LogViewer logs={logs} onClear={() => setLogs([])} isOpen={showLogViewer} onClose={() => setShowLogViewer(false)} />
+      {showSettings && (
+        <SettingsPanel
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          kernelConfig={kernelConfig}
+          onConfigChange={setKernelConfig}
+          addLog={addLog}
+        />
+      )}
       <DeviceBadge />
     </div>
   );

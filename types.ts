@@ -1,5 +1,3 @@
-
-
 // ===================== ENUMS =====================
 export enum PanelMode {
   START = 'start',
@@ -35,12 +33,18 @@ export enum StyleCategory {
   UNKNOWN = 'UNKNOWN'
 }
 
+export enum ImageEngine {
+  GEMINI = 'gemini',
+  HF = 'hf'
+}
+
 // ===================== CORE INTERFACES =====================
 export interface KernelConfig {
   thinkingBudget: number;
   temperature: number;
   model: string;
   deviceContext: string;
+  imageEngine: ImageEngine;
 }
 
 export interface LogEntry {
@@ -182,7 +186,8 @@ export type FilterType =
   | 'Pastel' 
   | 'Monochrome' 
   | 'High Contrast' 
-  | 'Soft Glow';
+  | 'Soft Glow'
+  | 'Custom';
 
 export interface EmblemDna {
   containment: string;
@@ -201,13 +206,22 @@ export interface EmblemPreset extends BasePreset {
   parameters: EmblemDna;
 }
 
-export type Preset = VectorPreset | TypographyPreset | MonogramPreset | FilterPreset | EmblemPreset;
+// Fix: Add ExtractorPreset type to represent presets from the Style Extractor panel.
+export interface ExtractorPreset extends BasePreset {
+  type: PanelMode.EXTRACTOR;
+  parameters: {};
+}
+
+// Fix: Add ExtractorPreset to the main Preset union type to resolve type errors.
+export type Preset = VectorPreset | TypographyPreset | MonogramPreset | FilterPreset | EmblemPreset | ExtractorPreset;
 
 export const isVectorPreset = (preset: Preset): preset is VectorPreset => preset.type === PanelMode.VECTOR;
 export const isTypographyPreset = (preset: Preset): preset is TypographyPreset => preset.type === PanelMode.TYPOGRAPHY;
 export const isMonogramPreset = (preset: Preset): preset is MonogramPreset => preset.type === PanelMode.MONOGRAM;
 export const isFilterPreset = (preset: Preset): preset is FilterPreset => preset.type === PanelMode.FILTERS;
 export const isEmblemPreset = (preset: Preset): preset is EmblemPreset => preset.type === PanelMode.EMBLEM_FORGE;
+// Fix: Add a type guard for the new ExtractorPreset.
+export const isExtractorPreset = (preset: Preset): preset is ExtractorPreset => preset.type === PanelMode.EXTRACTOR;
 
 export type PresetItem = Preset;
 

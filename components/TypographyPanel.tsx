@@ -1,7 +1,6 @@
-
 // FINAL – LOCKED - REFINED V7.1.3
-import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react';
-import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, TypographyPreset, Preset, LatticeBuffer, TypographyDna, isTypographyPreset } from '../types.ts';
+import React, { useEffect, useMemo, useCallback, useState } from 'react';
+import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, TypographyPreset, Preset, LatticeBuffer, TypographyDna, isTypographyPreset, ImageEngine } from '../types.ts';
 import { getMobileCategories } from '../presets/index.ts';
 import { synthesizeTypoStyle, refineTextPrompt } from '../services/geminiService.ts';
 import { useDevourer } from '../hooks/useDevourer.ts';
@@ -58,7 +57,6 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
   const [activePreset, setActivePreset] = useState<PresetItem | null>(initialData || null);
   
   const [isRefining, setIsRefining] = useState(false);
-  const processingRef = useRef(false);
 
   // History for Undo/Redo
   const [history, setHistory] = useState<string[]>(initialData?.imageUrl ? [initialData.imageUrl] : []);
@@ -109,9 +107,14 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
   }, []);
 
   const handleGenerate = useCallback(async () => {
-    if (processingRef.current) return;
+    if (isProcessing) return;
     
-    // FIX: Imported isTypographyPreset type guard to correctly validate the active preset.
+    if (uploadedImage && kernelConfig.imageEngine === ImageEngine.HF) {
+      addLog(`ENGINE_ERROR: The ${kernelConfig.imageEngine.toUpperCase()} engine does not support image input. Please switch to Gemini or remove the image.`, 'error');
+      transition('LATTICE_FAIL');
+      return;
+    }
+
     if (!activePreset || !isTypographyPreset(activePreset)) {
         addLog("TYPO_ERROR: No valid typography preset selected.", 'error');
         return;
@@ -121,7 +124,6 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
     const userText = prompt.trim() || 'HYPERX';
     const finalPrompt = `Synthesize the text "${userText}" using the following artistic direction: ${activePreset.prompt}`;
     
-    processingRef.current = true;
     transition(dna || globalDna ? 'DNA_STYLIZE_ACTIVE' : 'DEVOURING_BUFFER', true);
     setGenerationNonce(prev => prev + 1); // Increment nonce for new generation attempt
 
@@ -172,13 +174,12 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
         description: 'User-generated typography'
       } as TypographyPreset);
     } catch (e: any) {
-      addLog(`TYPO_ERROR: ${e.message}`, 'error');
+      addLog(`${e.message}`, 'error');
       transition('LATTICE_FAIL');
     } finally {
-      processingRef.current = false;
       transition('LATTICE_ACTIVE');
     }
-  }, [prompt, uploadedImage, activePreset, kernelConfig, dna, globalDna, transition, addLog, onSaveToHistory, historyIndex, generationNonce]); // Add generationNonce as dependency
+  }, [prompt, uploadedImage, activePreset, kernelConfig, dna, globalDna, transition, addLog, onSaveToHistory, historyIndex, generationNonce, isProcessing]); // Add isProcessing as dependency
 
   const handleUndo = useCallback(() => {
     if (historyIndex > 0) {

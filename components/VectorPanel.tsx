@@ -1,9 +1,8 @@
-
 // FINAL – LOCKED - REFINED V8.0.0
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { SparkleIcon } from './Icons.tsx';
 import { DevourerHUD } from './HUD.tsx';
-import { PanelMode, KernelConfig, ExtractionResult, PresetCategory, VectorPreset, Preset, LatticeBuffer, isVectorPreset, VectorDna } from '../types.ts';
+import { PanelMode, KernelConfig, ExtractionResult, PresetCategory, VectorPreset, Preset, LatticeBuffer, isVectorPreset, VectorDna, ImageEngine } from '../types.ts';
 import { getMobileCategories } from '../presets/index.ts';
 import { synthesizeVectorStyle, refineTextPrompt } from '../services/geminiService.ts';
 import { useDevourer } from '../hooks/useDevourer.ts';
@@ -55,7 +54,6 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
   const [activePresetId, setActivePresetId] = useState<string | null>(initialData?.id || null);
   const [activePreset, setActivePreset] = useState<VectorPreset | null>(initialData as VectorPreset || null);
   const [isRefining, setIsRefining] = useState(false);
-  const processingRef = useRef(false);
 
   const { status, isProcessing, transition } = useDevourer(uploadedImage ? 'BUFFER_LOADED' : 'STARVING');
 
@@ -121,8 +119,14 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
   }, []);
 
   const handleGenerate = useCallback(async () => {
-    if (processingRef.current) return;
+    if (isProcessing) return;
 
+    if (uploadedImage && kernelConfig.imageEngine === ImageEngine.HF) {
+      addLog(`ENGINE_ERROR: The ${kernelConfig.imageEngine.toUpperCase()} engine does not support image-to-image tasks. Please switch to Gemini in settings.`, 'error');
+      transition('LATTICE_FAIL');
+      return;
+    }
+    
     if (!uploadedImage) {
       addLog("VECTORIZATION_FAIL: Source image buffer is empty.", 'error');
       return;
@@ -132,7 +136,6 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
       return;
     }
     
-    processingRef.current = true;
     transition('DEVOURING_BUFFER', true);
     setGenerationNonce(prev => prev + 1); // Increment nonce for new generation attempt
     
@@ -193,10 +196,9 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
       transition('LATTICE_FAIL'); 
       addLog(`VECTORIZATION_ERROR: ${e.message}`, 'error'); 
     } finally { 
-      processingRef.current = false; 
       transition('LATTICE_ACTIVE'); 
     }
-  }, [command, uploadedImage, activePreset, kernelConfig, dna, globalDna, transition, addLog, onSaveToHistory, historyIndex, generationNonce]); // Add generationNonce as dependency
+  }, [command, uploadedImage, activePreset, kernelConfig, dna, globalDna, transition, addLog, onSaveToHistory, historyIndex, generationNonce, isProcessing]); // Add isProcessing as dependency
 
   const handleUndo = useCallback(() => {
     if (historyIndex > 0) {

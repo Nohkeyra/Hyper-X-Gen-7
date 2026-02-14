@@ -1,7 +1,6 @@
-
 // FINAL – LOCKED - REFINED V7.2.5
-import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react';
-import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, MonogramPreset, Preset, LatticeBuffer, MonogramDna } from '../types.ts';
+import React, { useEffect, useMemo, useCallback, useState } from 'react';
+import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, MonogramPreset, Preset, LatticeBuffer, MonogramDna, ImageEngine } from '../types.ts';
 import { getMobileCategories } from '../presets/index.ts';
 import { synthesizeMonogramStyle, refineTextPrompt } from '../services/geminiService.ts';
 import { useDevourer } from '../hooks/useDevourer.ts';
@@ -44,8 +43,6 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
   
   const [isRefining, setIsRefining] = useState(false);
   
-  const processingRef = useRef(false);
-
   // History for Undo/Redo
   const [history, setHistory] = useState<string[]>(initialData?.imageUrl ? [initialData.imageUrl] : []);
   const [historyIndex, setHistoryIndex] = useState(initialData?.imageUrl ? 0 : -1);
@@ -94,8 +91,14 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
   }, []);
 
   const handleGenerate = useCallback(async () => {
-    if (processingRef.current || !activePreset) {
+    if (isProcessing || !activePreset) {
       if(!activePreset) addLog("MONOGRAM_ERROR: No preset selected.", 'error');
+      return;
+    }
+
+    if (uploadedImage && kernelConfig.imageEngine === ImageEngine.HF) {
+      addLog(`ENGINE_ERROR: The ${kernelConfig.imageEngine.toUpperCase()} engine does not support image input. Please switch to Gemini or remove the image.`, 'error');
+      transition('LATTICE_FAIL');
       return;
     }
 
@@ -104,7 +107,6 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
     
     const finalPrompt = `A monogram of the initials "${userInitials}". The style is "${(activePreset as MonogramPreset).name}". ${activePreset?.prompt || ""}`;
     
-    processingRef.current = true;
     transition(dna || globalDna ? "DNA_STYLIZE_ACTIVE" : "DEVOURING_BUFFER", true);
     setGenerationNonce(prev => prev + 1); // Increment nonce for new generation attempt
 
@@ -148,12 +150,11 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
       addLog(`MONOGRAM_CREATED: "${userInitials}" with ${presetParams.period_influence} style`, 'success');
     } catch (e: any) { 
       transition("LATTICE_FAIL"); 
-      addLog(`MONOGRAM_ERROR: ${e.message}`, 'error'); 
+      addLog(`${e.message}`, 'error'); 
     } finally { 
-      processingRef.current = false; 
       transition("LATTICE_ACTIVE"); 
     }
-  }, [prompt, activePreset, dna, globalDna, kernelConfig, uploadedImage, transition, onSaveToHistory, addLog, historyIndex, generationNonce]); // Add generationNonce as dependency
+  }, [prompt, activePreset, dna, globalDna, kernelConfig, uploadedImage, transition, onSaveToHistory, addLog, historyIndex, generationNonce, isProcessing]); // Add isProcessing as dependency
 
   const handleUndo = useCallback(() => {
     if (historyIndex > 0) {

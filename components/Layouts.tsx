@@ -33,7 +33,6 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
 
 // --- Layouts ---
 
-// Added missing PageLayout component to resolve import errors in StartScreen and index.ts
 interface PageLayoutProps {
   children: React.ReactNode;
   centered?: boolean;

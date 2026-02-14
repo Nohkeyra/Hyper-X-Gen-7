@@ -12,6 +12,7 @@ export { MonogramPanel } from './MonogramPanel.tsx';
 export { StyleExtractorPanel } from './StyleExtractorPanel.tsx';
 export { ImageFilterPanel } from './ImageFilterPanel.tsx';
 export { EmblemForgePanel } from './EmblemForgePanel.tsx';
+export { SettingsPanel } from './SettingsPanel.tsx';
 
 // Screen-Level Components
 export { BootScreen } from './BootScreen.tsx';

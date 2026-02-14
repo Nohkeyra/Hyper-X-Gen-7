@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 
 interface GenerationBarProps {
@@ -111,7 +110,7 @@ export const GenerationBar: React.FC<GenerationBarProps> = ({
           type="button"
           onClick={handleExecute}
           disabled={isProcessing || isThrottled}
-          className={`flex-none px-6 py-3 md:px-10 md:py-4 font-black uppercase text-[10px] md:text-[11px] italic tracking-[0.15em] md:tracking-[0.25em] transition-all flex items-center justify-center border-l border-brandCharcoal/10 dark:border-brandYellow/20
+          className={`flex-none px-6 py-3 md:px-10 md:py-4 font-black uppercase text-[10px] md:text-[11px] italic tracking-[0.15em] md:tracking-[0.25em] transition-all flex items-center justify-center gap-2 border-l border-brandCharcoal/10 dark:border-brandYellow/20
             ${(isProcessing || isThrottled)
               ? 'bg-black text-brandYellow cursor-wait' 
               : 'bg-brandBlue dark:bg-brandYellow text-white dark:text-black hover:brightness-110 active:translate-x-0.5 active:translate-y-0.5'
@@ -119,10 +118,10 @@ export const GenerationBar: React.FC<GenerationBarProps> = ({
           `}
         >
           {isProcessing ? (
-            <div className="flex items-center gap-2">
+            <>
               <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
               <span>LOCKED</span>
-            </div>
+            </>
           ) : (
             <span>{isThrottled ? 'COOLDOWN' : 'EXECUTE'}</span>
           )}
