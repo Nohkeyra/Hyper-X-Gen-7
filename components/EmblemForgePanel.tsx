@@ -1,8 +1,8 @@
-// FINAL – LOCKED - REFINED V8.0.0
+// FINAL – LOCKED - REFINED V8.0.2
 import React, { useEffect, useMemo, useCallback, useState } from 'react';
 import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, EmblemPreset, Preset, LatticeBuffer, isEmblemPreset } from '../types.ts';
 import { getMobileCategories } from '../presets/index.ts';
-import { synthesizeEmblemStyle } from '../services/geminiService.ts';
+import { synthesizeEmblemStyle } from '../services/imageOrchestrator.ts';
 import { useDevourer } from '../hooks/useDevourer.ts';
 import { PresetCard } from './PresetCard.tsx';
 import { PresetCarousel } from './PresetCarousel.tsx';
@@ -30,15 +30,19 @@ export const EmblemForgePanel: React.FC<EmblemForgePanelProps> = ({
     return getMobileCategories(PanelMode.EMBLEM_FORGE, savedPresets);
   }, [savedPresets]);
 
+  const findPresetById = useCallback((id: string) => {
+    return PRESETS.flatMap(c => c.items).find(i => i.id === id) || null;
+  }, [PRESETS]);
+
   const { status, isProcessing, transition } = useDevourer(initialData?.dna || globalDna ? 'DNA_LINKED' : 'STARVING');
 
-  const [primaryText, setPrimaryText] = useState(initialData?.prompt || '');
-  const [subText, setSubText] = useState('');
-  const [generationNonce, setGenerationNonce] = useState(0); // Add generationNonce
+  const [primaryText, setPrimaryText] = useState(initialData?.prompt || 'CYBERPUNK EAGLE');
+  const [subText, setSubText] = useState('EST. 2024');
+  const [generationNonce, setGenerationNonce] = useState(0); 
   const [generatedOutput, setGeneratedOutput] = useState<string | null>(initialData?.imageUrl || null);
   const [dna, setDna] = useState<ExtractionResult | null>(initialData?.dna || globalDna || null);
-  const [activePresetId, setActivePresetId] = useState<string | null>(initialData?.id || null);
-  const [activePreset, setActivePreset] = useState<PresetItem | null>(initialData || null);
+  const [activePresetId, setActivePresetId] = useState<string | null>(initialData?.id || 'emblem-esports');
+  const [activePreset, setActivePreset] = useState<PresetItem | null>(() => initialData || findPresetById('emblem-esports'));
   
   useEffect(() => {
     onStateUpdate?.({
@@ -58,7 +62,7 @@ export const EmblemForgePanel: React.FC<EmblemForgePanelProps> = ({
       setActivePreset(null);
       setDna(null);
       onSetGlobalDna?.(null);
-      setGenerationNonce(0); // Reset nonce if preset is deselected
+      setGenerationNonce(0); 
       return;
     }
     setActivePresetId(id);
@@ -70,18 +74,18 @@ export const EmblemForgePanel: React.FC<EmblemForgePanelProps> = ({
       transition("DNA_LINKED");
       onSetGlobalDna?.(item.dna);
     }
-    setGenerationNonce(0); // Reset nonce on new preset selection
+    setGenerationNonce(0); 
     addLog(`EMBLEM_RECALL: ${item.name}`, 'info');
   }, [PRESETS, isProcessing, transition, activePresetId, onSetGlobalDna, addLog]);
 
   const setPrimaryTextAndResetNonce = useCallback((value: string) => {
     setPrimaryText(value);
-    setGenerationNonce(0); // Reset nonce if primary text changes
+    setGenerationNonce(0); 
   }, []);
 
   const setSubTextAndResetNonce = useCallback((value: string) => {
     setSubText(value);
-    setGenerationNonce(0); // Reset nonce if subtext changes
+    setGenerationNonce(0); 
   }, []);
 
 
@@ -97,7 +101,7 @@ export const EmblemForgePanel: React.FC<EmblemForgePanelProps> = ({
     const finalPrompt = `Primary Text: "${userPrimaryText}". ${userSubText ? `Subtext: "${userSubText}".` : ''} The style is a ${activePreset.name}. ${activePreset.prompt || ''}`;
     
     transition(dna || globalDna ? 'DNA_STYLIZE_ACTIVE' : 'DEVOURING_BUFFER', true);
-    setGenerationNonce(prev => prev + 1); // Increment nonce for new generation attempt
+    setGenerationNonce(prev => prev + 1); 
     
     const emblemParams = activePreset.parameters;
     const directives = [`[DIRECTIVE: EMBLEM_FORGE_V1]`];
@@ -113,7 +117,12 @@ export const EmblemForgePanel: React.FC<EmblemForgePanelProps> = ({
     const extraDirectives = directives.join('\n');
 
     try {
-      const result = await synthesizeEmblemStyle(finalPrompt, undefined, kernelConfig, dna || globalDna || undefined, extraDirectives, generationNonce); // Pass generationNonce
+      const { imageUrl: result, fallbackTriggered } = await synthesizeEmblemStyle(finalPrompt, undefined, kernelConfig, dna || globalDna || undefined, extraDirectives, generationNonce); 
+      
+      if (fallbackTriggered) {
+        addLog('FLUX_FAIL: Primary engine connection failed. Switched to Gemini fallback.', 'warning');
+      }
+
       setGeneratedOutput(result);
       addLog(`EMBLEM_SYNTHESIS: "${userPrimaryText}" forged`, 'success');
       onSaveToHistory({
@@ -127,13 +136,13 @@ export const EmblemForgePanel: React.FC<EmblemForgePanelProps> = ({
         category: 'Synthesis',
         description: 'User-generated emblem'
       } as EmblemPreset);
-    } catch (e: any) {
-      addLog(`EMBLEM_ERROR: ${e.message}`, 'error');
+    } catch (error: any) {
       transition('LATTICE_FAIL');
+      addLog(`EMBLEM_ERROR: ${error.message}`, 'error');
     } finally {
       transition('LATTICE_ACTIVE');
     }
-  }, [primaryText, subText, activePreset, kernelConfig, dna, globalDna, transition, addLog, onSaveToHistory, generationNonce, isProcessing]); // Add isProcessing as dependency
+  }, [primaryText, subText, activePreset, kernelConfig, dna, globalDna, transition, addLog, onSaveToHistory, generationNonce, isProcessing]);
   
   const canGenerate = !isProcessing && !!activePresetId;
 
@@ -173,45 +182,75 @@ export const EmblemForgePanel: React.FC<EmblemForgePanelProps> = ({
             setPrimaryText('');
             setSubText('');
             transition('STARVING'); 
-            setGenerationNonce(0); // Reset nonce on clear
+            setGenerationNonce(0); 
           }} 
           onFileUpload={() => {}}
+          activeEngine={kernelConfig.imageEngine}
         />
       }
       footer={
         <div className="space-y-4">
           <PresetCarousel categories={PRESETS} activeId={activePresetId} onSelect={handleSelectPreset} />
-          {/* Custom Footer for Emblem Forge */}
-          <div className={`w-full border-t-2 transition-colors duration-500 border-brandRed dark:border-brandYellow bg-brandNeutral dark:bg-brandDeep shadow-[0_-10px_30px_rgba(0,0,0,0.5)] dark:shadow-neon-yellow-soft z-50 rounded-sm py-2 px-3 md:py-4 md:px-6`}>
-            <div className={`max-w-screen-2xl mx-auto flex flex-col md:flex-row items-stretch gap-0 border-2 transition-all duration-500 border-brandCharcoal dark:border-brandYellow/30 shadow-[2px_2px_0px_0px_#CC0001] dark:shadow-[4px_4px_0px_0px_#FFCC00] bg-white dark:bg-black/60 overflow-hidden`}>
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2">
+          {/* Custom Footer standardized to match GenerationBar architecture */}
+          <div className="w-full glass-panel border-t-2 border-brandRed dark:border-brandYellow p-3 md:p-6 z-50 rounded-sm shadow-2xl">
+            <div className="max-w-screen-2xl mx-auto flex flex-col md:flex-row items-stretch gap-0 border-2 border-brandBlue/30 dark:border-white/10 bg-white/50 dark:bg-black/60 overflow-hidden shadow-xl">
+                {/* Active Preset Indicator (Visual Match) */}
+                {activePresetId && (
+                  <div className="flex-none bg-brandBlue/5 dark:bg-white/5 border-b md:border-b-0 md:border-r border-brandBlue/20 dark:border-white/10 px-4 flex items-center justify-center py-3 md:py-0">
+                     <div className="w-8 h-8 flex items-center justify-center bg-brandYellow text-black font-black text-[10px] rounded-sm">
+                        E
+                     </div>
+                  </div>
+                )}
+
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-brandBlue/10 dark:divide-white/10">
                     <input
                         type="text"
                         value={primaryText}
-                        onChange={e => setPrimaryTextAndResetNonce(e.target.value)} // Use new setter
+                        onChange={e => setPrimaryTextAndResetNonce(e.target.value)} 
                         placeholder="Primary Text (e.g. HYPERXGEN)"
                         disabled={isProcessing}
-                        className="w-full px-3 py-3 md:px-5 md:py-4 bg-brandCharcoal/10 dark:bg-black/20 border-b md:border-b-0 md:border-r border-brandBlue/30 dark:border-brandYellow/30 text-brandYellow dark:text-brandYellow font-mono text-xs md:text-sm focus:outline-none placeholder-brandCharcoalMuted/40 dark:placeholder-white/30 min-w-0 caret-brandRed dark:caret-brandYellow"
+                        className="w-full px-6 py-5 bg-transparent text-brandBlue dark:text-white font-mono text-sm md:text-base focus:outline-none placeholder-brandBlue/30 dark:placeholder-white/20 min-w-0 caret-brandRed"
                     />
                     <input
                         type="text"
                         value={subText}
-                        onChange={e => setSubTextAndResetNonce(e.target.value)} // Use new setter
+                        onChange={e => setSubTextAndResetNonce(e.target.value)} 
                         placeholder="Subtext (e.g. EST. 2024)"
                         disabled={isProcessing}
-                        className="w-full px-3 py-3 md:px-5 md:py-4 bg-brandCharcoal/5 dark:bg-black/10 border-brandBlue/20 dark:border-brandYellow/20 text-brandYellow dark:text-brandYellow/80 font-mono text-xs md:text-sm focus:outline-none placeholder-brandCharcoalMuted/30 dark:placeholder-white/20 min-w-0 caret-brandRed dark:caret-brandYellow"
+                        className="w-full px-6 py-5 bg-transparent text-brandBlue dark:text-white font-mono text-sm md:text-base focus:outline-none placeholder-brandBlue/30 dark:placeholder-white/20 min-w-0 caret-brandRed"
                     />
                 </div>
                 <button
                     type="button"
                     onClick={handleGenerate}
                     disabled={!canGenerate}
-                    className={`flex-none px-6 py-3 md:px-10 md:py-4 font-black uppercase text-[10px] md:text-[11px] italic tracking-[0.15em] md:tracking-[0.25em] transition-all flex items-center justify-center border-l border-brandCharcoal/10 dark:border-brandYellow/20
-                    ${isProcessing ? 'bg-black text-brandYellow animate-pulse cursor-wait' : 'bg-brandBlue dark:bg-brandYellow text-white dark:text-black hover:bg-brandYellow dark:hover:bg-black hover:text-black dark:hover:text-brandYellow active:translate-x-0.5 active:translate-y-0.5 dark:shadow-neon-yellow-soft disabled:bg-zinc-500 disabled:text-zinc-300 disabled:cursor-not-allowed'}
+                    className={`flex-none px-8 md:px-16 py-5 font-black uppercase text-xs md:text-sm italic tracking-[0.3em] transition-all flex items-center justify-center gap-3 border-l border-brandBlue/20 dark:border-white/10 btn-tactile
+                    ${isProcessing 
+                      ? 'bg-black text-brandYellow cursor-wait shadow-inner' 
+                      : 'bg-brandBlue dark:bg-brandYellow text-white dark:text-black hover:brightness-110 active:bg-brandRed'}
                     `}
                 >
-                  {isProcessing ? 'FORGING...' : 'FORGE EMBLEM'}
+                  {isProcessing ? (
+                    <>
+                      <div className="w-4 h-4 border-3 border-current border-t-transparent rounded-full animate-spin" />
+                      <span>FORGING</span>
+                    </>
+                  ) : (
+                    <span>EXECUTE</span>
+                  )}
                 </button>
+            </div>
+            {/* HUD Telemetry Match */}
+            <div className="max-w-screen-2xl mx-auto mt-3 flex justify-between items-center px-2 opacity-60">
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <div className={`w-1.5 h-1.5 rounded-full ${isProcessing ? 'bg-brandRed animate-pulse shadow-neon-red' : 'bg-brandBlue dark:bg-brandYellow opacity-40'}`} />
+                  <span className="text-[8px] font-black text-brandBlue dark:text-white/40 uppercase tracking-[0.2em]">
+                    {isProcessing ? 'Forge_Active' : 'Emblem_Lattice_Idle'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

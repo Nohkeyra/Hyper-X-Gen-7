@@ -1,3 +1,4 @@
+
 HYPERXGEN Engine Protocol v7.1
 Deterministic Synthesis and Artistic Style DNA Specification
 
@@ -70,33 +71,68 @@ Rules:
 
 ---
 
-3.2 DIRECTIVE: TYPOGRAPHY_ART_SYNTAX_V3
-Preset-Driven Word-As-Art Protocol
+3.2 DIRECTIVE: TYPOGRAPHY_ART_SYNTAX_V4 (OMEGA DEFINITION)
+The Absolute Typography Design Protocol
 
-Rules:
-1. CORE PRINCIPLE: THE TEXT IS THE ARTWORK. All synthesis operations must treat the user-provided text as the singular artistic subject.
-2. PRESET-DRIVEN LAYOUT INTELLIGENCE: Each preset's DNA contains an intrinsic layout strategy (e.g., Arched, Stacked, Linear). The engine autonomously selects and executes the optimal layout based on the chosen preset and input text length. User layout controls are forbidden.
-3. HOLISTIC COMPOSITION AWARENESS: The entire canvas is treated as a single compositional unit. Text is optically balanced, spaced, and positioned according to the preset's internal rules for visual weight and negative space. Synthesis is deterministic; user intervention is forbidden.
-4. ABSOLUTE STYLE FIDELITY: Each preset constitutes a unique and identifiable visual system. Style is not a skin; it is the core logic. Grunge is distressed and raw. Art Deco is geometric and ornamental. Cyberpunk is glitchy and neon-drenched. Heraldic Crest is symmetrical, bordered, and arched. Presets must be instantly recognizable and distinct.
-5. INTRINSIC LETTERFORM STYLIZATION: Specific presets may possess baked-in logic for letterform modification (e.g., swashes, terminals, ligatures, decorative cuts). These modifications are an integral part of the preset's DNA and are not user-configurable.
-6. STRICT BACKGROUND PROTOCOL: The background is a solid, flat color field ONLY. No scenes, no objects, no photographic environments, no decorative frames.
-7. READABILITY MANDATE: The final synthesized word must remain recognizable as the intended text. Stylistic distortion is permitted only to the extent that it serves the preset's aesthetic without sacrificing core legibility.
+CORE PHILOSOPHY: Typography is the architecture of information. It is not merely writing; it is the visual manipulation of language to evoke feeling, hierarchy, and brand identity.
+
+1. EXECUTION PROTOCOL (HIGH FIDELITY ARTWORK)
+   - "Generate a high-fidelity typography artwork for the text [TEXT] using font style [STYLE] and layout [LAYOUT]."
+   - Treat the letters as the primary design elements, ensuring clean composition, aesthetic balance, and visual impact.
+   - Use a flat color or studio background unless style dictates otherwise.
+   - Do not apply textures, shadows, or ornamentation unless explicitly requested by the style preset.
+   - Maintain high readability.
+
+2. ANATOMY & CONSTRUCTION
+   - The engine must respect the structural integrity of glyphs: Cap Height, X-Height, Baseline, Ascenders, Descenders, Terminals, and Counters.
+   - Distortion is permitted ONLY if it adheres to a specific style logic (e.g., Glitch, Liquid). Random distortion is forbidden.
+
+3. STYLE MATRIX (Strict Adherence Required)
+   A. SWISS / INTERNATIONAL:
+      - Objective, grid-based, asymmetrical.
+      - Typeface: Neo-Grotesque Sans (Helvetica-like).
+      - Logic: Mathematical alignment, high negative space, flush-left rag-right.
+   B. BAUHAUS / GEOMETRIC:
+      - Form follows function. Reduced to elementary shapes (Circle, Square, Triangle).
+      - Typeface: Geometric Sans (Futura-like).
+      - Logic: Radical simplification, experimental layout, primary colors.
+   C. ART DECO / LUXURY:
+      - Glamour, symmetry, verticality.
+      - Typeface: High-waisted Sans or decorative Serif.
+      - Logic: Gold/Silver metallic textures, geometric ornamentation, stepped forms.
+   D. BRUTALIST / ANTI-DESIGN:
+      - Raw, unpolished, structural exposure.
+      - Typeface: Mono-spaced or heavy block Sans.
+      - Logic: Intentional crowding, system fonts, overlapping, high contrast, "ugly" aesthetic.
+   E. KINETIC / FUTURIST:
+      - Speed, motion, technology.
+      - Typeface: Wide, italicized, or sliced.
+      - Logic: Blur effects, speed lines, chromatic aberration, glow.
+   F. VINTAGE / HERITAGE:
+      - Nostalgia, craft, warmth.
+      - Typeface: Slab Serif, Hand-drawn Script, or Victorian ornamental.
+      - Logic: Textured edges (bleed/stamp), curved baselines, ornate flourishes.
+
+4. COMPOSITIONAL RULES
+   - OPTICAL KERNING: Space between letters must be visually balanced, not mathematically equal.
+   - HIERARCHY: Size, weight, and color must dictate the reading order.
+   - FIGURE/GROUND: The background is active space. It interacts with the type.
 
 ---
 
 3.3 DIRECTIVE: REFINED_MONOGRAM_V8
 Preset-Driven Identity Mark Protocol
 
-CORE PHILOSOPHY: A monogram is not typography. It is a single, unified symbol constructed from two or more initials. The letters lose their individual identity to form a new whole. Synthesis must create a finished identity mark, not stylized lettering.
+CORE PHILOSOPHY: A monogram is not typography. It is a single, unified symbol constructed from two or more initials (Max 3). The letters lose their individual identity to form a new whole. Synthesis must create a finished identity mark.
 
 Rules:
 1. FUSION MANDATE: Letters MUST be structurally connected. They must interlock, superimpose (overlap), or share common strokes. Simple side-by-side arrangement of letters is strictly forbidden.
-2. NO EXTRANEOUS TEXT: The engine is forbidden from generating ANY words, labels, or annotations. ONLY the user-provided initials may appear, fused into the final mark.
-3. NO ILLUSTRATIONS: The engine is forbidden from generating icons, mascots, or any pictorial elements. The fused letterforms ARE the mark.
-4. DISCERNIBILITY: The provided initials must remain recognizable within the final symbol within a 3-second analysis window, even at high levels of abstraction.
-5. PRESET-DRIVEN AESTHETICS: All visual parameters (symmetry, containment, weight, abstraction, etc.) are dictated by the selected preset's internal DNA. User controls are forbidden.
-6. CONTAINMENT PROTOCOL: The use of an explicit container (circle, shield, square) is determined by the preset's DNA. Some presets are contained; others are freeform.
-7. OUTPUT FORMAT: The final output must be a pure, scalable vector graphic suitable for professional brand identity use.
+2. LAYOUT ENFORCEMENT: The layout must strictly follow the preset definition (Interlocking, Stacked, Circular, Horizontal, Abstract, Tilted, Crest, Layered).
+3. STYLE INTEGRITY: The style must strictly follow the preset definition (Serif, Sans-serif, Script, Bold, Graffiti, Illustrative, Minimal, Futuristic, Hand-drawn).
+4. NO EXTRANEOUS ELEMENTS: The engine is forbidden from generating ANY words, labels, or annotations. ONLY the user-provided initials may appear, fused into the final mark.
+5. NO ILLUSTRATIONS: The engine is forbidden from generating icons, mascots, or any pictorial elements unless explicitly requested by the preset (e.g. "illustrative style").
+6. READABILITY: The fused mark must remain discernible as the input initials.
+7. BACKGROUND: Flat or Studio background only. No scenes.
 
 ---
 

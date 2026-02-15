@@ -61,13 +61,16 @@ interface PanelLayoutProps {
 export const PanelLayout: React.FC<PanelLayoutProps> = ({ sidebar, canvas, footer }) => {
   const [mobileView, setMobileView] = useState<'canvas' | 'library'>('canvas');
   const hasSidebar = !!sidebar;
+  const isDarkMode = document.documentElement.classList.contains('dark');
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-brandNeutral">
+    <div className="flex h-full w-full overflow-hidden bg-brandNeutral relative">
       {/* Desktop Sidebar */}
       {sidebar && (
         <aside 
-          className="hidden md:flex w-[var(--sidebar-w)] flex-col border-r border-brandBlue/10 dark:border-white/5 bg-brandDeep overflow-hidden z-10 shrink-0"
+          className={`hidden md:flex w-[var(--sidebar-w)] flex-col border-r bg-brandDeep overflow-hidden z-10 shrink-0
+            ${isDarkMode ? 'border-brandBlue/20 shadow-[4px_0_24px_-4px_rgba(0,50,160,0.4)]' : 'border-brandBlue/10'}
+          `}
           style={{ contentVisibility: 'auto' }}
         >
           <div className="flex-1 overflow-y-auto custom-scrollbar p-6 pb-24">
@@ -96,7 +99,7 @@ export const PanelLayout: React.FC<PanelLayoutProps> = ({ sidebar, canvas, foote
       {/* Mobile View Toggler */}
       {hasSidebar && (
         <div 
-          className="md:hidden fixed bottom-[var(--app-controls-bar-h)] left-0 right-0 h-14 bg-brandDeep border-t border-brandBlue/10 dark:border-white/5 flex items-stretch z-20"
+          className="md:hidden absolute bottom-0 left-0 right-0 h-14 bg-brandDeep border-t border-brandBlue/10 dark:border-white/5 flex items-stretch z-30 shadow-[0_-5px_15px_rgba(0,0,0,0.2)]"
         >
           <button onClick={() => setMobileView('canvas')} className={`flex-1 flex flex-col items-center justify-center gap-1 transition-colors ${mobileView === 'canvas' ? 'text-brandRed bg-brandRed/5' : 'text-brandCharcoalMuted dark:text-white/40'}`}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l-1-1m5 5l-1.5-1.5"></path><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>

@@ -1,225 +1,236 @@
 
-import React, { useRef, useCallback } from 'react';
-import { DownloadIcon, TrashIcon, BoxIcon, StarIcon, UndoIcon, RedoIcon } from './Icons.tsx';
+import React, { useEffect, useRef } from "react"
+import { CanvasFloatingControls } from './PanelShared.tsx';
+import { UploadIcon, UndoIcon, RedoIcon } from './Icons.tsx';
+import { ImageEngine } from '../types.ts';
 
-interface CanvasStageProps {
-  uploadedImage: string | null;
-  generatedOutput: string | null;
-  isProcessing: boolean;
+export interface CanvasStageProps {
+  imageUrl?: string; 
+  uploadedImage?: string | null;
+  generatedOutput?: string | null;
+  isProcessing?: boolean;
   hudContent?: React.ReactNode;
-  isValidationError?: boolean;
-  uiRefined?: boolean;
-  refinementLevel?: number;
-  onClear: () => void;
-  onGenerate?: () => void;
-  onFileUpload: (file: File) => void;
+  onClear?: () => void;
+  onFileUpload?: (file: File) => void;
   onUndo?: () => void;
   onRedo?: () => void;
   canUndo?: boolean;
   canRedo?: boolean;
+  onGenerate?: () => void;
   downloadFilename?: string;
-  bridgeSource?: string | null; // Module name where the asset came from
+  bridgeSource?: string | null;
+  isValidationError?: boolean;
+  uiRefined?: boolean;
+  activeEngine?: ImageEngine; // New prop for telemetry
 }
 
-export const CanvasStage: React.FC<CanvasStageProps> = ({
-  uploadedImage,
-  generatedOutput,
-  isProcessing,
-  hudContent,
-  isValidationError,
-  uiRefined,
-  onClear,
-  onGenerate,
-  onFileUpload,
-  onUndo,
-  onRedo,
-  canUndo = true,
-  canRedo = true,
-  downloadFilename = "hyperxgen_output.png",
-  bridgeSource
+export const CanvasStage: React.FC<CanvasStageProps> = ({ 
+  imageUrl, uploadedImage, generatedOutput, isProcessing, hudContent,
+  onClear, onFileUpload, onUndo, onRedo, canUndo, canRedo, downloadFilename,
+  bridgeSource, isValidationError, activeEngine = 'gemini'
 }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const displayImage = generatedOutput || uploadedImage || imageUrl;
+  const isFlux = activeEngine === 'hf';
 
-  const handleClick = () => {
-    // Priority: only allow clicking to upload if there is NO image at all.
-    // If there is an image, the user must use the 'Trash' (Clear) button first for forensic precision.
-    if (!uploadedImage && !generatedOutput && !isProcessing) {
-      fileInputRef.current?.click();
-    }
+  // Dynamic Theme Colors based on Engine
+  const theme = isFlux ? {
+    border: 'border-emerald-500',
+    text: 'text-emerald-500',
+    bg: 'bg-emerald-500',
+    glow: 'shadow-[0_0_20px_rgba(16,185,129,0.15)]',
+    gradient: 'from-emerald-500/10 to-transparent'
+  } : {
+    border: 'border-brandBlue',
+    text: 'text-brandBlue',
+    bg: 'bg-brandBlue',
+    glow: 'shadow-[0_0_20px_rgba(0,50,160,0.15)]',
+    gradient: 'from-brandBlue/10 to-transparent'
   };
 
-  const processFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      onFileUpload(file);
-      // Reset value so the same file can be picked again if the buffer is cleared.
-      e.target.value = '';
-    }
-  };
+  const validationRing = isValidationError ? 'ring-2 ring-brandRed shadow-[0_0_30px_rgba(204,0,1,0.3)]' : 'ring-1 ring-white/10';
 
-  const handleDownload = useCallback(() => {
-    const imageToDownload = generatedOutput || uploadedImage;
-    if (imageToDownload) {
-      const link = document.createElement('a');
-      link.href = imageToDownload;
-      link.download = downloadFilename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  }, [generatedOutput, uploadedImage, downloadFilename]);
+  useEffect(() => {
+    if (!displayImage || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = displayImage;
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      canvas.style.width = '100%';
+      canvas.style.height = 'auto';
+      ctx.drawImage(img, 0, 0);
+    };
+  }, [displayImage]);
 
   return (
-    <div className="flex-1 flex items-center justify-center bg-zinc-200/50 dark:bg-black/60 relative min-h-[250px] md:min-h-[450px] overflow-hidden rounded-sm w-full">
-      {/* Background Grid - Animated and Dimmed */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.05] dark:opacity-[0.1]" 
-           style={{
-             backgroundImage: `
-               linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-               linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px)
-             `,
-             backgroundSize: '40px 40px',
-             backgroundPosition: 'center'
-           }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#0c0c0c]/80" />
-      </div>
+    <div className="w-full relative group perspective-1000 my-2">
+       {/* Ambient Backlight / Glow - Engine Aware */}
+       <div className={`absolute -inset-[1px] rounded-xl blur-xl transition-all duration-1000 opacity-20 ${theme.bg} ${isProcessing ? 'animate-pulse opacity-50 scale-[1.01]' : ''}`} />
 
-      <button
-        type="button"
-        className={`canvas-stage relative w-full h-auto max-w-[900px] aspect-square md:aspect-video group transition-all duration-700 rounded-sm overflow-hidden border-4 border-brandCharcoal/10 dark:border-brandRed/30 bg-zinc-300/30 dark:bg-zinc-950/80 shadow-[10px_10px_0px_0px_rgba(1,0,102,0.02)] dark:shadow-[10px_10px_0px_0px_rgba(204,0,1,0.1)] ${
-          isProcessing ? 'border-brandRed dark:border-brandRed shadow-[0_0_30px_rgba(204,0,1,0.2)] dark:shadow-neon-red-soft' : ''
-        } ${(!uploadedImage && !generatedOutput && !isProcessing) ? 'cursor-pointer hover:border-brandRed/20' : 'cursor-default'}`}
-        onClick={handleClick}
-        disabled={isProcessing}
-        aria-label={uploadedImage || generatedOutput ? "View generated output" : "Upload source image"}
-      >
-        <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={processFile} />
-        
-        {/* REFINED VIEWFINDER OVERLAY */}
-        <div className="absolute inset-0 pointer-events-none z-20 transition-opacity duration-300 opacity-30 group-hover:opacity-60">
-          <div className="absolute top-4 left-4 w-6 h-6 md:w-8 md:h-8 border-t-2 border-l-2 border-brandRed/40" />
-          <div className="absolute top-4 right-4 w-6 h-6 md:w-8 md:h-8 border-t-2 border-r-2 border-brandRed/40" />
-          <div className="absolute bottom-4 left-4 w-6 h-6 md:w-8 md:h-8 border-b-2 border-l-2 border-brandRed/40" />
-          <div className="absolute bottom-4 right-4 w-6 h-6 md:w-8 md:h-8 border-b-2 border-r-2 border-brandRed/40" />
+       {/* MAIN CHASSIS - OMEGA SLATE DESIGN */}
+       <div className={`relative bg-[#09090b] dark:bg-[#050505] rounded-xl overflow-hidden transition-all duration-500 ${validationRing} ${theme.glow} shadow-2xl flex flex-col`}>
           
-          {/* Bridge Source Badge */}
-          {bridgeSource && !generatedOutput && (
-            <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-brandBlue text-white px-4 py-1.5 rounded-full border border-white/20 shadow-xl animate-in slide-in-from-top-4 duration-500">
-              <StarIcon className="w-3 h-3 text-brandYellow animate-pulse" />
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] italic">Bridged_From_{bridgeSource}</span>
-            </div>
-          )}
+          {/* TOP TERMINAL BAR */}
+          <div className="h-9 bg-white/5 border-b border-white/5 flex items-center justify-between px-4 shrink-0 relative overflow-hidden">
+             {/* Scanning Highlight */}
+             <div className={`absolute top-0 left-0 bottom-0 w-1/3 bg-gradient-to-r ${theme.gradient} skew-x-12 opacity-20 animate-[shimmer_3s_infinite] pointer-events-none`} />
+             
+             <div className="flex items-center gap-3 relative z-10">
+                <div className="flex items-center gap-1.5">
+                   <div className={`w-1.5 h-1.5 rounded-sm ${theme.bg} ${isProcessing ? 'animate-ping' : ''}`} />
+                   <div className={`w-1.5 h-1.5 rounded-sm ${theme.bg} opacity-50`} />
+                </div>
+                <span className={`text-[9px] font-black uppercase tracking-[0.2em] font-mono ${theme.text}`}>
+                   {isFlux ? 'FLUX_OMEGA_KERNEL' : 'GEMINI_NEURAL_LINK'}
+                </span>
+             </div>
 
-          <div className="absolute top-5 left-12 md:left-16 text-[8px] font-mono text-brandRed/40 font-black tracking-widest bg-black/40 px-2 py-0.5 backdrop-blur-sm border border-brandRed/5">
-            COORD: 000.00, 000.00
+             <div className="flex items-center gap-4 relative z-10">
+                <span className="hidden sm:block text-[7px] font-mono text-white/30 uppercase tracking-widest">
+                   {isProcessing ? '>>> SYNCING_LATTICE' : '/// SYSTEM_READY'}
+                </span>
+                <div className="flex gap-0.5">
+                   {[1,2,3,4].map(i => <div key={i} className={`w-0.5 h-2 rounded-full ${i===4 ? theme.bg : 'bg-white/10'}`} />)}
+                </div>
+             </div>
           </div>
-          <div className="absolute bottom-5 right-12 md:right-16 text-[8px] font-mono text-brandRed/40 font-black tracking-widest bg-black/40 px-2 py-0.5 backdrop-blur-sm border border-brandRed/5">
-            STATUS: {isProcessing ? 'SYNTHESIZING' : (generatedOutput ? 'OUTPUT_LOCKED' : (uploadedImage ? 'BUFFER_READY' : 'AWAITING_INPUT'))}
+
+          {/* MAIN VIEWPORT */}
+          <div className="relative p-1 md:p-1 flex-1 bg-black/50">
+             
+             {/* Tech Frame (The Brackets) */}
+             <div className="absolute inset-0 pointer-events-none z-20 p-4">
+                <div className={`absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 ${theme.border} rounded-tl-md transition-colors duration-500`} />
+                <div className={`absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 ${theme.border} rounded-tr-md transition-colors duration-500`} />
+                <div className={`absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 ${theme.border} rounded-bl-md transition-colors duration-500`} />
+                <div className={`absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 ${theme.border} rounded-br-md transition-colors duration-500`} />
+             </div>
+
+             {/* Inner Bezel Container */}
+             <div className="relative w-full h-full bg-[#020202] rounded-lg overflow-hidden border border-white/5 shadow-inner">
+                
+                {/* CRT / Glass Texture Overlay */}
+                <div className="absolute inset-0 pointer-events-none z-30 opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%]" />
+                <div className={`absolute inset-0 pointer-events-none z-30 bg-radial-gradient from-transparent to-black/40 opacity-60`} />
+
+                {/* VIEWPORT CONTENT AREA */}
+                <div className={`relative w-full aspect-square md:aspect-video lg:aspect-square overflow-hidden flex items-center justify-center transition-all duration-700`}>
+                   
+                   {/* Grid Background */}
+                   <div className="absolute inset-0 pointer-events-none z-0 opacity-[0.07] bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[length:32px_32px]" />
+
+                   {/* HUD Overlay */}
+                   <div className="absolute inset-0 z-10 opacity-50 pointer-events-none mix-blend-screen">
+                     {hudContent}
+                   </div>
+
+                   {/* CORE RENDERER */}
+                   {displayImage ? (
+                     <canvas 
+                       ref={canvasRef} 
+                       className={`relative z-20 block mx-auto transition-all duration-1000 ${isProcessing ? 'opacity-40 blur-sm scale-95' : 'opacity-100 scale-100 hover:scale-[1.005]'}`}
+                     />
+                   ) : !isProcessing && (
+                     <div className="relative z-20 flex flex-col items-center gap-6 animate-in fade-in zoom-in duration-700 group/upload">
+                        <label className="cursor-pointer">
+                           <div className={`w-24 h-24 bg-white/5 border border-white/10 border-dashed rounded-full flex items-center justify-center transition-all duration-500 relative overflow-hidden backdrop-blur-md group-hover/upload:border-opacity-100
+                              ${isFlux 
+                                ? 'dark:shadow-[0_0_25px_rgba(16,185,129,0.2)] group-hover/upload:bg-emerald-500/10 group-hover/upload:border-emerald-500 dark:group-hover/upload:shadow-[0_0_35px_rgba(16,185,129,0.5)]' 
+                                : 'dark:shadow-[0_0_25px_rgba(0,50,160,0.2)] group-hover/upload:bg-brandBlue/10 group-hover/upload:border-brandBlue dark:group-hover/upload:shadow-[0_0_35px_rgba(0,50,160,0.5)]'
+                              }
+                           `}>
+                             <div className={`absolute inset-0 opacity-0 group-hover/upload:opacity-100 transition-opacity bg-gradient-to-t ${theme.gradient}`} />
+                             <UploadIcon className={`w-8 h-8 text-white/60 transition-all duration-300 group-hover/upload:scale-110 group-hover/upload:text-white 
+                                ${isFlux ? 'dark:group-hover/upload:text-emerald-400' : 'dark:group-hover/upload:text-brandYellow'} relative z-10`} />
+                           </div>
+                           <input type="file" className="hidden" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f && onFileUpload) onFileUpload(f); }} />
+                        </label>
+                        <div className="text-center space-y-1">
+                          <span className={`text-[10px] font-black uppercase tracking-[0.3em] block transition-colors ${theme.text} ${isFlux ? 'dark:drop-shadow-[0_0_8px_rgba(16,185,129,0.7)]' : 'dark:drop-shadow-neon-blue'}`}>Inject_Buffer</span>
+                          {bridgeSource && (
+                            <div className={`inline-flex items-center gap-2 px-3 py-0.5 bg-white/5 border border-white/10 rounded-full animate-pulse mt-2`}>
+                               <div className={`w-1 h-1 rounded-full ${theme.bg}`} />
+                               <p className="text-[7px] font-mono text-white/60 uppercase">SRC: {bridgeSource}</p>
+                            </div>
+                          )}
+                        </div>
+                     </div>
+                   )}
+
+                   {/* PROCESSING STATE */}
+                   {isProcessing && (
+                     <div className="absolute inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[70] animate-in fade-in duration-300">
+                        <div className="flex flex-col items-center gap-6">
+                           <div className="relative w-20 h-20">
+                             <div className={`absolute inset-0 border-2 rounded-full border-white/10`} />
+                             <div className={`absolute inset-0 border-t-2 rounded-full animate-spin ${theme.border}`} style={{ animationDuration: '0.8s' }} />
+                             <div className={`absolute inset-0 border-r-2 rounded-full animate-spin-reverse-slow border-white/20`} />
+                             <div className={`absolute inset-[35%] rounded-full animate-pulse ${theme.bg}`} />
+                           </div>
+                           <div className={`flex flex-col items-center gap-1`}>
+                             <span className={`text-[10px] font-black uppercase tracking-[0.3em] animate-pulse ${theme.text}`}>
+                               {isFlux ? 'FLUX_DIFFUSION' : 'GEMINI_SYNTHESIS'}
+                             </span>
+                             <span className="text-[7px] font-mono text-white/30 uppercase tracking-widest">
+                               Constructing_Visual_Artifact...
+                             </span>
+                           </div>
+                        </div>
+                     </div>
+                   )}
+
+                   {/* CONTROLS */}
+                   {displayImage && onClear && (
+                     <CanvasFloatingControls onClear={onClear} onDownload={() => {
+                        if (!displayImage) return;
+                        const link = document.createElement('a');
+                        link.download = downloadFilename || `hyperxgen_artifact_${Date.now()}.png`;
+                        link.href = displayImage;
+                        link.click();
+                     }} />
+                   )}
+
+                   {/* UNDO/REDO */}
+                   {(onUndo || onRedo) && displayImage && !isProcessing && (
+                     <div className="absolute bottom-6 left-6 z-50 flex gap-2">
+                        <button 
+                          onClick={onUndo} 
+                          disabled={!canUndo} 
+                          className="btn-tactile w-10 h-10 flex items-center justify-center bg-black/60 backdrop-blur-md text-white rounded-full border border-white/10 hover:border-white/30 disabled:opacity-20 transition-all shadow-lg"
+                          title="Undo"
+                        >
+                          <UndoIcon className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={onRedo} 
+                          disabled={!canRedo} 
+                          className="btn-tactile w-10 h-10 flex items-center justify-center bg-black/60 backdrop-blur-md text-white rounded-full border border-white/10 hover:border-white/30 disabled:opacity-20 transition-all shadow-lg"
+                          title="Redo"
+                        >
+                          <RedoIcon className="w-4 h-4" />
+                        </button>
+                     </div>
+                   )}
+                </div>
+             </div>
           </div>
-        </div>
 
-        {/* SCANLINE DURING PROCESSING */}
-        {isProcessing && (
-          <div className="absolute inset-0 z-30 pointer-events-none overflow-hidden">
-            <div className="w-full h-[2px] bg-brandRed shadow-[0_0_20px_rgba(204,0,1,1)] animate-scan absolute" />
-            <div className="absolute inset-0 bg-brandRed/5 animate-pulse mix-blend-overlay" />
+          {/* BOTTOM METADATA BAR */}
+          <div className="h-6 bg-[#020202] border-t border-white/5 flex items-center justify-between px-4 shrink-0">
+             <span className="text-[7px] font-mono text-white/20 uppercase tracking-wider">RES: 1024x1024 // MODE: {isFlux ? 'LATENT_DIFFUSION' : 'MULTIMODAL_V3'}</span>
+             <span className={`text-[7px] font-black uppercase tracking-wider ${theme.text} ${isProcessing ? 'animate-pulse' : 'opacity-60'}`}>
+               {isProcessing ? 'PROCESSING...' : 'IDLE'}
+             </span>
           </div>
-        )}
-
-        {/* HUD CONTENT */}
-        <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
-          {hudContent}
-        </div>
-
-        {/* ART CONTENT */}
-        <div className="w-full h-full flex items-center justify-center overflow-hidden p-6 md:p-8 relative z-10">
-          {isValidationError ? (
-            <div className="flex flex-col items-center text-center max-w-xs animate-in zoom-in duration-300">
-              <span className="text-brandRed font-black text-lg md:text-xl uppercase italic mb-2 tracking-tighter drop-shadow-md">Null_Lattice_Error</span>
-              <p className="text-[9px] font-black text-white/50 uppercase leading-tight tracking-[0.2em] mb-4">
-                Synthesis returned semantic drift. Handshake failed.
-              </p>
-              {onGenerate && (
-                <button onClick={(e) => { e.stopPropagation(); onGenerate(); }} className="px-6 py-2 bg-brandRed text-white text-[10px] font-black uppercase italic border-2 border-brandRed hover:bg-white hover:text-brandRed transition-all">
-                  RE_SYNC_KERNEL
-                </button>
-              )}
-            </div>
-          ) : (generatedOutput || uploadedImage) ? (
-            <img 
-              src={generatedOutput || uploadedImage || ''} 
-              className="w-full h-full object-contain animate-in zoom-in duration-1000 select-none pointer-events-none shadow-2xl" 
-              alt="Generated Output" 
-            />
-          ) : (
-            <div className="flex flex-col items-center gap-4 md:gap-6 text-center group-hover:scale-105 transition-transform duration-500">
-              <div className="w-16 h-16 md:w-20 md:h-20 border-2 border-dashed border-brandRed/10 flex items-center justify-center rounded-sm bg-brandRed/5">
-                <BoxIcon className="w-8 h-8 md:w-10 md:h-10 text-brandRed opacity-20" />
-              </div>
-              <div className="space-y-1">
-                <span className="text-5xl lg:text-8xl font-black italic tracking-tighter uppercase text-brandCharcoal/10 dark:text-white/10 select-none block">VOID</span>
-                <p className="text-[8px] md:text-[9px] font-black text-brandRed/20 uppercase tracking-[0.4em] bg-black/20 px-3 py-1 rounded-full border border-brandRed/5">
-                  Awaiting_Buffer_Injection
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* CONTROLS */}
-        <div className="absolute top-4 right-4 md:top-6 md:right-6 z-40 flex flex-col gap-2 md:gap-3">
-          {(generatedOutput || uploadedImage) && (
-            <button 
-              onClick={(e) => { e.stopPropagation(); onClear(); }} 
-              disabled={isProcessing}
-              className="p-3.5 md:p-4 bg-brandCharcoal/80 dark:bg-black/80 text-brandRed border border-brandRed/20 hover:bg-brandRed hover:text-white transition-all shadow-xl rounded-sm disabled:opacity-0 backdrop-blur-sm"
-              title="Purge Buffer"
-            >
-              <TrashIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
-            </button>
-          )}
-          {(generatedOutput || uploadedImage) && (
-            <button 
-              onClick={(e) => { e.stopPropagation(); handleDownload(); }} 
-              disabled={isProcessing}
-              className="p-3.5 md:p-4 bg-brandCharcoal/80 dark:bg-black/80 text-brandYellow border border-brandYellow/20 hover:bg-brandYellow hover:text-brandBlue transition-all shadow-xl rounded-sm disabled:opacity-0 backdrop-blur-sm"
-              title="Export Artifact"
-            >
-              <DownloadIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
-            </button>
-          )}
-          
-          {(generatedOutput || uploadedImage) && (
-            <>
-              <button 
-                onClick={(e) => { e.stopPropagation(); onUndo?.(); }} 
-                disabled={isProcessing || !canUndo}
-                className="p-3.5 md:p-4 bg-brandCharcoal/80 dark:bg-black/80 text-white border border-white/20 hover:bg-white hover:text-brandBlue transition-all shadow-xl rounded-sm disabled:opacity-30 backdrop-blur-sm"
-                title="Undo Transformation"
-              >
-                <UndoIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
-              </button>
-              <button 
-                onClick={(e) => { e.stopPropagation(); onRedo?.(); }} 
-                disabled={isProcessing || !canRedo}
-                className="p-3.5 md:p-4 bg-brandCharcoal/80 dark:bg-black/80 text-white border border-white/20 hover:bg-white hover:text-brandBlue transition-all shadow-xl rounded-sm disabled:opacity-30 backdrop-blur-sm"
-                title="Redo Transformation"
-              >
-                <RedoIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
-              </button>
-            </>
-          )}
-        </div>
-
-        {/* STATUS OVERLAY */}
-        {isProcessing && (
-          <div className="absolute bottom-4 left-4 md:bottom-6 md:left-6 z-40 flex items-center gap-3 bg-brandCharcoal/90 backdrop-blur-md px-4 py-2 md:px-5 md:py-2.5 border-l-4 border-brandRed shadow-lg">
-            <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-brandRed rounded-full animate-ping" />
-            <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-brandRed animate-pulse">Synthesizing...</span>
-          </div>
-        )}
-      </button>
+       </div>
     </div>
   );
 };
+
+export default CanvasStage;

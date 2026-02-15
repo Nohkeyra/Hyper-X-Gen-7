@@ -1,8 +1,6 @@
 
-
-
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { KernelConfig, ExtractionResult, PanelMode, StyleCategory, Preset, VectorPreset, TypographyPreset, MonogramPreset, EmblemPreset } from '../types.ts';
+import { KernelConfig, ExtractionResult, PanelMode, StyleCategory, Preset, VectorPreset, TypographyPreset, MonogramPreset, EmblemPreset, PresetCategory } from '../types.ts';
 import { EnhancedStyleExtractor } from '../services/styleExtractor.ts';
 import { StyleExtractionResult } from './StyleExtractionResult.tsx';
 import { PresetCard } from './PresetCard.tsx';
@@ -80,8 +78,8 @@ export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
       
     } catch (err: any) {
       console.error(err);
-      setReconStatusOverride("AUDIT_FAILED");
       transition('LATTICE_FAIL');
+      setReconStatusOverride("AUDIT_FAILED");
       addLog(`EXTRACTION_FAILED: ${err.message}`, "error");
     } finally {
       setTimeout(() => setReconStatusOverride(null), 1000);
@@ -183,12 +181,25 @@ export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
       sidebar={
         <>
           <SidebarHeader moduleNumber="Module_04" title="Style_Extractor" version="Style DNA Capture v7.6" colorClass="text-brandRed" borderColorClass="border-brandRed" />
-          <div className="md:block hidden">
-            <p className="text-[10px] font-black uppercase text-brandCharcoal/40 dark:text-brandYellow/40 tracking-widest italic mb-4">Preset Forensics Analysis</p>
-            <div className="p-3 bg-brandRed/5 dark:bg-brandYellow/5 border border-brandRed/20 dark:border-brandYellow/20 rounded-sm mb-6">
-              <span className="text-[8px] font-black text-brandRed dark:text-brandYellow uppercase tracking-widest block mb-1">Instruction:</span>
-              <p className="text-[9px] text-brandCharcoalMuted dark:text-white/60 leading-tight">Identify pure design traits and map them directly to engine synthesis presets.</p>
+          <div className="space-y-6 px-1">
+            <div className="p-3 bg-brandRed/5 border border-brandRed/20 rounded-sm mb-6">
+                <span className="text-[8px] font-black text-brandRed uppercase tracking-widest block mb-1">Instruction:</span>
+                <p className="text-[9px] text-brandCharcoalMuted dark:text-white/60 leading-tight">Identify pure design traits and map them directly to engine synthesis presets. Upload an image to begin forensic style decoding.</p>
             </div>
+            
+            {dnaVault.length > 0 && (
+              <div className="space-y-4 pt-4 border-t border-white/5">
+                <h4 className="text-[10px] font-black uppercase text-brandCharcoal/40 dark:text-white/40 tracking-widest italic border-b border-white/5 pb-2">Extracted_DNA_Vault</h4>
+                {dnaVault.map(p => (
+                  <div key={p.id} className="relative group">
+                    <PresetCard name={p.name} description={p.description} prompt={p.dna?.promptTemplate} isActive={false} onClick={() => {}} iconChar="S" />
+                    <button onClick={(e) => { e.stopPropagation(); onDeletePreset(p.id); }} className="absolute top-2 right-2 p-1 bg-brandRed text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                      <TrashIcon className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </>
       }
@@ -255,22 +266,6 @@ export const StyleExtractorPanel: React.FC<StyleExtractorPanelProps> = ({
       }
       footer={
         <div className="space-y-4">
-          {dnaVault.length > 0 && (
-            <div className="bg-brandNeutral dark:bg-black/20 p-3 border border-brandBlue/10 dark:border-brandYellow/10 rounded-sm">
-              <h5 className="text-[8px] font-black text-brandBlue dark:text-brandYellow/40 uppercase tracking-widest mb-3 italic">PRESET_COLLECTION</h5>
-              <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-                {dnaVault.map(p => (
-                  <div key={p.id} className="relative group shrink-0 w-48">
-                    <div className="absolute top-2 left-2 z-10 px-1.5 py-0.5 bg-brandRed dark:bg-brandYellow text-white dark:text-black text-[6px] font-black uppercase rounded-sm">
-                      {p.type.toUpperCase()}
-                    </div>
-                    <PresetCard name={p.name} description={p.dna?.domain || 'DNA'} prompt={p.dna?.promptTemplate} isActive={false} onClick={() => {}} iconChar="S" />
-                    <button onClick={() => onDeletePreset(p.id)} className="absolute top-2 right-2 p-1 bg-brandRed text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><TrashIcon className="w-3 h-3" /></button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
           <GenerationBar onGenerate={() => uploadedImage && handleExtractStyle(uploadedImage)} isProcessing={isProcessing}>
              <div className="flex-1 flex items-center justify-center text-[10px] font-black uppercase text-brandCharcoal dark:text-brandYellow/60 tracking-widest italic">
                { status === 'STARVING' ? 'Inject image buffer for forensic extraction' : (isProcessing ? 'Harvesting Preset DNA...' : 'Ready for Extraction') }

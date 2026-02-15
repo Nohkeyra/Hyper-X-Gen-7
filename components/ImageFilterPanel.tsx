@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { PanelMode, KernelConfig, FilterPreset, LatticeBuffer, PresetCategory, FilterType } from '../types.ts';
 import { getMobileCategories } from '../presets/index.ts';
@@ -137,7 +138,12 @@ export const ImageFilterPanel: React.FC<ImageFilterPanelProps> = ({
         <>
           <SidebarHeader moduleNumber="Module_05" title="Image_Filters" version="Spectral Transformation v3.0" colorClass="text-brandBlue" borderColorClass="border-brandBlue" />
           <div className="space-y-6 px-1">
-             <div className="space-y-4">
+             <div className="p-3 bg-brandBlue/5 border border-brandBlue/20 rounded-sm mb-6">
+                <span className="text-[8px] font-black text-brandBlue uppercase tracking-widest block mb-1">Instruction:</span>
+                <p className="text-[9px] text-brandCharcoalMuted dark:text-white/60 leading-tight">Apply non-destructive spectral filters to image buffers. Use presets for rapid look application or fine-tune brightness, contrast, and saturation manually.</p>
+            </div>
+
+             <div className="space-y-4 pt-4 border-t border-white/5">
                 <h4 className="text-[10px] font-black uppercase text-brandCharcoal/40 dark:text-white/40 tracking-widest italic border-b border-white/5 pb-2">Filter_Library</h4>
                 {PRESETS.map(cat => (
                   <div key={cat.title} className="space-y-3">

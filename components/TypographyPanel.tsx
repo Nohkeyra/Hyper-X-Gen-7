@@ -1,8 +1,9 @@
-// FINAL – LOCKED - REFINED V7.1.3
+// FINAL – LOCKED - REFINED V7.1.7
 import React, { useEffect, useMemo, useCallback, useState } from 'react';
-import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, TypographyPreset, Preset, LatticeBuffer, TypographyDna, isTypographyPreset, ImageEngine } from '../types.ts';
+import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, TypographyPreset, Preset, LatticeBuffer, isTypographyPreset, ImageEngine } from '../types.ts';
 import { getMobileCategories } from '../presets/index.ts';
-import { synthesizeTypoStyle, refineTextPrompt } from '../services/geminiService.ts';
+import { synthesizeTypoStyle } from '../services/imageOrchestrator.ts';
+import { refineTextPrompt } from '../services/geminiService.ts';
 import { useDevourer } from '../hooks/useDevourer.ts';
 import { PresetCard } from './PresetCard.tsx';
 import { GenerationBar } from './GenerationBar.tsx';
@@ -46,21 +47,35 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
     return getMobileCategories(PanelMode.TYPOGRAPHY, savedPresets);
   }, [savedPresets]);
 
-  const { status, isProcessing, transition } = useDevourer(initialData?.dna || globalDna ? 'DNA_LINKED' : 'STARVING');
-
-  const [prompt, setPrompt] = useState(initialData?.prompt || '');
-  const [generationNonce, setGenerationNonce] = useState(0); // Add generationNonce
-  const [generatedOutput, setGeneratedOutput] = useState<string | null>(initialData?.imageUrl || null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(initialData?.imageUrl && initialData?.category === 'LATTICE_BRIDGE' ? initialData.imageUrl : null);
+  const { status, isProcessing, transition } = useDevourer(initialData?.dna || globalDna || uploadedImage ? 'DNA_LINKED' : 'STARVING');
+
+  const [prompt, setPrompt] = useState(initialData?.prompt || 'HYPERXGEN');
+  const [generationNonce, setGenerationNonce] = useState(0); 
+  const [generatedOutput, setGeneratedOutput] = useState<string | null>(initialData?.imageUrl || null);
   const [dna, setDna] = useState<ExtractionResult | null>(initialData?.dna || globalDna || null);
-  const [activePresetId, setActivePresetId] = useState<string | null>(initialData?.id || null);
-  const [activePreset, setActivePreset] = useState<PresetItem | null>(initialData || null);
+  const [activePresetId, setActivePresetId] = useState<string | null>(initialData?.id || 'kinetic-typography');
+  const [activePreset, setActivePreset] = useState<PresetItem | null>(() => initialData || PRESETS.flatMap(c => c.items).find(i => i.id === 'kinetic-typography') || null);
   
   const [isRefining, setIsRefining] = useState(false);
 
   // History for Undo/Redo
   const [history, setHistory] = useState<string[]>(initialData?.imageUrl ? [initialData.imageUrl] : []);
   const [historyIndex, setHistoryIndex] = useState(initialData?.imageUrl ? 0 : -1);
+
+  // LATTICE BRIDGE INGESTION
+  useEffect(() => {
+    if (latticeBuffer?.imageUrl && uploadedImage !== latticeBuffer.imageUrl) {
+      setUploadedImage(latticeBuffer.imageUrl);
+      if (latticeBuffer.dna) setDna(latticeBuffer.dna);
+      if (latticeBuffer.prompt && !prompt) setPrompt(latticeBuffer.prompt);
+      
+      setHistory([latticeBuffer.imageUrl]);
+      setHistoryIndex(0);
+      transition('BUFFER_LOADED');
+      addLog(`LATTICE_IMPORT: Buffer acquired from ${latticeBuffer.sourceMode}`, 'info');
+    }
+  }, [latticeBuffer, transition, addLog, prompt, uploadedImage]);
 
   useEffect(() => {
     onStateUpdate?.({
@@ -82,7 +97,7 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
       setActivePreset(null);
       setDna(null);
       onSetGlobalDna?.(null);
-      setGenerationNonce(0); // Reset nonce if preset is deselected
+      setGenerationNonce(0); 
       return;
     }
 
@@ -97,24 +112,18 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
       transition("DNA_LINKED");
       onSetGlobalDna?.(item.dna);
     }
-    setGenerationNonce(0); // Reset nonce on new preset selection
+    setGenerationNonce(0); 
     addLog(`TYPO_RECALL: ${item.name}`, 'info');
   }, [PRESETS, isProcessing, transition, activePresetId, onSetGlobalDna, addLog]);
 
   const setPromptAndResetNonce = useCallback((value: string) => {
     setPrompt(value);
-    setGenerationNonce(0); // Reset nonce if prompt changes
+    setGenerationNonce(0); 
   }, []);
 
   const handleGenerate = useCallback(async () => {
     if (isProcessing) return;
     
-    if (uploadedImage && kernelConfig.imageEngine === ImageEngine.HF) {
-      addLog(`ENGINE_ERROR: The ${kernelConfig.imageEngine.toUpperCase()} engine does not support image input. Please switch to Gemini or remove the image.`, 'error');
-      transition('LATTICE_FAIL');
-      return;
-    }
-
     if (!activePreset || !isTypographyPreset(activePreset)) {
         addLog("TYPO_ERROR: No valid typography preset selected.", 'error');
         return;
@@ -122,13 +131,23 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
     
     const params = activePreset.parameters;
     const userText = prompt.trim() || 'HYPERX';
-    const finalPrompt = `Synthesize the text "${userText}" using the following artistic direction: ${activePreset.prompt}`;
     
-    transition(dna || globalDna ? 'DNA_STYLIZE_ACTIVE' : 'DEVOURING_BUFFER', true);
-    setGenerationNonce(prev => prev + 1); // Increment nonce for new generation attempt
+    // OMEGA PROMPT TEMPLATE V4 (Dynamic Rules Engine)
+    let finalPrompt = "";
+    
+    // Check if the preset uses the {TEXT} template placeholder
+    if (activePreset.prompt.includes("{TEXT}")) {
+       finalPrompt = activePreset.prompt.replace(/{TEXT}/g, userText);
+    } else {
+       // Fallback for older presets or DNA jumps
+       finalPrompt = `Generate a high-fidelity typography artwork for the text "${userText}" using font style "${params.letterform_style}" and layout "${params.layout}". Treat the letters as the primary design elements, ensuring clean composition, aesthetic balance, and visual impact. Use a ${params.background} background. Artistic Direction: ${activePreset.prompt}`;
+    }
+    
+    transition(dna || globalDna || uploadedImage ? 'DNA_STYLIZE_ACTIVE' : 'DEVOURING_BUFFER', true);
+    setGenerationNonce(prev => prev + 1); 
 
     const extraDirectives = [
-      `[TYPOGRAPHY_ART_SYNTAX_V3]`,
+      `[TYPOGRAPHY_ART_SYNTAX_V4]`,
       `TEXT_CONTENT: "${userText}"`,
       `LETTERFORM_STYLE: ${params.letterform_style}`,
       `LAYOUT: ${params.layout}`,
@@ -143,14 +162,18 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
 
 
     try {
-      const result = await synthesizeTypoStyle(
+      const { imageUrl: result, fallbackTriggered } = await synthesizeTypoStyle(
         finalPrompt,
         uploadedImage || undefined,
         kernelConfig,
         dna || globalDna || undefined,
         extraDirectives,
-        generationNonce // Pass generationNonce
+        generationNonce 
       );
+
+      if (fallbackTriggered) {
+        addLog('FLUX_FAIL: Primary engine connection failed. Switched to Gemini fallback.', 'warning');
+      }
 
       setGeneratedOutput(result);
       
@@ -173,13 +196,13 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
         category: 'Synthesis',
         description: 'User-generated typography'
       } as TypographyPreset);
-    } catch (e: any) {
-      addLog(`${e.message}`, 'error');
+    } catch (error: any) {
       transition('LATTICE_FAIL');
+      addLog(`TYPO_ERROR: ${error.message}`, 'error');
     } finally {
       transition('LATTICE_ACTIVE');
     }
-  }, [prompt, uploadedImage, activePreset, kernelConfig, dna, globalDna, transition, addLog, onSaveToHistory, historyIndex, generationNonce, isProcessing]); // Add isProcessing as dependency
+  }, [prompt, uploadedImage, activePreset, kernelConfig, dna, globalDna, transition, addLog, onSaveToHistory, historyIndex, generationNonce, isProcessing]);
 
   const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
@@ -208,7 +231,7 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
       setHistory([base64]);
       setHistoryIndex(0);
       transition('BUFFER_LOADED');
-      setGenerationNonce(0); // Reset nonce on file upload
+      setGenerationNonce(0); 
       addLog("SOURCE_BUFFER_LOADED: Ready for synthesis", "info");
     };
     r.readAsDataURL(f);
@@ -219,7 +242,7 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
     setIsRefining(true);
     try {
       const refined = await refineTextPrompt(prompt, PanelMode.TYPOGRAPHY, kernelConfig, dna || globalDna || undefined);
-      setPromptAndResetNonce(refined); // Use new setter
+      setPromptAndResetNonce(refined); 
       addLog("PROMPT_REFINED", "success");
     } catch {
       addLog("PROMPT_REFINE_FAIL", "error");
@@ -232,11 +255,11 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
     <PanelLayout
       sidebar={
         <>
-          <SidebarHeader moduleNumber="Module_02" title="Typography_Engine" version="Kinetic Word Art v7.1" colorClass="text-brandBlue" borderColorClass="border-brandBlue" />
+          <SidebarHeader moduleNumber="Module_02" title="Typography_Engine" version="Kinetic Word Art v7.6" colorClass="text-brandBlue" borderColorClass="border-brandBlue" />
           <div className="space-y-6 px-1">
-            <div className="p-3 bg-brandBlue/5 dark:bg-brandYellow/5 border border-brandBlue/20 dark:border-brandYellow/20 rounded-sm mb-6">
-                <span className="text-[8px] font-black text-brandBlue dark:text-brandYellow uppercase tracking-widest block mb-1">Instruction:</span>
-                <p className="text-[9px] text-brandCharcoalMuted dark:text-white/60 leading-tight">Enter text. Select an authoritative style preset. Each preset is a complete, opinionated artistic direction, not a starting point. The engine handles all synthesis parameters.</p>
+            <div className="p-3 bg-brandBlue/5 border border-brandBlue/20 rounded-sm mb-6">
+                <span className="text-[8px] font-black text-brandBlue uppercase tracking-widest block mb-1">Instruction:</span>
+                <p className="text-[9px] text-brandCharcoalMuted dark:text-white/60 leading-tight">Enter text. Select an authoritative style preset. The engine treats the word as the primary subject, ensuring aesthetic fidelity and readability.</p>
             </div>
              <div className="space-y-4 pt-4 border-t border-white/5">
                 <h4 className="text-[10px] font-black uppercase text-brandCharcoal/40 dark:text-white/40 tracking-widest italic border-b border-white/5 pb-2">Style_Library</h4>
@@ -275,7 +298,7 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
             setHistoryIndex(-1); 
             transition('STARVING'); 
             onClearLattice?.();
-            setGenerationNonce(0); // Reset nonce on clear
+            setGenerationNonce(0); 
           }} 
           onFileUpload={handleFileUpload}
           onUndo={handleUndo}
@@ -283,7 +306,8 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
           canUndo={historyIndex > 0}
           canRedo={historyIndex < history.length - 1}
           downloadFilename={`hyperxgen_typo_${Date.now()}.png`}
-          bridgeSource={initialData?.category === 'LATTICE_BRIDGE' ? latticeBuffer?.sourceMode : null}
+          bridgeSource={initialData?.category === 'LATTICE_BRIDGE' ? latticeBuffer?.sourceMode : (latticeBuffer ? latticeBuffer.sourceMode : null)}
+          activeEngine={kernelConfig.imageEngine}
         />
       }
       footer={
@@ -291,12 +315,12 @@ export const TypographyPanel: React.FC<TypographyPanelProps> = ({
           <PresetCarousel categories={PRESETS} activeId={activePresetId} onSelect={handleSelectPreset} />
           <GenerationBar 
             prompt={prompt} 
-            setPrompt={setPromptAndResetNonce} // Use new setter
+            setPrompt={setPromptAndResetNonce} 
             onGenerate={handleGenerate} 
             isProcessing={isProcessing} 
             activePresetName={activePreset?.name || dna?.name || globalDna?.name} 
             placeholder="Enter words (1-3 ideal)..." 
-            bridgedThumbnail={initialData?.category === 'LATTICE_BRIDGE' ? initialData.imageUrl : null}
+            bridgedThumbnail={latticeBuffer?.imageUrl || (initialData?.category === 'LATTICE_BRIDGE' ? initialData.imageUrl : null)}
             onClearBridge={() => { if (onClearLattice) onClearLattice(); setUploadedImage(null); setGenerationNonce(0); }}
             refineButton={
               <button

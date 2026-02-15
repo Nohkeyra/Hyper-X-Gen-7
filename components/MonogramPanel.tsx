@@ -1,8 +1,9 @@
-// FINAL – LOCKED - REFINED V7.2.5
+// FINAL – LOCKED - REFINED V7.2.9
 import React, { useEffect, useMemo, useCallback, useState } from 'react';
-import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, MonogramPreset, Preset, LatticeBuffer, MonogramDna, ImageEngine } from '../types.ts';
+import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, MonogramPreset, Preset, LatticeBuffer, ImageEngine } from '../types.ts';
 import { getMobileCategories } from '../presets/index.ts';
-import { synthesizeMonogramStyle, refineTextPrompt } from '../services/geminiService.ts';
+import { synthesizeMonogramStyle } from '../services/imageOrchestrator.ts';
+import { refineTextPrompt } from '../services/geminiService.ts';
 import { useDevourer } from '../hooks/useDevourer.ts';
 import { GenerationBar } from './GenerationBar.tsx';
 import { PresetCarousel } from './PresetCarousel.tsx';
@@ -32,20 +33,34 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
     return getMobileCategories(PanelMode.MONOGRAM, savedPresets);
   }, [savedPresets]);
 
-  const { status, isProcessing, transition } = useDevourer(initialData?.dna || globalDna ? 'DNA_LINKED' : 'STARVING');
-  const [prompt, setPrompt] = useState(initialData?.prompt || '');
-  const [generationNonce, setGenerationNonce] = useState(0); // Add generationNonce
-  const [generatedOutput, setGeneratedOutput] = useState<string | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(initialData?.imageUrl && initialData?.category === 'LATTICE_BRIDGE' ? initialData.imageUrl : null);
+  const { status, isProcessing, transition } = useDevourer(initialData?.dna || globalDna || uploadedImage ? 'DNA_LINKED' : 'STARVING');
+  const [prompt, setPrompt] = useState(initialData?.prompt || 'HXG');
+  const [generationNonce, setGenerationNonce] = useState(0); 
+  const [generatedOutput, setGeneratedOutput] = useState<string | null>(null);
   const [dna, setDna] = useState<ExtractionResult | null>(initialData?.dna || globalDna || null);
-  const [activePresetId, setActivePresetId] = useState<string | null>(initialData?.id || null);
-  const [activePreset, setActivePreset] = useState<PresetItem | null>(initialData || null);
+  const [activePresetId, setActivePresetId] = useState<string | null>(initialData?.id || 'mono-velvet-interlock');
+  const [activePreset, setActivePreset] = useState<PresetItem | null>(() => initialData || PRESETS.flatMap(c => c.items).find(i => i.id === 'mono-velvet-interlock') || null);
   
   const [isRefining, setIsRefining] = useState(false);
   
   // History for Undo/Redo
   const [history, setHistory] = useState<string[]>(initialData?.imageUrl ? [initialData.imageUrl] : []);
   const [historyIndex, setHistoryIndex] = useState(initialData?.imageUrl ? 0 : -1);
+
+  // LATTICE BRIDGE INGESTION
+  useEffect(() => {
+    if (latticeBuffer?.imageUrl && uploadedImage !== latticeBuffer.imageUrl) {
+      setUploadedImage(latticeBuffer.imageUrl);
+      if (latticeBuffer.dna) setDna(latticeBuffer.dna);
+      if (latticeBuffer.prompt && !prompt) setPrompt(latticeBuffer.prompt);
+      
+      setHistory([latticeBuffer.imageUrl]);
+      setHistoryIndex(0);
+      transition('BUFFER_LOADED');
+      addLog(`LATTICE_IMPORT: Buffer acquired from ${latticeBuffer.sourceMode}`, 'info');
+    }
+  }, [latticeBuffer, transition, addLog, prompt, uploadedImage]);
 
   useEffect(() => {
     onStateUpdate?.({
@@ -66,7 +81,7 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
       setActivePreset(null);
       setDna(null);
       onSetGlobalDna?.(null);
-      setGenerationNonce(0); // Reset nonce if preset is deselected
+      setGenerationNonce(0); 
       return;
     }
 
@@ -81,13 +96,15 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
       transition("DNA_LINKED");
       onSetGlobalDna?.(item.dna);
     }
-    setGenerationNonce(0); // Reset nonce on new preset selection
+    setGenerationNonce(0); 
     addLog(`REFINED_RECALL: ${item.name}`, 'info');
   }, [PRESETS, isProcessing, transition, activePresetId, onSetGlobalDna, addLog]);
 
   const setPromptAndResetNonce = useCallback((value: string) => {
-    setPrompt(value);
-    setGenerationNonce(0); // Reset nonce if prompt changes
+    // Enforce 3 char limit
+    const cleanValue = value.slice(0, 3).toUpperCase();
+    setPrompt(cleanValue);
+    setGenerationNonce(0); 
   }, []);
 
   const handleGenerate = useCallback(async () => {
@@ -96,38 +113,54 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
       return;
     }
 
-    if (uploadedImage && kernelConfig.imageEngine === ImageEngine.HF) {
-      addLog(`ENGINE_ERROR: The ${kernelConfig.imageEngine.toUpperCase()} engine does not support image input. Please switch to Gemini or remove the image.`, 'error');
-      transition('LATTICE_FAIL');
+    const userInitials = prompt.trim() || "HXG";
+    if (userInitials.length > 3) {
+      addLog("MONOGRAM_ERROR: Max 3 characters allowed.", 'error');
       return;
     }
 
-    const userInitials = prompt.trim() || "HXG";
     const presetParams = (activePreset as MonogramPreset).parameters;
+    const metadata = activePreset.metadata || {};
     
-    const finalPrompt = `A monogram of the initials "${userInitials}". The style is "${(activePreset as MonogramPreset).name}". ${activePreset?.prompt || ""}`;
+    // Construct Prompt
+    let finalPrompt = "";
     
-    transition(dna || globalDna ? "DNA_STYLIZE_ACTIVE" : "DEVOURING_BUFFER", true);
-    setGenerationNonce(prev => prev + 1); // Increment nonce for new generation attempt
+    if (activePreset.prompt) {
+        // V2 Logic: Use the rich AI prompt from the preset
+        finalPrompt = `${activePreset.prompt}. Create this monogram for the initials: "${userInitials}". Ensure high legibility and correct letterforms.`;
+    } else {
+        // V1 Logic: Fallback to constructing from metadata
+        const layout = metadata.layout || presetParams.letter_relationship;
+        const style = metadata.style || presetParams.form_language;
+        const theme = metadata.theme || presetParams.period_influence;
+        const twist = metadata.twist || activePreset.description;
+        finalPrompt = `Create a monogram with initials ${userInitials}, layout ${layout}, style ${style}, theme ${theme}, twist ${twist}, constraints: readable, max 3 letters, no extra letters, flat/studio background`;
+    }
+    
+    // Engine Switching Logic
+    const preferredEngine = metadata.preferredEngine;
+    const effectiveConfig = {
+      ...kernelConfig,
+      imageEngine: preferredEngine || kernelConfig.imageEngine
+    };
 
-    const extraDirectives = [
-      `[DIRECTIVE: REFINED_MONOGRAM_V8]`,
-      `PERMITTED_ALPHANUMERIC: "${userInitials}" ONLY.`,
-      `LETTER_RELATIONSHIP: ${presetParams.letter_relationship}`,
-      `SYMMETRY: ${presetParams.symmetry}`,
-      `CONTAINER: ${presetParams.container}`,
-      `LEGIBILITY_TARGET: ${presetParams.legibility_target}`,
-      `FORM_LANGUAGE: ${presetParams.form_language}`,
-      `STROKE_CHARACTER: ${presetParams.stroke_character}`,
-      `SPATIAL_DENSITY: ${presetParams.spatial_density}`,
-      `ABSTRACTION_TOLERANCE: ${presetParams.abstraction_tolerance}`,
-      `PERIOD_INFLUENCE: ${presetParams.period_influence}`,
-      `FUSION_MANDATE: Letters must interlock, overlap, or connect.`,
-      activePreset?.styleDirective || ""
-    ].filter(Boolean).join('\n');
+    transition(dna || globalDna || uploadedImage ? "DNA_STYLIZE_ACTIVE" : "DEVOURING_BUFFER", true);
+    setGenerationNonce(prev => prev + 1); 
 
     try {
-      const result = await synthesizeMonogramStyle(finalPrompt, uploadedImage || undefined, kernelConfig, dna || globalDna || undefined, extraDirectives, generationNonce); // Pass generationNonce
+      const { imageUrl: result, fallbackTriggered } = await synthesizeMonogramStyle(
+        finalPrompt, 
+        uploadedImage || undefined, 
+        effectiveConfig, 
+        dna || globalDna || undefined, 
+        "", 
+        generationNonce
+      ); 
+      
+      if (fallbackTriggered) {
+        addLog('FLUX_FAIL: Primary engine connection failed. Switched to Gemini fallback.', 'warning');
+      }
+
       setGeneratedOutput(result);
       
       setHistory(prev => {
@@ -147,14 +180,14 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
         category: 'Synthesis',
         description: 'User-generated monogram'
       } as any);
-      addLog(`MONOGRAM_CREATED: "${userInitials}" with ${presetParams.period_influence} style`, 'success');
-    } catch (e: any) { 
+      addLog(`MONOGRAM_CREATED: "${userInitials}" with ${activePreset.name}`, 'success');
+    } catch (error: any) { 
       transition("LATTICE_FAIL"); 
-      addLog(`${e.message}`, 'error'); 
+      addLog(`MONO_ERROR: ${error.message}`, 'error'); 
     } finally { 
       transition("LATTICE_ACTIVE"); 
     }
-  }, [prompt, activePreset, dna, globalDna, kernelConfig, uploadedImage, transition, onSaveToHistory, addLog, historyIndex, generationNonce, isProcessing]); // Add isProcessing as dependency
+  }, [prompt, activePreset, dna, globalDna, kernelConfig, uploadedImage, transition, onSaveToHistory, addLog, historyIndex, generationNonce, isProcessing]);
 
   const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
@@ -183,7 +216,7 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
       setHistory([base64]);
       setHistoryIndex(0);
       transition('BUFFER_LOADED');
-      setGenerationNonce(0); // Reset nonce on file upload
+      setGenerationNonce(0); 
       addLog("MONO_SOURCE_LOADED", "info");
     }; 
     r.readAsDataURL(f); 
@@ -194,7 +227,7 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
     setIsRefining(true);
     try {
       const refined = await refineTextPrompt(prompt, PanelMode.MONOGRAM, kernelConfig, dna || globalDna || undefined);
-      setPromptAndResetNonce(refined); // Use new setter
+      setPromptAndResetNonce(refined); 
       addLog("PROMPT_REFINED", "success");
     } catch {
       addLog("PROMPT_REFINE_FAIL", "error");
@@ -209,9 +242,9 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
         <>
           <SidebarHeader moduleNumber="Module_03" title="Monogram_Engine" version="Identity Mark Synthesis v8.0" colorClass="text-brandRed" borderColorClass="border-brandRed" />
           <div className="space-y-6 px-1">
-             <div className="p-3 bg-brandRed/5 dark:bg-brandYellow/5 border border-brandRed/20 dark:border-brandYellow/20 rounded-sm mb-6">
-                <span className="text-[8px] font-black text-brandRed dark:text-brandYellow uppercase tracking-widest block mb-1">Instruction:</span>
-                <p className="text-[9px] text-brandCharcoalMuted dark:text-white/60 leading-tight">Enter initials. Select an authoritative style preset. Each preset is a complete aesthetic system that dictates how letters fuse, align, and resolve into a finished identity mark. No manual adjustments are available.</p>
+             <div className="p-3 bg-brandRed/5 border border-brandRed/20 rounded-sm mb-6">
+                <span className="text-[8px] font-black text-brandRed uppercase tracking-widest block mb-1">Instruction:</span>
+                <p className="text-[9px] text-brandCharcoalMuted dark:text-white/60 leading-tight">Enter initials (max 3). Select an authoritative style preset. Each preset dictates layout, style, and texture. Flux Engine creates texture; Gemini Engine creates vectors.</p>
             </div>
 
              <div className="space-y-4 pt-4 border-t border-white/5">
@@ -234,13 +267,14 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
           generatedOutput={generatedOutput} 
           isProcessing={isProcessing} 
           hudContent={<DevourerHUD devourerStatus={status} />} 
-          onClear={() => { setGeneratedOutput(null); setUploadedImage(null); setDna(null); setHistory([]); setHistoryIndex(-1); transition('STARVING'); setGenerationNonce(0); }} // Reset nonce on clear
+          onClear={() => { setGeneratedOutput(null); setUploadedImage(null); setDna(null); setHistory([]); setHistoryIndex(-1); transition('STARVING'); setGenerationNonce(0); }} 
           onFileUpload={handleFileUpload}
           onUndo={handleUndo}
           onRedo={handleRedo}
           canUndo={historyIndex > 0}
           canRedo={historyIndex < history.length - 1}
-          bridgeSource={initialData?.category === 'LATTICE_BRIDGE' ? latticeBuffer?.sourceMode : null}
+          bridgeSource={initialData?.category === 'LATTICE_BRIDGE' ? latticeBuffer?.sourceMode : (latticeBuffer ? latticeBuffer.sourceMode : null)}
+          activeEngine={kernelConfig.imageEngine}
         />
       }
       footer={
@@ -248,8 +282,8 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
           <PresetCarousel categories={PRESETS} activeId={activePresetId} onSelect={handleSelectPreset} />
           <GenerationBar 
             prompt={prompt} setPrompt={setPromptAndResetNonce} onGenerate={handleGenerate} isProcessing={isProcessing || !activePreset} 
-            activePresetName={activePreset?.name || dna?.name || globalDna?.name} placeholder="Enter initials (e.g. HXG)..." 
-            bridgedThumbnail={initialData?.category === 'LATTICE_BRIDGE' ? initialData.imageUrl : null}
+            activePresetName={activePreset?.name || dna?.name || globalDna?.name} placeholder="Enter initials (1-3 chars)..." 
+            bridgedThumbnail={latticeBuffer?.imageUrl || (initialData?.category === 'LATTICE_BRIDGE' ? initialData.imageUrl : null)}
             onClearBridge={() => { if (onClearLattice) onClearLattice(); setUploadedImage(null); setGenerationNonce(0); }}
             refineButton={
               <button

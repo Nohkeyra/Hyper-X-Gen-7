@@ -1,5 +1,4 @@
 
-
 import React, { memo } from 'react';
 
 export const TrashIcon = memo((props: React.SVGProps<SVGSVGElement>) => ( <svg {...props} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 01 2-2h4a2 2 0 01 2 2v2"/></svg>));
@@ -7,6 +6,17 @@ export const TrashIcon = memo((props: React.SVGProps<SVGSVGElement>) => ( <svg {
 export const StarIcon = memo((props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+  </svg>
+));
+
+export const MalaysiaSymbolIcon = memo((props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} viewBox="0 0 64 32" fill="currentColor">
+    {/* Crescent: Spine Left, Opening Right (Standard Malaysia Flag) */}
+    {/* Outer Arc: Leftward bulge. Inner Arc: Less Leftward bulge (cutout) */}
+    <path d="M22,6 C10,6 10,26 22,26 C16,26 16,6 22,6 Z" fillRule="nonzero" />
+    
+    {/* 14-Point Star: Centered Right */}
+    <polygon points="44,6 45.5,9.8 49.3,9.2 47.5,12.6 50.7,14.5 47.8,17 50.7,19.5 47.5,21.4 49.3,24.8 45.5,24.2 44,28 42.5,24.2 38.7,24.8 40.5,21.4 37.3,19.5 40.2,17 37.3,14.5 40.5,12.6 38.7,9.2 42.5,9.8" />
   </svg>
 ));
 
@@ -46,6 +56,12 @@ export const FilterIcon = memo((props: React.SVGProps<SVGSVGElement>) => (
 export const EmblemIcon = memo((props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+));
+
+export const RepairIcon = memo((props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
   </svg>
 ));
 

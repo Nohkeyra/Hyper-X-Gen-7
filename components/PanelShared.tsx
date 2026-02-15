@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 import { 
   TrashIcon, 
@@ -34,7 +33,12 @@ export const ThemeToggle = ({
 }) => (
   <button 
     onClick={onToggle}
-    className="p-3 bg-brandCharcoal dark:bg-zinc-800 border border-white/10 text-brandYellow hover:border-brandRed hover:text-brandRed transition-all shadow-xl rounded-sm group flex items-center justify-center pointer-events-auto"
+    className={`p-3 border transition-all shadow-xl rounded-sm group flex items-center justify-center pointer-events-auto
+      ${isDarkMode 
+        ? 'bg-brandCharcoal dark:bg-zinc-800 border-white/10 text-brandYellow hover:border-brandRed hover:text-brandRed' 
+        : 'bg-brandYellow border-brandRed/20 text-brandBlue hover:bg-brandBlue hover:text-brandYellow hover:border-brandBlue'
+      }
+    `}
     title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
   >
     {isDarkMode ? (

@@ -1,148 +1,167 @@
 
 import React, { useMemo } from 'react';
 import { PanelMode } from '../types';
-import { VectorIcon, TypographyIcon, MonogramIcon, ExtractorIcon, FilterIcon, EmblemIcon, BoxIcon } from './Icons'; 
+import { VectorIcon, TypographyIcon, MonogramIcon, ExtractorIcon, FilterIcon, EmblemIcon } from './Icons'; 
 import { PageLayout } from './Layouts.tsx';
 
 interface StartScreenProps {
-  onSelectMode?: (mode: PanelMode) => void;
-  recentCount?: number;
-  enabledModes?: PanelMode[];
+  onSelectMode: (mode: PanelMode) => void;
+  recentCount: number;
 }
 
-interface CardPalette {
-  bgColor: string;
-  textColor: string;
-  accentColor: string;
-  shadowColor: string;
-  darkBgColor?: string;
-  darkTextColor?: string;
-  darkAccentColor?: string;
-}
-
-const PALETTES: CardPalette[] = [
-  { bgColor: "bg-brandYellow", textColor: "text-brandBlue", accentColor: "bg-brandBlue/10", shadowColor: "#0032A0", darkBgColor: "dark:bg-brandYellow", darkTextColor: "dark:text-brandBlue", darkAccentColor: "dark:bg-brandBlue/10" },
-  { bgColor: "bg-brandRed", textColor: "text-white", accentColor: "bg-white/10", shadowColor: "#0032A0", darkBgColor: "dark:bg-brandRed", darkTextColor: "dark:text-white", darkAccentColor: "dark:bg-white/10" },
-  { bgColor: "bg-brandBlue", textColor: "text-brandYellow", accentColor: "bg-brandYellow/10", shadowColor: "#FFCC00", darkBgColor: "dark:bg-brandBlue", darkTextColor: "dark:text-brandYellow", darkAccentColor: "dark:bg-brandYellow/10" },
-  { bgColor: "bg-white", textColor: "text-brandRed", accentColor: "bg-brandRed/10", shadowColor: "#CC0001", darkBgColor: "dark:bg-white", darkTextColor: "dark:text-brandRed", darkAccentColor: "dark:bg-brandRed/10" },
-  { bgColor: "bg-brandRed", textColor: "text-brandYellow", accentColor: "bg-brandYellow/10", shadowColor: "#FFCC00", darkBgColor: "dark:bg-brandRed", darkTextColor: "dark:text-brandYellow", darkAccentColor: "dark:bg-brandYellow/10" },
-  { bgColor: "bg-brandBlue", textColor: "text-white", accentColor: "bg-white/10", shadowColor: "#FFCC00", darkBgColor: "dark:bg-brandBlue", darkTextColor: "dark:text-white", darkAccentColor: "dark:bg-white/10" },
-  { bgColor: "bg-white", textColor: "text-brandBlue", accentColor: "bg-brandBlue/10", shadowColor: "#0032A0", darkBgColor: "dark:bg-white", darkTextColor: "dark:text-brandBlue", darkAccentColor: "dark:bg-brandBlue/10" },
-  { bgColor: "bg-brandYellow", textColor: "text-brandRed", accentColor: "bg-brandRed/10", shadowColor: "#CC0001", darkBgColor: "dark:bg-brandYellow", darkTextColor: "dark:text-brandRed", darkAccentColor: "dark:bg-brandRed/10" },
+const MODULE_DEFINITIONS = [
+  { id: PanelMode.VECTOR, title: "Vector Synth", Icon: VectorIcon, stat: "Omega_V7", desc: "Geometric core synthesis" },
+  { id: PanelMode.TYPOGRAPHY, title: "Typography", Icon: TypographyIcon, stat: "Kinetic_V3", desc: "Semantic visual art" },
+  { id: PanelMode.MONOGRAM, title: "Monogram", Icon: MonogramIcon, stat: "Fused_Mark", desc: "Identity logic engine" },
+  { id: PanelMode.EMBLEM_FORGE, title: "Emblem Forge", Icon: EmblemIcon, stat: "Heraldic", desc: "Identity mark forge" },
+  { id: PanelMode.EXTRACTOR, title: "DNA Extract", Icon: ExtractorIcon, stat: "Forensic", desc: "Style architectural capture" },
+  { id: PanelMode.FILTERS, title: "Spectral", Icon: FilterIcon, stat: "Post_Proc", desc: "Visual shift protocols" },
 ];
 
-function shuffle<T>(array: T[]): T[] {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+const PALETTE_CONFIG = [
+  // 1: Jalur Gemilang Blue (Canton)
+  // Light: Blue BG, White Text | Dark: Blue BG, White/Yellow Text
+  { 
+    bg: 'dark:bg-brandBlue bg-brandBlue', 
+    border: 'border-brandBlue',
+    text: 'text-white dark:text-white', 
+    descColor: 'text-white/80 dark:text-white/80',
+    shadow: 'dark:box-glow-intense-blue',
+    iconColor: 'text-brandYellow dark:text-brandYellow', // Yellow Star on Blue
+    subText: 'text-brandYellow dark:text-white'
+  },
+  // 2: Jalur Gemilang Red (Stripes)
+  // Light: Red BG, White Text | Dark: Red BG, White Text
+  { 
+    bg: 'dark:bg-brandRed bg-brandRed', 
+    border: 'border-brandRed',
+    text: 'text-white dark:text-white', 
+    descColor: 'text-white/80 dark:text-white/80',
+    shadow: 'dark:box-glow-intense-red',
+    iconColor: 'text-white dark:text-white', // White on Red
+    subText: 'text-white dark:text-white'
+  },
+  // 3: Jalur Gemilang Yellow (Crescent/Star)
+  // Light: Yellow BG, Blue Text | Dark: Yellow BG, Blue/Red Text
+  { 
+    bg: 'dark:bg-brandYellow bg-brandYellow', 
+    border: 'border-brandYellow',
+    text: 'text-brandBlue dark:text-brandBlue', 
+    descColor: 'text-brandBlue/80 dark:text-brandBlue/80',
+    shadow: 'dark:box-glow-intense-yellow',
+    iconColor: 'text-brandRed dark:text-brandRed', // Red on Yellow
+    subText: 'text-brandRed dark:text-brandBlue'
   }
-  return shuffled;
-}
+];
 
-export const StartScreen: React.FC<StartScreenProps> = ({ onSelectMode = (_mode) => {}, recentCount = 0, enabledModes = Object.values(PanelMode) }) => {
-  const shuffledPalettes = useMemo(() => shuffle(PALETTES), []);
-
-  const allCardConfigs = useMemo(() => [
-    { title: "Vector", subtitle: "Geometric synth", Icon: VectorIcon, mode: PanelMode.VECTOR, borderColor: 'border-brandYellow', darkBorderColor: 'dark:border-brandYellow' },
-    { title: "Extract", subtitle: "Style thief", Icon: ExtractorIcon, mode: PanelMode.EXTRACTOR, borderColor: 'border-brandBlue', darkBorderColor: 'dark:border-brandBlue' },
-    { title: "Mono", subtitle: "Visual core", Icon: MonogramIcon, mode: PanelMode.MONOGRAM, borderColor: 'border-brandYellow', darkBorderColor: 'dark:border-brandYellow' },
-    { title: "Filter", subtitle: "Spectral unit", Icon: FilterIcon, mode: PanelMode.FILTERS, borderColor: 'border-brandRed', darkBorderColor: 'dark:border-brandRed' },
-    { title: "Typo", subtitle: "Kinetic engine", Icon: TypographyIcon, mode: PanelMode.TYPOGRAPHY, borderColor: 'border-brandBlue', darkBorderColor: 'dark:border-brandBlue' },
-    { title: "Emblem", subtitle: "Heraldic forge", Icon: EmblemIcon, mode: PanelMode.EMBLEM_FORGE, borderColor: 'border-brandRed', darkBorderColor: 'dark:border-brandRed' }
-  ], []);
-
-  const visibleCardConfigs = useMemo(() => {
-    return allCardConfigs.filter(config => enabledModes.includes(config.mode));
-  }, [allCardConfigs, enabledModes]);
+export const StartScreen: React.FC<StartScreenProps> = ({ onSelectMode, recentCount }) => {
+  const randomizedModules = useMemo(() => {
+    return MODULE_DEFINITIONS.map((mod, index) => ({
+      ...mod,
+      scheme: PALETTE_CONFIG[index % PALETTE_CONFIG.length]
+    }));
+  }, []);
 
   return (
     <PageLayout centered>
-      <div className="flex flex-col items-center justify-center text-center py-2 md:py-8">
-        <div className="flex flex-col items-center max-w-4xl w-full mb-4 md:mb-12 scale-90 md:scale-100 origin-top">
-          <div className="relative inline-block mb-4 md:mb-8">
-            <div className="w-12 h-12 sm:w-32 sm:h-32 bg-brandBlue dark:bg-zinc-900 border-[4px] sm:border-[12px] border-brandYellow flex items-center justify-center mx-auto shadow-[6px_6px_0px_0px_#FFCC00] sm:shadow-[16px_16px_0px_0px_#FFCC00] hover:translate-x-1.5 hover:translate-y-1.5 transition-transform duration-500 cursor-pointer group rounded-sm">
-               <svg className="group-hover:rotate-[360deg] transition-transform duration-1000 ease-in-out" width="30" height="30" viewBox="0 0 240 240" fill="#FFCC00" stroke="#FFCC00" strokeWidth="4"><path d="M120 20L150 100H230L165 150L190 230L120 180L50 230L75 150L10 100H90L120 20Z" fill="#FFCC00" /></svg>
-            </div>
-            <div className="absolute -bottom-2 -right-4 bg-brandRed text-white text-[7px] sm:text-[9px] font-black uppercase px-2 py-0.5 sm:px-3 sm:py-1.5 italic tracking-widest shadow-lg rounded-sm border border-brandYellow">Engine_v7.6</div>
+      <div className="flex flex-col items-center w-full max-w-6xl py-12 md:py-20 animate-in fade-in zoom-in duration-1000 relative z-10">
+        
+        {/* IDENTITY ANCHOR */}
+        <div className="text-center mb-16 md:mb-24 space-y-4 relative">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[150%] bg-brandBlue/10 blur-[100px] rounded-full pointer-events-none animate-pulse" />
+          
+          <div className="inline-flex items-center gap-2 bg-white dark:bg-black/80 text-brandRed text-[10px] font-black uppercase px-6 py-2 tracking-[0.4em] italic mb-6 border border-brandRed shadow-sm dark:shadow-neon-red rounded-full relative z-20 backdrop-blur-md">
+            <div className="w-2 h-2 bg-brandRed rounded-full animate-ping" />
+            <span className="dark:text-neon-red">System_Architecture_Omega_v7.6</span>
           </div>
-          <h1 className="text-3xl xs:text-4xl sm:text-8xl lg:text-9xl font-black tracking-tighter text-brandBlue dark:text-white italic uppercase leading-[0.8] select-none mb-3 md:mb-8">HYPER<span className="text-brandRed">X</span>GEN</h1>
-          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8">
-             <div className="flex flex-col items-start border-l-2 border-brandRed pl-3 text-left">
-               <p className="text-[8px] sm:text-[12px] font-black uppercase tracking-[0.3em] text-brandBlue/60 dark:text-white/40 leading-none mb-0.5">Architectural_Engine</p>
-               <span className="text-[7px] sm:text-[9px] font-bold text-brandRed uppercase tracking-widest animate-pulse">MALAYSIA_EDITION</span>
-             </div>
-             {recentCount > 0 && (
-               <div className="flex items-center gap-2 bg-brandBlue dark:bg-zinc-800 p-1.5 px-4 rounded-sm border border-brandYellow/20 shadow-lg">
-                 <div className="w-1.5 h-1.5 bg-brandYellow rounded-full animate-ping"></div>
-                 <span className="text-[8px] sm:text-[10px] font-black text-white uppercase tracking-[0.2em]">{recentCount} NODES</span>
-               </div>
-             )}
+          
+          <h1 className="text-7xl md:text-[10rem] font-black italic tracking-tighter uppercase text-transparent bg-clip-text bg-gradient-to-b from-brandBlue to-brandCharcoal dark:from-white dark:to-brandCharcoal leading-[0.8] select-none drop-shadow-sm dark:drop-shadow-[0_0_35px_rgba(0,50,160,0.8)] relative z-20 dark:animate-flicker">
+            HYPER<span className="text-brandRed dark:text-neon-red">X</span>GEN
+          </h1>
+          
+          <div className="flex items-center justify-center gap-8 opacity-80 mt-8 relative z-20">
+            <div className="h-px w-24 bg-gradient-to-r from-transparent to-brandYellow" />
+            <p className="text-[11px] font-black uppercase tracking-[0.5em] text-brandYellow dark:text-neon-yellow bg-brandCharcoal px-2 rounded-sm dark:bg-transparent">Kuala_Lumpur_Synthesis_Node</p>
+            <div className="h-px w-24 bg-gradient-to-l from-transparent to-brandYellow" />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 w-full">
-          {visibleCardConfigs.map((config, index) => (
-            <ModeCard 
-              key={config.mode}
-              title={config.title} 
-              subtitle={config.subtitle} 
-              Icon={config.Icon} 
-              onClick={() => onSelectMode(config.mode)}
-              borderColor={config.borderColor}
-              darkBorderColor={config.darkBorderColor}
-              {...shuffledPalettes[index % shuffledPalettes.length]}
-            />
+        {/* MODULE MATRIX */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 w-full px-6 perspective-1000">
+          {randomizedModules.map((module, index) => (
+            <button
+              key={module.id}
+              onClick={() => onSelectMode(module.id)}
+              className={`group relative ${module.scheme?.bg} p-8 text-left transition-all duration-300 hover:-translate-y-2 hover:scale-[1.03] rounded-sm overflow-hidden border-2 ${module.scheme?.border} active:scale-95 backdrop-blur-md hover:z-20 shadow-xl hover:shadow-2xl animate-in fade-in zoom-in`}
+              style={{ animationDelay: `${100 + index * 80}ms`, animationFillMode: 'both' }}
+            >
+              {/* Internal Glow Field (Dark Only) */}
+              <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-white/5 to-transparent ${module.scheme?.shadow}`} />
+              
+              {/* Scanline Effect on Card (Dark Only) */}
+              <div className="hidden dark:block absolute inset-0 opacity-10 bg-[linear-gradient(transparent_2px,rgba(255,255,255,0.1)_2px)] bg-[length:100%_4px] pointer-events-none" />
+
+              {/* Background HUD Decal */}
+              <div className={`absolute -bottom-8 -right-8 opacity-[0.1] group-hover:opacity-[0.2] transition-opacity rotate-12 ${module.scheme?.text}`}>
+                <module.Icon className="w-40 h-40" />
+              </div>
+
+              <div className="relative z-10 flex flex-col h-full gap-6">
+                <div className="flex justify-between items-center">
+                  <div className={`w-12 h-12 flex items-center justify-center rounded-sm border-2 ${module.scheme?.border} ${module.scheme?.iconColor} bg-white/20 dark:bg-black/50 dark:group-hover:shadow-[0_0_20px_currentColor] transition-all`}>
+                    <module.Icon className="w-6 h-6" />
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className={`text-[7px] font-black opacity-60 tracking-widest ${module.scheme?.subText}`}>SIGNAL_LOCK</span>
+                    <div className={`w-4 h-1.5 ${module.scheme?.iconColor.replace('text', 'bg')} rounded-sm mt-1 dark:shadow-[0_0_10px_currentColor] animate-pulse`} />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <h3 className={`text-2xl font-black uppercase italic tracking-tighter leading-none ${module.scheme?.text} drop-shadow-sm`}>
+                    {module.title}
+                  </h3>
+                  <p className={`text-[9px] font-black uppercase tracking-widest leading-tight ${module.scheme?.descColor}`}>
+                    {module.desc}
+                  </p>
+                </div>
+
+                <div className="mt-auto pt-6 border-t border-white/20 dark:border-white/10 flex justify-between items-center">
+                  <span className={`text-[8px] font-black uppercase tracking-widest ${module.scheme?.subText} group-hover:animate-pulse`}>
+                    {module.stat}
+                  </span>
+                  <div className="flex gap-1">
+                    <div className={`w-1 h-1 ${module.scheme?.iconColor.replace('text','bg')} rounded-full opacity-40`} />
+                    <div className={`w-1 h-1 ${module.scheme?.iconColor.replace('text','bg')} rounded-full opacity-70`} />
+                    <div className={`w-1 h-1 ${module.scheme?.iconColor.replace('text','bg')} rounded-full animate-ping`} />
+                  </div>
+                </div>
+              </div>
+            </button>
           ))}
+        </div>
+
+        {/* FOOTER TELEMETRY */}
+        <div className="mt-20 flex flex-wrap justify-center items-center gap-12 text-brandCharcoalMuted dark:text-white/40">
+          <div className="flex flex-col items-center gap-1 group">
+             <span className="text-3xl font-black text-brandRed dark:text-neon-red leading-none group-hover:scale-110 transition-transform">{recentCount}</span>
+             <span className="text-[8px] font-black uppercase tracking-[0.3em] opacity-60">Cached_Blueprints</span>
+          </div>
+          <div className="h-12 w-px bg-gradient-to-b from-transparent via-brandBlue to-transparent hidden md:block opacity-50" />
+          <div className="flex flex-col items-center gap-1 group">
+             <div className="flex items-center gap-2">
+               <div className="w-2 h-2 bg-brandYellow rounded-full animate-ping dark:shadow-neon-yellow" />
+               <span className="text-3xl font-black text-brandBlue dark:text-brandYellow dark:text-neon-yellow leading-none uppercase">Online</span>
+             </div>
+             <span className="text-[8px] font-black uppercase tracking-[0.3em] opacity-60">Flag_Kernel_Stable</span>
+          </div>
+          <div className="h-12 w-px bg-gradient-to-b from-transparent via-brandBlue to-transparent hidden md:block opacity-50" />
+          <div className="flex flex-col items-center gap-1 group">
+             <span className="text-3xl font-black text-brandBlue dark:text-white dark:text-neon-blue leading-none">v7.6.1</span>
+             <span className="text-[8px] font-black uppercase tracking-[0.3em] opacity-60">Current_Release</span>
+          </div>
         </div>
       </div>
     </PageLayout>
-  );
-};
-
-const ModeCard = ({ title, subtitle, onClick, Icon, bgColor, textColor, accentColor, shadowColor, darkBgColor, darkTextColor, darkAccentColor, borderColor, darkBorderColor }: any) => {
-  const shadowClasses = useMemo(() => {
-    let base = '';
-    let neon = '';
-    switch (shadowColor) {
-      case '#CC0001':
-        base = 'shadow-[4px_4px_0px_0px_#CC0001]';
-        neon = 'dark:shadow-neon-red-soft';
-        break;
-      case '#FFCC00':
-        base = 'shadow-[4px_4px_0px_0px_#FFCC00]';
-        neon = 'dark:shadow-neon-yellow-soft';
-        break;
-      case '#0032A0':
-        base = 'shadow-[4px_4px_0px_0px_#0032A0]';
-        neon = 'dark:shadow-neon-blue-soft';
-        break;
-    }
-    return `${base} ${neon}`;
-  }, [shadowColor]);
-
-  return (
-    <button 
-      onClick={onClick} 
-      className={`relative group p-3 md:p-8 flex flex-col justify-between text-left transition-all duration-500 border-2 md:border-4 rounded-sm h-32 md:h-64 overflow-hidden
-        ${bgColor} ${textColor} ${darkBgColor || 'dark:bg-zinc-900'} ${darkTextColor || 'dark:text-white'} 
-        ${borderColor} ${darkBorderColor} hover:-translate-x-2 hover:-translate-y-2 md:hover:-translate-x-2 md:hover:-translate-y-2 active:translate-x-0 active:translate-y-0 active:shadow-none
-        ${shadowClasses}`}
-    >
-      <div className={`absolute top-0 right-0 w-16 h-16 md:w-32 md:h-32 -mr-6 -mt-6 md:-mr-12 md:-mt-12 rounded-full blur-2xl md:blur-3xl opacity-50 group-hover:scale-[2] transition-transform duration-1000
-        ${accentColor} ${darkAccentColor || 'dark:bg-brandRed/5'}
-      `}></div>
-      
-      <div className="absolute top-2 right-2 md:top-6 md:right-6 transition-all duration-500 transform group-hover:scale-110 group-hover:rotate-12 opacity-30">
-        <Icon className={`w-6 h-6 md:w-14 md:h-14 ${textColor} ${darkTextColor || 'dark:text-white'}`} />
-      </div>
-
-      <div className="relative z-10 space-y-1 md:space-y-3">
-        <h3 className={`text-xl md:text-4xl font-black uppercase italic tracking-tighter leading-none ${textColor} ${darkTextColor || 'dark:text-white'}`}>{title}</h3>
-        <div className={`h-1 md:h-1.5 w-6 md:w-12 bg-current group-hover:w-full transition-all duration-500`} />
-      </div>
-      
-      <p className={`relative z-10 text-[7px] md:text-[10px] font-black uppercase tracking-[0.1em] md:tracking-[0.25em] opacity-80 leading-tight pr-2 md:pr-10 ${textColor} ${darkTextColor || 'dark:text-white/80'}`}>{subtitle}</p>
-    </button>
   );
 };

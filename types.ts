@@ -1,3 +1,7 @@
+
+
+
+
 // ===================== ENUMS =====================
 export enum PanelMode {
   START = 'start',
@@ -73,6 +77,12 @@ export interface PanelState {
   latticeStatus?: LatticeStatus;
 }
 
+export interface GenerationResult {
+  imageUrl: string;
+  engineUsed: ImageEngine;
+  fallbackTriggered: boolean;
+}
+
 // ==================== PRESET TYPES ====================
 
 export enum PresetCategoryType {
@@ -127,6 +137,19 @@ export interface VectorDna {
   tech_influence?: 'High';
   abstraction_level?: 'High';
   ethereal_quality?: 'High';
+  
+  // Added from user request to support new presets
+  layout_type?: string;
+  style_category?: string;
+  color_mode?: string;
+  palette_depth?: string;
+  material_appearance?: string;
+  visual_complexity?: string;
+  color_preservation?: string;
+  smoothing?: string;
+  subject_type?: string;
+  skin_tone_priority?: boolean;
+  era_influence?: string;
 }
 
 export interface VectorPreset extends BasePreset {
@@ -206,13 +229,11 @@ export interface EmblemPreset extends BasePreset {
   parameters: EmblemDna;
 }
 
-// Fix: Add ExtractorPreset type to represent presets from the Style Extractor panel.
 export interface ExtractorPreset extends BasePreset {
   type: PanelMode.EXTRACTOR;
   parameters: {};
 }
 
-// Fix: Add ExtractorPreset to the main Preset union type to resolve type errors.
 export type Preset = VectorPreset | TypographyPreset | MonogramPreset | FilterPreset | EmblemPreset | ExtractorPreset;
 
 export const isVectorPreset = (preset: Preset): preset is VectorPreset => preset.type === PanelMode.VECTOR;
@@ -220,7 +241,6 @@ export const isTypographyPreset = (preset: Preset): preset is TypographyPreset =
 export const isMonogramPreset = (preset: Preset): preset is MonogramPreset => preset.type === PanelMode.MONOGRAM;
 export const isFilterPreset = (preset: Preset): preset is FilterPreset => preset.type === PanelMode.FILTERS;
 export const isEmblemPreset = (preset: Preset): preset is EmblemPreset => preset.type === PanelMode.EMBLEM_FORGE;
-// Fix: Add a type guard for the new ExtractorPreset.
 export const isExtractorPreset = (preset: Preset): preset is ExtractorPreset => preset.type === PanelMode.EXTRACTOR;
 
 export type PresetItem = Preset;

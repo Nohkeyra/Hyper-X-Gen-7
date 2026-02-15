@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 
 interface GenerationBarProps {
@@ -19,7 +20,7 @@ export const GenerationBar: React.FC<GenerationBarProps> = ({
   isProcessing, 
   prompt, 
   setPrompt, 
-  placeholder = "Describe synthesis parameters...", 
+  placeholder = "Input synthesis parameters...", 
   activePresetName,
   children, 
   additionalControls, 
@@ -32,112 +33,124 @@ export const GenerationBar: React.FC<GenerationBarProps> = ({
   const [isThrottled, setIsThrottled] = useState(false);
 
   useEffect(() => {
-    const generateId = () => {
+    const genId = () => {
       const hex = Math.random().toString(16).substring(2, 8).toUpperCase();
-      setLatticeId(`LAT_${hex}`);
+      setLatticeId(`LAT-CORE-${hex}`);
     };
-    generateId();
+    genId();
     if (isProcessing) {
-      const interval = setInterval(generateId, 100);
+      const interval = setInterval(genId, 150);
       return () => clearInterval(interval);
     }
   }, [isProcessing]);
 
   const handleExecute = useCallback(() => {
     if (isProcessing || isThrottled) return;
-    
-    // SPEED OPTIMIZATION: Hardware throttle to prevent 429 flood
     setIsThrottled(true);
     onGenerate();
-    
-    setTimeout(() => {
-      setIsThrottled(false);
-    }, 1500); // 1.5s cool-down between atomic requests
+    setTimeout(() => setIsThrottled(false), 2000); 
   }, [isProcessing, isThrottled, onGenerate]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleExecute();
-  };
-
   return (
-    <div className={`w-full border-t-2 transition-colors duration-500 border-brandRed dark:border-brandYellow bg-brandNeutral dark:bg-brandDeep shadow-[0_-10px_30px_rgba(0,0,0,0.5)] z-50 rounded-sm py-2 px-3 md:py-4 md:px-6`}>
-      <div className={`max-w-screen-2xl mx-auto flex flex-col md:flex-row items-stretch gap-0 border-2 transition-all duration-500 border-brandCharcoal dark:border-brandYellow/30 shadow-[2px_2px_0px_0px_#CC0001] dark:shadow-[4px_4px_0px_0px_#FFCC00] bg-white dark:bg-black/60 overflow-hidden`}>
+    <div className="w-full glass-panel border-t-2 border-brandRed dark:border-brandYellow p-3 md:p-6 z-50 rounded-sm shadow-2xl bg-brandBlue dark:bg-black/80 relative overflow-hidden transition-colors duration-500">
+      
+      {/* Background Glow Pulse (Dark Only) */}
+      <div className="hidden dark:block absolute inset-0 bg-brandRed/5 dark:bg-brandYellow/5 animate-pulse pointer-events-none" />
+
+      <div className="max-w-screen-2xl mx-auto flex flex-col md:flex-row items-stretch gap-0 border-2 border-brandYellow/30 dark:border-brandYellow bg-white/10 dark:bg-black overflow-hidden shadow-md dark:shadow-[0_0_20px_rgba(255,204,0,0.15)] relative z-10 backdrop-blur-sm">
         
-        <div className="flex-none bg-brandCharcoal/5 dark:bg-white/5 border-b md:border-b-0 md:border-r border-brandCharcoal dark:border-brandYellow/20 px-2 md:px-4 flex items-center py-2 md:py-0 gap-2">
-          {bridgedThumbnail && !isProcessing && (
+        {/* BRIDGE/CONTROL HUB */}
+        <div className="flex-none bg-brandSecondary dark:bg-brandYellow/10 border-b md:border-b-0 md:border-r border-white/20 dark:border-brandYellow/30 px-4 flex items-center py-3 md:py-0 gap-3">
+          {bridgedThumbnail && (
             <div 
-              className="relative w-10 h-10 border-2 border-brandRed dark:border-brandYellow rounded-sm overflow-hidden shrink-0 shadow-lg cursor-pointer group/bridge"
-              onClick={onClearBridge}
+              className={`relative w-12 h-12 border-2 ${isProcessing ? 'border-brandBlue dark:border-brandYellow animate-pulse' : 'border-brandRed'} rounded-sm overflow-hidden shrink-0 shadow-lg cursor-pointer group transition-all hover:scale-110`}
+              onClick={!isProcessing ? onClearBridge : undefined}
             >
-              <img src={bridgedThumbnail} className="w-full h-full object-cover opacity-80" alt="Bridge" />
-              <div className="absolute inset-0 bg-brandRed/60 flex items-center justify-center opacity-0 group-hover/bridge:opacity-100 transition-opacity">
-                <span className="text-white text-lg font-black">×</span>
-              </div>
+              <img src={bridgedThumbnail} className="w-full h-full object-cover" alt="Bridge Source" />
+              {!isProcessing && (
+                <div className="absolute inset-0 bg-brandRed/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-white text-xl font-black">×</span>
+                </div>
+              )}
             </div>
           )}
-          {additionalControls}
+          <div className="flex-1 md:flex-none">{additionalControls}</div>
         </div>
         
-        <div className="flex-1 flex min-w-0 items-center bg-transparent">
+        {/* INPUT CORE */}
+        <div className="flex-1 flex min-w-0 items-center bg-transparent relative group">
           {activePresetName && (
-            <div className="flex-none pl-3 md:pl-4 py-1">
-              <div className={`px-2.5 py-1.5 bg-brandBlue dark:bg-black text-white dark:text-brandYellow border-brandBlue/50 dark:border-brandYellow/50 text-[8px] md:text-[9px] font-black uppercase italic tracking-widest rounded-sm border flex items-center gap-1.5 whitespace-nowrap transition-all duration-500`}>
-                <div className={`w-1.5 h-1.5 bg-white dark:bg-brandYellow rounded-full ${isProcessing ? 'animate-ping' : ''}`} />
-                <span className="opacity-70">DNA:</span> {activePresetName}
+            <div className="absolute left-4 -top-3 md:top-auto md:relative md:left-0 md:pl-6 z-10">
+              <div className="px-3 py-1.5 bg-brandRed dark:bg-brandYellow text-white dark:text-black text-[9px] font-black uppercase italic tracking-widest rounded-sm border border-white/20 shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
+                <div className={`w-1.5 h-1.5 rounded-full ${isProcessing ? 'bg-white dark:bg-brandRed animate-ping' : 'bg-brandYellow dark:bg-brandRed'}`} />
+                DNA_{activePresetName.replace(/\s/g, '_')}
               </div>
             </div>
           )}
 
-          <div className="flex-1 flex min-w-0 relative h-full">
+          <div className="flex-1 flex min-w-0 h-full relative">
             {children || (
               <input
                 ref={inputRef}
                 type="text"
                 value={prompt || ''}
-                onChange={e => setPrompt && setPrompt(e.target.value)}
-                onKeyDown={handleKeyPress}
+                onChange={e => setPrompt?.(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleExecute()}
                 placeholder={placeholder}
                 disabled={isProcessing}
-                className={`w-full px-3 py-3 md:px-5 md:py-4 bg-transparent text-brandCharcoal dark:text-brandYellow font-mono text-xs md:text-sm focus:outline-none placeholder-brandCharcoalMuted/40 dark:placeholder-white/30 min-w-0 caret-brandRed dark:caret-brandYellow`}
+                className="w-full px-6 py-5 bg-transparent text-white dark:text-brandYellow font-mono text-sm md:text-base focus:outline-none placeholder-white/50 dark:placeholder-brandYellow/30 min-w-0 caret-brandYellow dark:caret-brandYellow"
               />
             )}
-            
-            {refineButton && <div className="flex items-center px-1 md:px-2">{refineButton}</div>}
           </div>
+          
+          {refineButton && <div className="flex items-center pr-4">{refineButton}</div>}
         </div>
 
+        {/* EXECUTION UNIT */}
         <button
-          type="button"
           onClick={handleExecute}
           disabled={isProcessing || isThrottled}
-          className={`flex-none px-6 py-3 md:px-10 md:py-4 font-black uppercase text-[10px] md:text-[11px] italic tracking-[0.15em] md:tracking-[0.25em] transition-all flex items-center justify-center gap-2 border-l border-brandCharcoal/10 dark:border-brandYellow/20
+          className={`flex-none px-8 md:px-16 py-5 font-black uppercase text-xs md:text-sm italic tracking-[0.3em] transition-all flex items-center justify-center gap-3 border-l-2 border-white/20 dark:border-brandYellow btn-tactile relative overflow-hidden
             ${(isProcessing || isThrottled)
-              ? 'bg-black text-brandYellow cursor-wait' 
-              : 'bg-brandBlue dark:bg-brandYellow text-white dark:text-black hover:brightness-110 active:translate-x-0.5 active:translate-y-0.5'
+              ? 'bg-black text-brandYellow cursor-wait shadow-inner' 
+              : 'bg-brandYellow dark:bg-brandYellow text-brandBlue dark:text-black hover:brightness-110 shadow-md dark:shadow-neon-yellow'
             }
           `}
         >
+          {/* Animated Glint */}
+          {!isProcessing && !isThrottled && (
+             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12 translate-x-[-200%] animate-[shimmer_3s_infinite]" />
+          )}
+
           {isProcessing ? (
             <>
-              <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              <span>LOCKED</span>
+              <div className="w-4 h-4 border-3 border-current border-t-transparent rounded-full animate-spin" />
+              <span>SYNTHESIZING</span>
             </>
           ) : (
-            <span>{isThrottled ? 'COOLDOWN' : 'EXECUTE'}</span>
+            <span className="relative z-10">{isThrottled ? 'STABILIZING' : 'EXECUTE'}</span>
           )}
         </button>
       </div>
       
-      <div className="max-w-screen-2xl mx-auto mt-1.5 flex justify-between items-center px-1 opacity-50">
-        <div className="flex items-center gap-4">
+      {/* HUD TELEMETRY */}
+      <div className="max-w-screen-2xl mx-auto mt-3 flex justify-between items-center px-2 opacity-80">
+        <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
-            <div className={`w-1 h-1 rounded-full ${isProcessing ? 'bg-brandYellow animate-pulse' : 'bg-brandYellow'}`} />
-            <span className="text-[7px] font-black text-brandCharcoalMuted dark:text-white/40 uppercase tracking-widest">
-              LATTICE_SYNC_OK
+            <div className={`w-2 h-2 rounded-full ${isProcessing ? 'bg-brandRed animate-ping' : 'bg-brandYellow dark:bg-brandYellow animate-pulse dark:shadow-neon-yellow'}`} />
+            <span className="text-[8px] font-black text-white dark:text-brandYellow dark:text-neon-yellow uppercase tracking-[0.2em]">
+              {isProcessing ? 'Buffer_Devour_In_Progress' : 'Neural_Lattice_Idle'}
             </span>
           </div>
+          <div className="hidden sm:flex items-center gap-1">
+             {[1,2,3,4,5].map(i => (
+               <div key={i} className={`w-1 h-3 rounded-full ${isProcessing ? 'bg-brandRed animate-bounce' : 'bg-white/20 dark:bg-brandYellow/20'}`} style={{ animationDelay: `${i*100}ms` }} />
+             ))}
+          </div>
         </div>
-        <span className={`text-[6px] font-mono text-brandRed dark:text-brandYellow font-black tracking-widest`}>{latticeId}</span>
+        <span className="text-[8px] font-mono text-white dark:text-brandYellow font-black tracking-widest bg-white/10 dark:bg-white/5 px-3 py-1 rounded-full border border-white/20 dark:border-brandYellow/20 dark:shadow-neon-red-soft">
+          {latticeId}
+        </span>
       </div>
     </div>
   );

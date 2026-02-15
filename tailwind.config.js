@@ -1,3 +1,4 @@
+
 // tailwind.config.js
 module.exports = {
   darkMode: 'class', // Enable dark mode based on 'class'
@@ -19,7 +20,10 @@ module.exports = {
         flagYellow: '#FFCC00',
         flagWhite: '#FFFFFF'
       },
-      fontFamily: { sans: ['Inter', 'sans-serif'] },
+      fontFamily: { 
+        sans: ['Inter', 'sans-serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", 'monospace'],
+      },
       spacing: {
         '8px': '8px',
         '16px': '16px',
@@ -66,5 +70,8 @@ module.exports = {
         'spin-reverse-slow': 'spin-reverse-slow 1.5s linear infinite'
       }
     }
-  }
+  },
+  plugins: [
+    require('tailwindcss-animate')
+  ],
 };

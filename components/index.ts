@@ -1,39 +1,38 @@
 
-
 /**
- * HYPERXGEN_COMPONENT_BARREL v7.1
+ * HYPERXGEN_COMPONENT_BARREL v7.2
  * Unified entry point for all architectural UI modules.
  */
 
-// Core Panels (Main Synthesis Modules)
-export { VectorPanel } from './VectorPanel.tsx';
-export { TypographyPanel } from './TypographyPanel.tsx';
-export { MonogramPanel } from './MonogramPanel.tsx';
+// Core Panels
+export { VectorPanel }         from './VectorPanel.tsx';
+export { TypographyPanel }     from './TypographyPanel.tsx';
+export { MonogramPanel }       from './MonogramPanel.tsx';
 export { StyleExtractorPanel } from './StyleExtractorPanel.tsx';
-export { ImageFilterPanel } from './ImageFilterPanel.tsx';
-export { EmblemForgePanel } from './EmblemForgePanel.tsx';
-export { SettingsPanel } from './SettingsPanel.tsx';
+export { ImageFilterPanel }    from './ImageFilterPanel.tsx';
+export { EmblemForgePanel }    from './EmblemForgePanel.tsx';
+// AnalyzerPanel removed
+export { SettingsPanel }       from './SettingsPanel.tsx';
 
-// Screen-Level Components
-export { BootScreen } from './BootScreen.tsx';
-export { StartScreen } from './StartScreen.tsx';
+// Screen-Level
+export { BootScreen }   from './BootScreen.tsx';
+export { StartScreen }  from './StartScreen.tsx';
 
-// Global UI Layout & Controls
-export { PanelHeader } from './PanelHeader.tsx';
+// Global UI
+export { PanelHeader }    from './PanelHeader.tsx';
 export { AppControlsBar } from './AppControlsBar.tsx';
-export { LogViewer } from './LogViewer.tsx';
-export { LoadingSpinner } from './Loading.tsx';
+export { LogViewer }      from './LogViewer.tsx';
 
-// Shared UI Elements
-export { CanvasStage } from './CanvasStage.tsx';
-export { GenerationBar } from './GenerationBar.tsx';
-export { PresetCard } from './PresetCard.tsx';
-export { PresetCarousel } from './PresetCarousel.tsx';
+// Shared UI
+export { CanvasStage }      from './CanvasStage.tsx';
+export { GenerationBar }    from './GenerationBar.tsx';
+export { PresetCard }       from './PresetCard.tsx';
+export { PresetCarousel }   from './PresetCarousel.tsx';
 export { ThemeToggle, CanvasFloatingControls } from './PanelShared.tsx';
 
-// Layout & HUD Utilities
+// Layout & HUD
 export { SidebarHeader, PanelLayout, PageLayout } from './Layouts.tsx';
-export { DevourerHUD, ReconHUD, FilterHUD } from './HUD.tsx';
+export { DevourerHUD, ReconHUD, FilterHUD }       from './HUD.tsx';
 
-// Vectors & Icons
+// Icons
 export * from './Icons.tsx';

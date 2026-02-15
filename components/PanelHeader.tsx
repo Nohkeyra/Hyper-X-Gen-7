@@ -1,8 +1,8 @@
 
-
 import React, { memo } from 'react';
 import { ThemeToggle } from './PanelShared';
-import { SettingsIcon } from './Icons';
+import { SettingsIcon, MalaysiaSymbolIcon } from './Icons';
+import { ImageEngine } from '../types';
 
 interface PanelHeaderProps {
   title?: string;
@@ -12,6 +12,7 @@ interface PanelHeaderProps {
   onToggleLogViewer?: () => void; 
   onToggleSettings?: () => void;
   latticeStatus?: 'IDLE' | 'SYNCED' | 'DRIFT' | 'LOCKED';
+  activeEngine?: ImageEngine;
 }
 
 export const PanelHeader: React.FC<PanelHeaderProps> = memo(({ 
@@ -21,66 +22,117 @@ export const PanelHeader: React.FC<PanelHeaderProps> = memo(({
   onToggleTheme,
   onToggleLogViewer,
   onToggleSettings,
-  latticeStatus = 'IDLE'
+  latticeStatus = 'IDLE',
+  activeEngine = 'gemini' // Default to Gemini if undefined
 }) => {
+  const isFlux = activeEngine === 'hf';
+
   return (
-    <header className={`fixed top-0 left-0 right-0 h-[var(--header-h)] ${isDarkMode ? 'bg-brandDeep' : 'bg-brandBlue'} flex z-[100] border-b border-white/5 shadow-2xl backdrop-blur-xl bg-opacity-95 transition-all duration-300 panel-header-with-glow select-none`}>
-      <div className="w-full max-w-[1400px] mx-auto flex flex-row items-center justify-between h-full px-4 md:px-6">
-        <div className="flex items-center gap-3 md:gap-6 min-w-0">
-          <button onClick={onBack} className="flex items-center gap-2 md:gap-3 cursor-pointer group shrink-0 active:scale-95 transition-transform duration-150">
-            <div className="relative w-3 h-3 md:w-4 md:h-4">
-               <div className={`absolute inset-0 ${isDarkMode ? 'bg-brandRed' : 'bg-brandYellow'} rounded-full animate-ping opacity-30`}></div>
-               <div className={`relative w-3 h-3 md:w-4 md:h-4 ${isDarkMode ? 'bg-brandRed' : 'bg-brandYellow'} rounded-full shadow-[0_0_12px_rgba(255,204,0,1)] flex items-center justify-center`}>
-                 <div className={`w-0.5 h-0.5 md:w-1 md:h-1 ${isDarkMode ? 'bg-white' : 'bg-brandBlue'} rounded-full`}></div>
-               </div>
+    <header className={`fixed top-0 left-0 right-0 h-[var(--header-h)] z-[100] flex backdrop-blur-2xl transition-all duration-500 panel-header-with-glow select-none
+      ${isDarkMode 
+        ? 'bg-black/80 border-b border-brandBlue/30 shadow-[0_4px_30px_-5px_rgba(0,50,160,0.6)]' 
+        : 'bg-brandYellow/95 border-b border-brandRed/20 shadow-2xl'}
+    `}>
+      <div className="w-full max-w-screen-2xl mx-auto flex flex-row items-center justify-between h-full px-4 md:px-8">
+        
+        {/* LOGO AREA */}
+        <div className="flex items-center gap-4 min-w-0">
+          <button 
+            onClick={onBack} 
+            className="group flex items-center gap-4 cursor-pointer btn-tactile"
+          >
+            {/* Malaysia Flag Icon (Canton Blue Background + Yellow Crescent & Star) */}
+            <div className={`relative w-8 h-8 md:w-10 md:h-10 bg-brandBlue rounded-full flex items-center justify-center shadow-lg border-2 transition-all overflow-hidden shrink-0 group-hover:border-brandYellow
+              ${isDarkMode ? 'border-brandYellow/20 shadow-[0_0_15px_rgba(0,50,160,0.5)]' : 'border-white/10'}
+            `}>
+               <MalaysiaSymbolIcon className="w-5 h-5 md:w-6 md:h-6 text-brandYellow" />
             </div>
+
             <div className="flex flex-col items-start leading-none min-w-0">
-              <div className="font-black text-xs md:text-sm tracking-[0.15em] md:tracking-[0.25em] text-white uppercase italic group-hover:text-brandYellow dark:group-hover:text-brandRed transition-colors duration-300 truncate">
+              <div className={`font-black text-sm md:text-lg tracking-tighter uppercase italic transition-all duration-300 truncate ${isDarkMode ? 'text-white group-hover:text-brandRed text-glow-blue' : 'text-brandBlue group-hover:text-brandRed'}`}>
                 {title}
               </div>
-              <span className={`text-[6px] md:text-[7px] font-black ${isDarkMode ? 'text-brandRed' : 'text-brandYellow'} tracking-[0.1em] opacity-80 uppercase mt-0.5 hidden xs:block`}>OMEGA_CORE_ACTIVE</span>
+              <div className="flex items-center gap-2 mt-1">
+                <span className={`text-[7px] font-black ${isDarkMode ? 'text-brandRed' : 'text-brandRed'} tracking-[0.2em] uppercase`}>Lattice_Core_v7.6</span>
+                <div className={`h-px w-4 ${isDarkMode ? 'bg-white/20' : 'bg-brandBlue/20'}`} />
+                <span className={`text-[7px] font-black uppercase ${isDarkMode ? 'text-white/40' : 'text-brandBlue/40'}`}>Safe_State</span>
+              </div>
             </div>
           </button>
         </div>
 
+        {/* STATUS & CONTROLS */}
         <div className="flex items-center gap-2 md:gap-6 shrink-0">
-          {/* Lattice Bridge Status */}
-          <div className="flex items-center gap-3 px-4 border-x border-white/10 h-8 bg-brandCharcoal/20 dark:bg-white/10 rounded-sm">
+          
+          {/* ENGINE TELEMETRY (NEW) */}
+          <div className={`hidden sm:flex items-center gap-3 px-4 py-1.5 rounded-sm border transition-all duration-500
+             ${isFlux 
+                ? 'bg-emerald-900/20 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.2)]' 
+                : (isDarkMode ? 'bg-brandBlue/10 border-brandBlue/30' : 'bg-white/30 border-brandBlue/10')
+             }
+          `}>
              <div className="flex flex-col items-end leading-none">
-                <span className="text-[6px] font-black text-white/30 uppercase tracking-widest">Lattice_Bridge</span>
-                <span className={`text-[8px] font-black uppercase italic ${latticeStatus === 'SYNCED' ? 'text-brandYellow dark:text-brandRed' : 'text-white/40'}`}>
-                  {latticeStatus}
+                <span className={`text-[6px] font-black uppercase tracking-widest opacity-60 ${isFlux ? 'text-emerald-400' : (isDarkMode ? 'text-brandBlue' : 'text-brandBlue')}`}>
+                   Synthesis_Engine
+                </span>
+                <span className={`text-[9px] font-black uppercase italic tracking-wider ${isFlux ? 'text-emerald-400 drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]' : (isDarkMode ? 'text-white' : 'text-brandCharcoal')}`}>
+                   {isFlux ? 'FLUX_OMEGA' : 'GEMINI_PRO'}
                 </span>
              </div>
-             <div className={`w-1.5 h-1.5 rounded-full ${latticeStatus === 'SYNCED' ? 'bg-brandYellow animate-pulse' : 'bg-white/10'}`} />
+             <div className="relative w-2 h-2">
+                <div className={`absolute inset-0 rounded-full animate-ping ${isFlux ? 'bg-emerald-500' : 'bg-brandBlue'}`} />
+                <div className={`absolute inset-0 rounded-full ${isFlux ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-brandBlue'}`} />
+             </div>
           </div>
 
-          <div className="flex gap-1 md:gap-2 items-center">
+          {/* LATTICE TELEMETRY (Desktop Only) */}
+          <div className={`hidden md:flex items-center gap-4 px-6 py-2 rounded-sm border transition-colors ${isDarkMode ? 'bg-black/40 border-brandBlue/20 shadow-[0_0_10px_rgba(0,50,160,0.2)]' : 'bg-white/40 border-brandRed/10'}`}>
+             <div className="flex flex-col items-end leading-none">
+                <span className={`text-[7px] font-black uppercase tracking-widest ${isDarkMode ? 'text-brandBlue' : 'text-brandBlue/40'}`}>Bridging_State</span>
+                <span className={`text-[10px] font-black uppercase italic ${latticeStatus === 'SYNCED' ? 'text-brandYellow dark:text-brandRed animate-pulse' : (isDarkMode ? 'text-white/40' : 'text-brandRed/60')}`}>
+                  {latticeStatus === 'SYNCED' ? 'LINK_ACTIVE' : 'READY_STANDBY'}
+                </span>
+             </div>
+             <div className="flex flex-col gap-0.5">
+                {[1,2,3].map(i => (
+                  <div key={i} className={`w-3 h-0.5 rounded-full ${latticeStatus === 'SYNCED' ? 'bg-brandYellow' : (isDarkMode ? 'bg-brandBlue/40' : 'bg-brandRed/20')} transition-colors duration-500`} />
+                ))}
+             </div>
+          </div>
+
+          {/* ACTION CLUSTER */}
+          <div className="flex gap-2 items-center">
              {onToggleLogViewer && (
                 <button 
                   onClick={onToggleLogViewer} 
-                  className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center border border-white/10 bg-white/5 text-white hover:border-brandRed hover:text-brandRed transition-all rounded-sm group shadow-sm hover:shadow-lg" 
-                  title="View System Logs"
+                  className={`w-10 h-10 flex items-center justify-center border transition-all rounded-sm group btn-tactile
+                    ${isDarkMode 
+                      ? 'border-brandBlue/20 bg-black/40 text-brandBlue hover:bg-brandRed hover:border-brandRed hover:text-white shadow-[0_0_10px_rgba(0,50,160,0.1)]' 
+                      : 'border-brandRed/10 bg-white/20 text-brandBlue hover:bg-brandRed hover:text-white hover:border-brandRed'}
+                  `}
+                  title="System Trace"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="group-hover:translate-y-px transition-transform md:w-[18px] md:h-[18px]"><path d="M12 20h9M12 4h9M4 12h17M4 12l-3-3m3 3l-3 3"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="group-hover:translate-x-1 transition-transform"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg>
                 </button>
              )}
             
              {onToggleSettings && (
                 <button
                   onClick={onToggleSettings}
-                  className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center border border-white/10 bg-white/5 text-white hover:border-brandYellow hover:text-brandYellow transition-all rounded-sm group shadow-sm hover:shadow-lg"
-                  title="System Configuration"
+                  className={`w-10 h-10 flex items-center justify-center border transition-all rounded-sm group btn-tactile
+                    ${isDarkMode
+                      ? 'border-brandBlue/20 bg-black/40 text-brandBlue hover:bg-brandYellow hover:text-brandBlue hover:shadow-neon-yellow'
+                      : 'border-brandRed/10 bg-white/20 text-brandBlue hover:bg-brandBlue hover:text-brandYellow'}
+                  `}
+                  title="Engine Tuning"
                 >
-                  <SettingsIcon className="group-hover:rotate-45 transition-transform duration-300 w-4 h-4 md:w-5 md:h-5" />
+                  <SettingsIcon className="group-hover:rotate-90 transition-transform duration-500 w-5 h-5" />
                 </button>
               )}
 
-             {onToggleTheme && (
-                <div className="ml-1 md:ml-2 border-l border-white/10 pl-2 md:pl-4">
-                  <ThemeToggle isDarkMode={isDarkMode} onToggle={onToggleTheme} />
-                </div>
-             )}
+             <div className={`ml-2 pl-4 border-l ${isDarkMode ? 'border-white/10' : 'border-brandBlue/10'}`}>
+               <ThemeToggle isDarkMode={isDarkMode} onToggle={onToggleTheme || (() => {})} />
+             </div>
           </div>
         </div>
       </div>

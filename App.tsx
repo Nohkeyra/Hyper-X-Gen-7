@@ -1,331 +1,320 @@
 
-
-import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
-import { 
-  PanelMode, 
-  KernelConfig, 
-  LogEntry, 
-  ExtractionResult, 
-  LogType,
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  PanelMode,
   Preset,
+  LogEntry,
+  LogType,
+  KernelConfig,
+  ImageEngine,
+  ExtractionResult,
   LatticeBuffer,
-  PanelState,
-  VectorPreset,
-  TypographyPreset,
-  MonogramPreset,
-  FilterPreset,
-  EmblemPreset,
-  BasePreset,
-  LatticeStatus,
-  ImageEngine
 } from './types.ts';
-import { BootScreen } from './components/BootScreen.tsx';
-import { StartScreen } from './components/StartScreen.tsx';
-import { PanelHeader } from './components/PanelHeader.tsx';
-import { AppControlsBar } from './components/AppControlsBar.tsx';
-import { LogViewer } from './components/LogViewer.tsx';
-import { LoadingSpinner } from './components/Loading.tsx';
-import { DeviceBadge } from './components/DeviceDetector.tsx';
-import { SettingsPanel } from './components/SettingsPanel.tsx';
-import { LS_KEYS, SUCCESS_MESSAGES } from './constants.ts';
+import {
+  VectorPanel,
+  TypographyPanel,
+  MonogramPanel,
+  StyleExtractorPanel,
+  ImageFilterPanel,
+  EmblemForgePanel,
+  SettingsPanel,
+  LogViewer,
+  PanelHeader,
+  AppControlsBar,
+  BootScreen,
+  StartScreen,
+} from './components/index.ts';
 import { vaultDb } from './services/dbService.ts';
+import { LS_KEYS, APP_CONSTANTS } from './constants.ts';
 
-// Lazy-load panel components
-const VectorPanel = lazy(() => import('./components/VectorPanel.tsx').then(m => ({ default: m.VectorPanel })));
-const TypographyPanel = lazy(() => import('./components/TypographyPanel.tsx').then(m => ({ default: m.TypographyPanel })));
-const MonogramPanel = lazy(() => import('./components/MonogramPanel.tsx').then(m => ({ default: m.MonogramPanel })));
-const StyleExtractorPanel = lazy(() => import('./components/StyleExtractorPanel.tsx').then(m => ({ default: m.StyleExtractorPanel })));
-const ImageFilterPanel = lazy(() => import('./components/ImageFilterPanel.tsx').then(m => ({ default: m.ImageFilterPanel })));
-const EmblemForgePanel = lazy(() => import('./components/EmblemForgePanel.tsx').then(m => ({ default: m.EmblemForgePanel })));
+// ─── System Alert Overlay ────────────────────────────────────────────────────
+interface SystemAlert { title: string; message: string; type: 'warning' | 'error' | 'info'; }
 
+const SystemAlertOverlay: React.FC<{ alert: SystemAlert | null; onClose: () => void }> = ({ alert, onClose }) => {
+  if (!alert) return null;
+  const border = alert.type === 'warning' ? 'border-brandYellow' : alert.type === 'error' ? 'border-brandRed' : 'border-brandBlue';
+  const text   = alert.type === 'warning' ? 'text-brandYellow'  : alert.type === 'error' ? 'text-brandRed'  : 'text-brandBlue';
+  const bg     = alert.type === 'warning' ? 'bg-brandYellow/10' : alert.type === 'error' ? 'bg-brandRed/10' : 'bg-brandBlue/10';
+  return (
+    <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[2000] w-full max-w-md px-4 animate-in slide-in-from-top-4 duration-500">
+      <div className={`relative p-4 md:p-6 bg-brandCharcoal/95 dark:bg-black/95 backdrop-blur-xl border-l-4 ${border} ${bg} rounded-r-sm shadow-2xl flex items-start gap-4`}>
+        <div className={`mt-1 p-2 rounded-full border ${border} ${text}`}>
+          {alert.type === 'warning'
+            ? <svg className="w-4 h-4 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            : <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          }
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${text}`}>{alert.title}</h4>
+          <p className="text-[10px] font-mono text-white/80 leading-relaxed">{alert.message}</p>
+        </div>
+        <button onClick={onClose} className="p-1 hover:bg-white/10 rounded transition-colors">
+          <svg className="w-4 h-4 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+        <div className="absolute bottom-0 left-0 h-0.5 bg-current opacity-30 animate-[shimmer_5s_linear_forwards] w-full" />
+      </div>
+    </div>
+  );
+};
+
+// ─── App ─────────────────────────────────────────────────────────────────────
 export const App: React.FC = () => {
-  const [isBooting, setIsBooting] = useState(true);
-  const [currentPanel, setCurrentPanel] = useState<PanelMode>(PanelMode.START);
-  const [transferData, setTransferData] = useState<Preset | null>(null);
-  const [hasInitialized, setHasInitialized] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [enabledModes, setEnabledModes] = useState<PanelMode[]>([]);
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [showLogViewer, setShowLogViewer] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [currentPanelState, setCurrentPanelState] = useState<PanelState | null>(null);
+  const [booting,      setBooting]      = useState(true);
+  const [activeMode,   setActiveMode]   = useState<PanelMode>(PanelMode.START);
+  const [isDarkMode,   setIsDarkMode]   = useState(() => {
+    const saved = localStorage.getItem(LS_KEYS.THEME);
+    return saved ? saved === 'dark' : true;
+  });
 
-  // LATTICE_LINK
-  const [latticeBuffer, setLatticeBuffer] = useState<LatticeBuffer | null>(null);
-  const [latticeStatus, setLatticeStatus] = useState<LatticeStatus>(LatticeStatus.IDLE);
+  const [recentWorks,  setRecentWorks]  = useState<Preset[]>([]);
+  const [savedPresets, setSavedPresets] = useState<Preset[]>([]);
+  const [logs,         setLogs]         = useState<LogEntry[]>([]);
+  const [globalDna,    setGlobalDna]    = useState<ExtractionResult | null>(null);
+  const [latticeBuffer,setLatticeBuffer]= useState<LatticeBuffer | null>(null);
+
+  const [showLogs,     setShowLogs]     = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [isSaving,     setIsSaving]     = useState(false);
+  const [systemAlert,  setSystemAlert]  = useState<SystemAlert | null>(null);
 
   const [kernelConfig, setKernelConfig] = useState<KernelConfig>({
     thinkingBudget: 0,
-    temperature: 0.1,
-    model: 'gemini-3-flash-preview',
-    deviceContext: 'MAXIMUM_ARCHITECTURE_OMEGA_V5',
-    imageEngine: ImageEngine.GEMINI
+    temperature:    0.2,
+    model:          'gemini-3-pro-preview',
+    deviceContext:  'desktop',
+    imageEngine:    ImageEngine.GEMINI,
   });
 
-  const [recentWorks, setRecentWorks] = useState<Preset[]>([]);
-  const [savedPresets, setSavedPresets] = useState<Preset[]>([]);
-  const [globalDna, setGlobalDna] = useState<ExtractionResult | null>(null);
+  // ── Init ──────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const initApp = async () => {
+      await vaultDb.init();
+      const [presets, recent, dbLogs, dna, savedConfig] = await Promise.all([
+        vaultDb.getAll<Preset>('presets'),
+        vaultDb.getAll<Preset>('recent'),
+        vaultDb.getAll<LogEntry>('logs'),
+        vaultDb.getItem<ExtractionResult>('global_dna', 'current'),
+        // Restore persisted kernelConfig (engine selection survives refresh)
+        vaultDb.getItem<KernelConfig>('config', 'kernel'),
+      ]);
+      setSavedPresets(presets || []);
+      setRecentWorks(recent  || []);
+      setLogs(dbLogs         || []);
+      setGlobalDna(dna       || null);
+      if (savedConfig) setKernelConfig(prev => ({ ...prev, ...savedConfig }));
 
-  const addLog = useCallback((message: string, type: 'info' | 'error' | 'success' | 'warning' = 'info') => {
-    setLogs(prev => {
-      const newLogEntry: LogEntry = {
-        id: Date.now().toString(),
-        timestamp: new Date().toLocaleTimeString(),
-        message,
-        type: type as LogType,
-      };
-      return [newLogEntry, ...prev].slice(0, 50);
+      // Sync theme class on boot
+      if (isDarkMode) document.documentElement.classList.add('dark');
+      else            document.documentElement.classList.remove('dark');
+    };
+    initApp();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps — intentionally run once
+
+  // ── Persist kernelConfig whenever it changes ──────────────────────────────
+  useEffect(() => {
+    vaultDb.saveItem('config', 'kernel', kernelConfig);
+  }, [kernelConfig]);
+
+  // ── Logging ───────────────────────────────────────────────────────────────
+  const addLog = useCallback((message: string, type: LogType = LogType.INFO) => {
+    const newLog: LogEntry = {
+      id:        `log-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      timestamp: new Date().toLocaleTimeString(),
+      message,
+      type,
+    };
+    setLogs(prev => [...prev, newLog].slice(-APP_CONSTANTS.MAX_LOG_ENTRIES));
+
+    if (type === LogType.ERROR) {
+      const u = message.toUpperCase();
+      if (u.includes('QUOTA') || u.includes('LIMIT') || u.includes('OVERLOAD') || u.includes('429') || u.includes('RESOURCE_EXHAUSTED')) {
+        setSystemAlert({ title: 'SYSTEM COOLDOWN ACTIVE', message: 'Neural engines at max capacity. Please wait 60 seconds.', type: 'warning' });
+        setTimeout(() => setSystemAlert(null), 8000);
+        return;
+      }
+      if (u.includes('KEY') || u.includes('AUTH') || u.includes('CREDENTIAL')) {
+        setSystemAlert({ title: 'SECURITY PROTOCOL FAILURE', message: 'API authentication failed. Verify your API keys in .env.local or Settings.', type: 'error' });
+        setTimeout(() => setSystemAlert(null), 8000);
+        return;
+      }
+      if (u.includes('FAIL') || u.includes('ERROR')) {
+        setSystemAlert({ title: 'SYNTHESIS INTERRUPTED', message: message.replace(/^(VECTORIZATION_|TYPO_|MONO_|EMBLEM_)?ERROR: /, ''), type: 'error' });
+        setTimeout(() => setSystemAlert(null), 5000);
+      }
+    }
+  }, []);
+
+  // ── Persistence helpers ───────────────────────────────────────────────────
+  const saveToHistory = useCallback((work: Preset) => {
+    setRecentWorks(prev => {
+      const updated = [work, ...prev].slice(0, APP_CONSTANTS.MAX_RECENT_ITEMS);
+      vaultDb.saveAll('recent', updated);
+      return updated;
     });
   }, []);
 
-  const handleClearLattice = useCallback(() => {
-    setLatticeBuffer(null);
-    setLatticeStatus(LatticeStatus.IDLE);
-    setTransferData(prev => prev?.category === 'LATTICE_BRIDGE' ? null : prev);
-    addLog("LATTICE_DECOUPLED: Bridge connection terminated", "warning");
+  const saveToVault = useCallback((preset: Preset) => {
+    setSavedPresets(prev => {
+      const updated = [preset, ...prev];
+      vaultDb.saveAll('presets', updated);
+      return updated;
+    });
+    addLog(`ARTIFACT_COMMITTED: ${preset.name}`, LogType.SUCCESS);
   }, [addLog]);
 
-  useEffect(() => {
-    const storedTheme = localStorage.getItem(LS_KEYS.THEME);
-    if (storedTheme) setIsDarkMode(storedTheme === 'dark');
-    else if (window.matchMedia('(prefers-color-scheme: dark)').matches) setIsDarkMode(true);
-  }, []);
+  const deletePreset = useCallback((id: string) => {
+    setSavedPresets(prev => {
+      const updated = prev.filter(p => p.id !== id);
+      vaultDb.saveAll('presets', updated);
+      return updated;
+    });
+    addLog(`ARTIFACT_PURGED: ${id}`, LogType.WARNING);
+  }, [addLog]);
 
-  useEffect(() => {
-    if (isDarkMode) document.documentElement.classList.add('dark');
-    else document.documentElement.classList.remove('dark');
-    localStorage.setItem(LS_KEYS.THEME, isDarkMode ? 'dark' : 'light');
-  }, [isDarkMode]);
+  // ── Theme ─────────────────────────────────────────────────────────────────
+  const toggleTheme = useCallback(() => {
+    setIsDarkMode(prev => {
+      const next = !prev;
+      localStorage.setItem(LS_KEYS.THEME, next ? 'dark' : 'light');
+      if (next) document.documentElement.classList.add('dark');
+      else      document.documentElement.classList.remove('dark');
+      addLog(`THEME_SHIFT: ${next ? 'DARK' : 'LIGHT'}`, LogType.INFO);
+      return next;
+    });
+  }, [addLog]);
 
-  const toggleTheme = useCallback(() => setIsDarkMode(prev => !prev), []);
-
-  useEffect(() => {
-    if (!isBooting && !hasInitialized) {
-      const boot = async () => {
-        try {
-          addLog("INITIATING: OMEGA_KERNEL_BOOT", 'info');
-          await vaultDb.init();
-          
-          // SPEED OPTIMIZATION: Fire all data retrieval requests in parallel
-          const [appConfigRes, dbPresets, dbRecent, dbConfig, dbLogs, dbDna] = await Promise.all([
-            fetch('/config.json'),
-            vaultDb.getAll<Preset>('presets'),
-            vaultDb.getAll<Preset>('recent'),
-            vaultDb.getItem<KernelConfig>('config', 'kernel'),
-            vaultDb.getItem<LogEntry[]>('logs', 'entries'),
-            vaultDb.getItem<ExtractionResult | null>('global_dna', 'dna')
-          ]);
-
-          const appConfig = await appConfigRes.json();
-          
-          const configuredModes: PanelMode[] = appConfig.panels.enabled.map(panelName => {
-            switch (panelName) {
-              case 'VectorPanel': return PanelMode.VECTOR;
-              case 'TypographyPanel': return PanelMode.TYPOGRAPHY;
-              case 'MonogramPanel': return PanelMode.MONOGRAM;
-              case 'EmblemForgePanel': return PanelMode.EMBLEM_FORGE;
-              case 'StyleExtractorPanel': return PanelMode.EXTRACTOR;
-              case 'ImageFilterPanel': return PanelMode.FILTERS;
-              default: return PanelMode.START;
-            }
-          }).filter(mode => (mode as PanelMode) !== PanelMode.START);
-          
-          setEnabledModes(configuredModes);
-          setSavedPresets(dbPresets);
-          setRecentWorks(dbRecent);
-          
-          if (dbConfig) setKernelConfig(prev => ({...prev, ...dbConfig, thinkingBudget: 0}));
-          if (dbLogs) setLogs(dbLogs);
-          if (typeof dbDna !== 'undefined') setGlobalDna(dbDna);
-          
-          setHasInitialized(true);
-          addLog("ARCHITECTURE: MASTER_PROTOCOL_ACTIVE", 'success');
-        } catch (e) {
-          setHasInitialized(true);
-          addLog(`CRITICAL_KERNEL_PANIC: ${e instanceof Error ? e.message : String(e)}`, 'error');
-        }
-      };
-      boot();
-    }
-  }, [addLog, isBooting, hasInitialized]);
-
-  useEffect(() => {
-    if (hasInitialized) {
-      // Lazy save using debouncing if this grows, but for now standard persistence
-      vaultDb.saveAll('presets', savedPresets);
-      vaultDb.saveAll('recent', recentWorks.slice(0, 15));
-      vaultDb.saveItem('config', 'kernel', kernelConfig);
-      vaultDb.saveItem('logs', 'entries', logs);
-      vaultDb.saveItem('global_dna', 'dna', globalDna);
-    }
-  }, [savedPresets, recentWorks, kernelConfig, logs, globalDna, hasInitialized]);
-
-  const handleCommitToVault = useCallback(() => {
-    if (!currentPanelState || (!currentPanelState.generatedOutput && !currentPanelState.dna)) {
-      addLog("COMMIT_FAIL: NO_ENTITY_DETECTED", 'error');
-      return;
-    }
-
-    const { type, prompt, dna, uploadedImage, generatedOutput, settings } = currentPanelState;
-    const name = currentPanelState.name || (prompt ? `Commit: ${prompt.substring(0, 20)}` : `Commit: ${type}_SYNTH`);
-
-    const basePreset: BasePreset = {
-      id: `preset-${Date.now()}`,
-      name,
-      category: 'USER_COMMIT',
-      description: `Synthesized on ${new Date().toLocaleDateString()}`,
-      prompt: prompt || '',
-      dna: dna || undefined,
-      imageUrl: generatedOutput || uploadedImage || undefined,
-      timestamp: new Date().toISOString(),
-      type: type,
-    };
-
-    let newPreset: Preset;
-
-    switch (type) {
-      case PanelMode.VECTOR:
-        newPreset = { ...basePreset, type: PanelMode.VECTOR, parameters: settings as VectorPreset['parameters'] };
-        break;
-      case PanelMode.TYPOGRAPHY:
-        newPreset = { ...basePreset, type: PanelMode.TYPOGRAPHY, parameters: settings as TypographyPreset['parameters'] };
-        break;
-      case PanelMode.MONOGRAM:
-        newPreset = { ...basePreset, type: PanelMode.MONOGRAM, parameters: settings as MonogramPreset['parameters'] };
-        break;
-      case PanelMode.FILTERS:
-        newPreset = { ...basePreset, type: PanelMode.FILTERS, parameters: settings as FilterPreset['parameters'] };
-        break;
-      case PanelMode.EMBLEM_FORGE:
-        newPreset = { ...basePreset, type: PanelMode.EMBLEM_FORGE, parameters: settings as EmblemPreset['parameters'] };
-        break;
-      // Fix: Add a case for PanelMode.EXTRACTOR to handle saving presets from this panel.
-      case PanelMode.EXTRACTOR:
-        newPreset = { ...basePreset, type: PanelMode.EXTRACTOR, parameters: {} };
-        break;
-      default:
-        addLog(`COMMIT_FAIL: Unsupported panel type "${type}" for vault commit.`, 'error');
-        return;
-    }
-
-    setSavedPresets(prev => [newPreset, ...prev]);
-    addLog("COMMIT_SUCCESS: VAULT_SYNCHRONIZED", 'success');
-  }, [currentPanelState, addLog]);
-
-  useEffect(() => {
-    if (currentPanelState?.generatedOutput && currentPanel !== PanelMode.START) {
-      setLatticeBuffer({
-        imageUrl: currentPanelState.generatedOutput,
-        dna: currentPanelState.dna || undefined,
-        prompt: currentPanelState.prompt || '',
-        sourceMode: currentPanel,
-        timestamp: Date.now()
-      });
-      setLatticeStatus(LatticeStatus.SYNCED);
-    }
-  }, [currentPanelState?.generatedOutput, currentPanelState?.dna, currentPanelState?.prompt, currentPanel]);
-
-  const handleModeSwitch = useCallback((mode: PanelMode, data: Preset | null = null) => {
-    let finalData = data;
-    
-    if (!finalData && latticeBuffer && mode !== PanelMode.START && mode !== latticeBuffer.sourceMode) {
-       addLog(`LATTICE_BRIDGE: HANDSHAKE_${latticeBuffer.sourceMode}_TO_${mode}`, 'info');
-       finalData = {
-         id: `bridge-${Date.now()}`,
-         name: `Bridged: ${latticeBuffer.prompt || 'Artifact'}`,
-         type: mode,
-         category: 'LATTICE_BRIDGE',
-         description: `Bridged from ${latticeBuffer.sourceMode} module`,
-         prompt: latticeBuffer.prompt || '',
-         imageUrl: latticeBuffer.imageUrl,
-         dna: latticeBuffer.dna,
-         timestamp: new Date().toISOString()
-       } as any;
-       setLatticeStatus(LatticeStatus.LOCKED);
-    }
-
-    if (mode === PanelMode.START) {
-      setTransferData(null);
-      setLatticeStatus(LatticeStatus.IDLE);
+  // ── Navigation ────────────────────────────────────────────────────────────
+  const handleModeSwitch = useCallback((mode: PanelMode, data?: any) => {
+    setActiveMode(mode);
+    if (data) {
+      setLatticeBuffer({ imageUrl: data.imageUrl, dna: data.dna, prompt: data.prompt, timestamp: Date.now(), sourceMode: mode });
+      addLog(`LATTICE_BRIDGE_SYNC: ${mode.toUpperCase()}`, LogType.INFO);
     } else {
-      setTransferData(finalData);
+      setLatticeBuffer(null);
     }
-    
-    setCurrentPanel(mode);
-    addLog(`OMEGA_PIVOT: ${mode.toUpperCase()}_ENGAGED`, 'info');
-  }, [addLog, latticeBuffer]);
+  }, [addLog]);
 
-  const handleLoadItem = useCallback((item: Preset) => {
-    const mode = item.type;
-    if (mode && (mode as any) !== PanelMode.START) {
-      handleModeSwitch(mode, item);
-    }
-    addLog(`RECALLED: ${item.name}`, 'info');
-  }, [handleModeSwitch, addLog]);
+  const clearSession = useCallback(() => {
+    setRecentWorks([]);
+    vaultDb.clearStore('recent');
+    addLog('SESSION_BUFFER_PURGED', LogType.WARNING);
+  }, [addLog]);
 
-  const handleBootComplete = useCallback(() => { setIsBooting(false); }, []);
+  const clearVault = useCallback(() => {
+    setSavedPresets([]);
+    vaultDb.clearStore('presets');
+    addLog('VAULT_ARCHIVES_DEEP_CLEANED', LogType.WARNING);
+  }, [addLog]);
 
-  if (isBooting) return <BootScreen onBootComplete={handleBootComplete} isDarkMode={isDarkMode} />;
-
+  // ── Common panel props ────────────────────────────────────────────────────
   const commonProps = {
     kernelConfig,
     integrity: 100,
-    uiRefined: false,
-    onSaveToHistory: (work: Preset) => setRecentWorks(prev => [work, ...prev].slice(0, 15)),
-    onModeSwitch: handleModeSwitch,
     savedPresets,
-    onStateUpdate: setCurrentPanelState,
-    addLog,
+    globalDna,
     onSetGlobalDna: setGlobalDna,
-    globalDna: globalDna,
-    latticeBuffer: latticeBuffer,
-    onClearLattice: handleClearLattice
+    addLog,
+    onSaveToHistory: saveToHistory,
+    onModeSwitch: handleModeSwitch,
+    latticeBuffer,
+    onClearLattice: () => setLatticeBuffer(null),
   };
-  
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <PanelHeader 
-        onBack={() => handleModeSwitch(PanelMode.START)} 
-        title={currentPanel === PanelMode.START ? "HYPERXGEN 7" : currentPanel.toUpperCase().replace('_', ' ')}
-        isDarkMode={isDarkMode}
-        onToggleTheme={toggleTheme}
-        onToggleLogViewer={() => setShowLogViewer(p => !p)}
-        onToggleSettings={() => setShowSettings(p => !p)}
-        latticeStatus={latticeStatus}
-      />
-      <main className="flex-1 overflow-hidden" style={{ paddingTop: 'var(--header-h)', paddingBottom: 'var(--app-controls-bar-h)' }}>
-        <Suspense fallback={<LoadingSpinner />}>
-          {currentPanel === PanelMode.START && <StartScreen onSelectMode={handleModeSwitch} recentCount={recentWorks.length} enabledModes={enabledModes} />}
-          {currentPanel === PanelMode.VECTOR && <VectorPanel {...commonProps} initialData={transferData} />}
-          {currentPanel === PanelMode.TYPOGRAPHY && <TypographyPanel {...commonProps} initialData={transferData} />}
-          {currentPanel === PanelMode.MONOGRAM && <MonogramPanel {...commonProps} initialData={transferData} />}
-          {currentPanel === PanelMode.EMBLEM_FORGE && <EmblemForgePanel {...commonProps} initialData={transferData} />}
-          {currentPanel === PanelMode.EXTRACTOR && <StyleExtractorPanel {...commonProps} initialData={transferData} onSaveToPresets={(p) => setSavedPresets(prev => [p as any, ...prev])} onDeletePreset={(id) => setSavedPresets(prev => prev.filter(p => p.id !== id))} onApiKeyError={() => {}} />}
-          {currentPanel === PanelMode.FILTERS && <ImageFilterPanel {...commonProps} initialData={transferData} />}
-        </Suspense>
-      </main>
-      <AppControlsBar 
-        activeMode={currentPanel} 
-        onSwitchMode={handleModeSwitch} 
-        recentWorks={recentWorks} 
-        savedPresets={savedPresets}
-        onLoadHistoryItem={handleLoadItem}
-        onClearRecentWorks={() => { setRecentWorks([]); vaultDb.clearStore('recent'); addLog(SUCCESS_MESSAGES.HISTORY_CLEARED, 'success'); }}
-        onClearSavedPresets={() => { setSavedPresets([]); vaultDb.clearStore('presets'); addLog(SUCCESS_MESSAGES.VAULT_CLEARED, 'success'); }}
-        onForceSave={handleCommitToVault}
-        enabledModes={enabledModes}
-      />
-      <LogViewer logs={logs} onClear={() => setLogs([])} isOpen={showLogViewer} onClose={() => setShowLogViewer(false)} />
-      {showSettings && (
-        <SettingsPanel
-          isOpen={showSettings}
-          onClose={() => setShowSettings(false)}
-          kernelConfig={kernelConfig}
-          onConfigChange={setKernelConfig}
-          addLog={addLog}
+    <div className={`flex flex-col h-screen w-screen bg-brandNeutral dark:bg-brandDeep transition-colors duration-500 overflow-hidden relative ${booting ? 'items-center justify-center' : ''}`}>
+      <SystemAlertOverlay alert={systemAlert} onClose={() => setSystemAlert(null)} />
+
+      {booting && (
+        <BootScreen
+          isDarkMode={isDarkMode}
+          onBootComplete={() => {
+            setBooting(false);
+            addLog('SYSTEM_READY: OMEGA_V7.6', LogType.SUCCESS);
+          }}
         />
       )}
-      <DeviceBadge />
+
+      {!booting && (
+        <PanelHeader
+          title={`HYPERXGEN 7.6 // ${activeMode.toUpperCase()}`}
+          onBack={() => setActiveMode(PanelMode.START)}
+          isDarkMode={isDarkMode}
+          onToggleTheme={toggleTheme}
+          onToggleLogViewer={() => setShowLogs(true)}
+          onToggleSettings={() => setShowSettings(true)}
+          latticeStatus={latticeBuffer ? 'SYNCED' : 'IDLE'}
+          activeEngine={kernelConfig.imageEngine}
+        />
+      )}
+
+      <main className={`flex-1 transition-opacity duration-1000 ${booting ? 'opacity-0' : 'opacity-100'} mt-[var(--header-h)] mb-[var(--app-controls-bar-h)] relative overflow-hidden`}>
+        {activeMode === PanelMode.START && (
+          <StartScreen onSelectMode={setActiveMode} recentCount={recentWorks.length} />
+        )}
+        {activeMode === PanelMode.VECTOR && (
+          <VectorPanel {...commonProps} />
+        )}
+        {activeMode === PanelMode.TYPOGRAPHY && (
+          <TypographyPanel {...commonProps} />
+        )}
+        {activeMode === PanelMode.MONOGRAM && (
+          <MonogramPanel {...commonProps} />
+        )}
+        {activeMode === PanelMode.EXTRACTOR && (
+          <StyleExtractorPanel
+            kernelConfig={kernelConfig}
+            savedPresets={savedPresets}
+            onSaveToPresets={saveToVault}
+            onDeletePreset={deletePreset}
+            addLog={addLog}
+            onModeSwitch={handleModeSwitch}
+            onApiKeyError={() => {}}
+          />
+        )}
+        {activeMode === PanelMode.FILTERS && (
+          <ImageFilterPanel
+            kernelConfig={kernelConfig}
+            addLog={addLog}
+            onModeSwitch={handleModeSwitch}
+            latticeBuffer={latticeBuffer}
+            savedPresets={savedPresets}
+            onSaveToHistory={saveToHistory}
+          />
+        )}
+        {activeMode === PanelMode.EMBLEM_FORGE && (
+          <EmblemForgePanel {...commonProps} />
+        )}
+      </main>
+
+      {!booting && (
+        <AppControlsBar
+          recentWorks={recentWorks}
+          savedPresets={savedPresets}
+          activeMode={activeMode}
+          onSwitchMode={setActiveMode}
+          onLoadHistoryItem={item => handleModeSwitch(item.type, item)}
+          onForceSave={() => addLog('MANUAL_SYNC_TRIGGERED', LogType.INFO)}
+          onClearRecentWorks={clearSession}
+          onClearSavedPresets={clearVault}
+          isSaving={isSaving}
+        />
+      )}
+
+      <LogViewer
+        logs={logs}
+        isOpen={showLogs}
+        onClose={() => setShowLogs(false)}
+        onClear={() => { setLogs([]); vaultDb.clearStore('logs'); }}
+      />
+
+      <SettingsPanel
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        kernelConfig={kernelConfig}
+        onConfigChange={setKernelConfig}
+        addLog={addLog}
+      />
     </div>
   );
 };

@@ -12,6 +12,8 @@ dist
 dist-ssr
 *.local
 Appsgeyser/
+.env
+.env.local
 
 # Editor directories and files
 .vscode/*

@@ -1,10 +1,11 @@
-// FINAL – LOCKED - REFINED V8.0.0
+// FINAL – LOCKED - REFINED V8.0.3
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { SparkleIcon } from './Icons.tsx';
 import { DevourerHUD } from './HUD.tsx';
-import { PanelMode, KernelConfig, ExtractionResult, PresetCategory, VectorPreset, Preset, LatticeBuffer, isVectorPreset, VectorDna, ImageEngine } from '../types.ts';
+import { PanelMode, KernelConfig, ExtractionResult, PresetCategory, VectorPreset, Preset, LatticeBuffer, isVectorPreset, ImageEngine } from '../types.ts';
 import { getMobileCategories } from '../presets/index.ts';
-import { synthesizeVectorStyle, refineTextPrompt } from '../services/geminiService.ts';
+import { synthesizeVectorStyle } from '../services/imageOrchestrator.ts';
+import { refineTextPrompt } from '../services/geminiService.ts';
 import { useDevourer } from '../hooks/useDevourer.ts';
 import { PresetCarousel } from './PresetCarousel.tsx';
 import { GenerationBar } from './GenerationBar.tsx';
@@ -46,7 +47,7 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
   }, [savedPresets]);
 
   const [command, setCommand] = useState(() => initialData?.prompt || '');
-  const [generationNonce, setGenerationNonce] = useState(0); // Add generationNonce
+  const [generationNonce, setGenerationNonce] = useState(0); 
 
   const [generatedOutput, setGeneratedOutput] = useState<string | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(initialData?.imageUrl || null);
@@ -58,8 +59,22 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
   const { status, isProcessing, transition } = useDevourer(uploadedImage ? 'BUFFER_LOADED' : 'STARVING');
 
   // History State for Undo/Redo
-  const [history, setHistory] = useState<string[]>(initialData?.imageUrl ? [initialData.imageUrl] : []);
-  const [historyIndex, setHistoryIndex] = useState(initialData?.imageUrl ? 0 : -1);
+  const [history, setHistory] = useState<string[]>(uploadedImage ? [uploadedImage] : []);
+  const [historyIndex, setHistoryIndex] = useState(uploadedImage ? 0 : -1);
+
+  // LATTICE BRIDGE INGESTION
+  useEffect(() => {
+    if (latticeBuffer?.imageUrl && uploadedImage !== latticeBuffer.imageUrl) {
+      setUploadedImage(latticeBuffer.imageUrl);
+      if (latticeBuffer.dna) setDna(latticeBuffer.dna);
+      if (latticeBuffer.prompt && !command) setCommand(latticeBuffer.prompt);
+      
+      setHistory([latticeBuffer.imageUrl]);
+      setHistoryIndex(0);
+      transition('BUFFER_LOADED');
+      addLog(`LATTICE_IMPORT: Buffer acquired from ${latticeBuffer.sourceMode}`, 'info');
+    }
+  }, [latticeBuffer, transition, addLog, command, uploadedImage]);
 
   useEffect(() => {
     if (initialData?.id && !activePreset) {
@@ -91,7 +106,7 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
       setActivePreset(null);
       setDna(null);
       onSetGlobalDna?.(null);
-      setGenerationNonce(0); // Reset nonce if preset is deselected
+      setGenerationNonce(0); 
       return;
     }
 
@@ -109,26 +124,20 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
         setDna(null);
         onSetGlobalDna?.(null);
     }
-    setGenerationNonce(0); // Reset nonce on new preset selection
+    setGenerationNonce(0); 
     addLog(`STYLE_DNA_LOCKED: ${item.name}`, 'info');
   }, [PRESETS, isProcessing, transition, activePresetId, onSetGlobalDna, addLog]);
 
   const setCommandAndResetNonce = useCallback((value: string) => {
     setCommand(value);
-    setGenerationNonce(0); // Reset nonce if command changes
+    setGenerationNonce(0); 
   }, []);
 
   const handleGenerate = useCallback(async () => {
     if (isProcessing) return;
-
-    if (uploadedImage && kernelConfig.imageEngine === ImageEngine.HF) {
-      addLog(`ENGINE_ERROR: The ${kernelConfig.imageEngine.toUpperCase()} engine does not support image-to-image tasks. Please switch to Gemini in settings.`, 'error');
-      transition('LATTICE_FAIL');
-      return;
-    }
     
     if (!uploadedImage) {
-      addLog("VECTORIZATION_FAIL: Source image buffer is empty.", 'error');
+      addLog("VECTORIZATION_FAIL: Source image buffer is empty. Ingest source via upload or bridge.", 'error');
       return;
     }
     if (!activePreset || !isVectorPreset(activePreset)) {
@@ -137,19 +146,16 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
     }
     
     transition('DEVOURING_BUFFER', true);
-    setGenerationNonce(prev => prev + 1); // Increment nonce for new generation attempt
+    setGenerationNonce(prev => prev + 1); 
     
     const userCommand = command.trim();
     const finalPrompt = `Vectorize the provided image using the aesthetic of "${activePreset.prompt}". ${userCommand ? `Execute the following command during vectorization: "${userCommand}".` : 'Perform a standard high-fidelity vectorization according to the style preset.'}`;
 
     const vectorParams = activePreset.parameters;
-    
     const directives = [`[DIRECTIVE: COMMAND_DRIVEN_VECTORIZATION_V8]`];
 
-    // Dynamically build directives from the preset's DNA
     for (const [key, value] of Object.entries(vectorParams)) {
         if (value) {
-            // Convert camelCase/snake_case to UPPER_SNAKE_CASE for directives
             const directiveKey = key.replace(/([A-Z])/g, '_$1').toUpperCase();
             directives.push(`${directiveKey}: ${String(value).toUpperCase()}`);
         }
@@ -162,14 +168,18 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
     const finalDirectives = directives.filter(Boolean).join('\n');
 
     try {
-      const result = await synthesizeVectorStyle(
+      const { imageUrl: result, fallbackTriggered } = await synthesizeVectorStyle(
         finalPrompt, 
         uploadedImage, 
         kernelConfig, 
         dna || globalDna || undefined, 
         finalDirectives,
-        generationNonce // Pass generationNonce
+        generationNonce 
       );
+      
+      if (fallbackTriggered) {
+        addLog('FLUX_FAIL: Primary engine connection failed. Switched to Gemini fallback.', 'warning');
+      }
       
       if (!result) throw new Error("Synthesis returned a null buffer.");
       setGeneratedOutput(result);
@@ -192,13 +202,13 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
         category: 'Synthesis',
         description: `Source vectorized with ${activePreset.name} style.`
       } as VectorPreset);
-    } catch (e: any) { 
+    } catch (error: any) { 
       transition('LATTICE_FAIL'); 
-      addLog(`VECTORIZATION_ERROR: ${e.message}`, 'error'); 
+      addLog(`VECTORIZATION_ERROR: ${error.message}`, 'error'); 
     } finally { 
       transition('LATTICE_ACTIVE'); 
     }
-  }, [command, uploadedImage, activePreset, kernelConfig, dna, globalDna, transition, addLog, onSaveToHistory, historyIndex, generationNonce, isProcessing]); // Add isProcessing as dependency
+  }, [command, uploadedImage, activePreset, kernelConfig, dna, globalDna, transition, addLog, onSaveToHistory, historyIndex, generationNonce, isProcessing]);
 
   const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
@@ -223,12 +233,12 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
     r.onload = e => {
       const base64 = e.target?.result as string;
       setUploadedImage(base64);
-      setGeneratedOutput(base64); // Show the uploaded image initially
+      setGeneratedOutput(null);
       setHistory([base64]);
       setHistoryIndex(0);
       transition('BUFFER_LOADED');
-      setGenerationNonce(0); // Reset nonce on file upload
-      addLog("SOURCE_BUFFER_LOADED: Ready for vectorization", "info");
+      setGenerationNonce(0); 
+      addLog("SOURCE_BUFFER_LOADED: Vector core initialized", "info");
     }; 
     r.readAsDataURL(f); 
   }, [transition, addLog]);
@@ -238,44 +248,33 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
     setIsRefining(true);
     try {
       const refined = await refineTextPrompt(command, PanelMode.VECTOR, kernelConfig, dna || globalDna || undefined);
-      setCommandAndResetNonce(refined); // Use new setter
-      addLog("COMMAND_REFINED: Architecture optimized", "success");
+      setCommandAndResetNonce(refined); 
+      addLog("PROMPT_REFINED", "success");
     } catch {
-      addLog("COMMAND_REFINE_FAIL: Kernel drift detected", "error");
+      addLog("PROMPT_REFINE_FAIL", "error");
     } finally {
       setIsRefining(false);
     }
   };
 
-  const canGenerate = !isProcessing && !!uploadedImage && !!activePresetId;
-
   return (
     <PanelLayout 
       sidebar={
         <>
-          <SidebarHeader moduleNumber="Module_01" title="Vectorization_Engine" version="Command-Driven v8.0" colorClass="text-brandRed" borderColorClass="border-brandRed" />
+          <SidebarHeader moduleNumber="Module_01" title="Vector_Engine" version="Geometric Synthesis v8.0" colorClass="text-brandYellow" borderColorClass="border-brandYellow" />
           <div className="space-y-6 px-1">
-             <div className="space-y-4">
+             <div className="p-3 bg-brandYellow/5 border border-brandYellow/20 rounded-sm mb-6">
+                <span className="text-[8px] font-black text-brandYellow uppercase tracking-widest block mb-1">Instruction:</span>
+                <p className="text-[9px] text-brandCharcoalMuted dark:text-white/60 leading-tight">Inject an image buffer. Select an authoritative style preset. Each preset is a complete, opinionated aesthetic system that governs all synthesis parameters. No manual adjustments are allowed.</p>
+            </div>
+
+             <div className="space-y-4 pt-4 border-t border-white/5">
                 <h4 className="text-[10px] font-black uppercase text-brandCharcoal/40 dark:text-white/40 tracking-widest italic border-b border-white/5 pb-2">Style_Library</h4>
-                
-                <div className="p-3 bg-brandRed/5 dark:bg-brandYellow/5 border border-brandRed/20 dark:border-brandYellow/20 rounded-sm">
-                  <span className="text-[8px] font-black text-brandRed dark:text-brandYellow uppercase tracking-widest block mb-1">Instruction:</span>
-                  <p className="text-[9px] text-brandCharcoalMuted dark:text-white/60 leading-tight">1. Upload a source image.<br/>2. Select a style preset below to define the vectorization aesthetic.</p>
-                </div>
-                
                 {PRESETS.map(cat => (
-                  <div key={cat.title} className="space-y-3 pt-4 border-t border-white/5">
+                  <div key={cat.title} className="space-y-3">
                     <h3 className="text-[9px] font-black uppercase text-brandCharcoal/40 dark:text-white/40 tracking-widest italic">{cat.title.replace(/_/g, ' ')}</h3>
                     {cat.items.map(p => (
-                      <PresetCard 
-                        key={p.id} 
-                        name={p.name} 
-                        description={p.description} 
-                        prompt={p.prompt} 
-                        isActive={activePresetId === p.id} 
-                        onClick={() => handleSelectPreset(p.id)} 
-                        iconChar="V" 
-                      />
+                      <PresetCard key={p.id} name={p.name} description={p.description} prompt={p.prompt} isActive={activePresetId === p.id} onClick={() => handleSelectPreset(p.id)} iconChar="V" />
                     ))}
                   </div>
                 ))}
@@ -289,35 +288,23 @@ export const VectorPanel: React.FC<VectorPanelProps> = ({
           generatedOutput={generatedOutput} 
           isProcessing={isProcessing} 
           hudContent={<DevourerHUD devourerStatus={status} />} 
-          onClear={() => { 
-            setGeneratedOutput(null); 
-            setUploadedImage(null); 
-            setDna(null); 
-            setHistory([]); 
-            setHistoryIndex(-1); 
-            transition('STARVING'); 
-            onClearLattice?.();
-            setGenerationNonce(0); // Reset nonce on clear
-          }} 
+          onClear={() => { setGeneratedOutput(null); setUploadedImage(null); setDna(null); setCommand(''); setHistory([]); setHistoryIndex(-1); transition('STARVING'); onClearLattice?.(); setGenerationNonce(0); }} 
           onFileUpload={handleFileUpload}
           onUndo={handleUndo}
           onRedo={handleRedo}
           canUndo={historyIndex > 0}
           canRedo={historyIndex < history.length - 1}
-          bridgeSource={initialData?.category === 'LATTICE_BRIDGE' ? latticeBuffer?.sourceMode : null}
+          bridgeSource={initialData?.category === 'LATTICE_BRIDGE' ? latticeBuffer?.sourceMode : (latticeBuffer ? latticeBuffer.sourceMode : null)}
+          activeEngine={kernelConfig.imageEngine}
         />
       }
       footer={
         <div className="space-y-4">
           <PresetCarousel categories={PRESETS} activeId={activePresetId} onSelect={handleSelectPreset} />
           <GenerationBar 
-            prompt={command} 
-            setPrompt={setCommandAndResetNonce} // Use new setter
-            onGenerate={handleGenerate} 
-            isProcessing={!canGenerate}
-            activePresetName={activePreset?.name || dna?.name || globalDna?.name} 
-            placeholder="Enter optional command (e.g. remove background)..." 
-            bridgedThumbnail={initialData?.category === 'LATTICE_BRIDGE' ? initialData.imageUrl : null}
+            prompt={command} setPrompt={setCommandAndResetNonce} onGenerate={handleGenerate} isProcessing={isProcessing} 
+            activePresetName={activePreset?.name || dna?.name || globalDna?.name} placeholder="Optional command (e.g. 'simplify silhouettes')..." 
+            bridgedThumbnail={latticeBuffer?.imageUrl || (initialData?.category === 'LATTICE_BRIDGE' ? initialData.imageUrl : null)}
             onClearBridge={() => { if (onClearLattice) onClearLattice(); setUploadedImage(null); setGenerationNonce(0); }}
             refineButton={
               <button
