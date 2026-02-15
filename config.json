@@ -15,10 +15,10 @@
     "topK": 40
   },
   "models": {
-    "text": "gemini-3-flash-preview",
+    "text": "gemini-2.5-flash-preview",
     "audit": "gemini-3-flash-preview",
     "telemetry": "gemini-3-flash-preview",
-    "synthesis": "gemini-3-flash-preview",
+    "synthesis": "gemini-2.5-flash-preview",
     "image": "gemini-2.5-flash-image"
   },
   "panels": {

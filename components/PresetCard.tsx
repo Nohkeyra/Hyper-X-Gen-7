@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 
 interface PresetCardProps {
@@ -16,7 +17,7 @@ export const PresetCard: React.FC<PresetCardProps> = ({ name, description, promp
     className={`w-full p-3 flex flex-col transition-all duration-300 rounded-sm text-left relative overflow-hidden group border-2 will-change-transform
       ${isActive 
         ? 'bg-brandBlue text-white border-brandBlue shadow-lg scale-[1.02] dark:bg-black dark:border-brandYellow dark:text-brandYellow dark:box-glow-intense-yellow' 
-        : 'bg-white border-brandCharcoal/10 text-brandCharcoal hover:border-brandBlue hover:text-brandBlue dark:bg-black/40 dark:border-white/10 dark:text-brandCharcoalMuted dark:hover:bg-white/5 dark:hover:border-brandBlue/50'
+        : 'bg-white border-brandCharcoal/10 text-brandCharcoal hover:border-brandBlue hover:text-brandBlue dark:bg-white/10 dark:border-white/20 dark:text-white/80 dark:hover:bg-white/20 dark:hover:border-white/30'
       }
     `}
   >
@@ -39,7 +40,7 @@ export const PresetCard: React.FC<PresetCardProps> = ({ name, description, promp
         <h4 className={`text-[10px] font-black uppercase truncate leading-tight transition-colors tracking-widest
           ${isActive 
             ? 'text-white dark:text-brandYellow dark:text-neon-yellow' 
-            : 'text-brandCharcoal dark:text-white group-hover:text-brandBlue dark:group-hover:text-brandBlue'
+            : 'text-brandCharcoal dark:text-white/80 group-hover:text-brandBlue dark:group-hover:text-brandBlue'
           }
         `}>
           {name}

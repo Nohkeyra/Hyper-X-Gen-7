@@ -1,4 +1,5 @@
 
+
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { defineConfig, loadEnv } from 'vite';
@@ -10,7 +11,7 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, __dirname, '');
 
     const geminiKey = env.GEMINI_API_KEY || env.VITE_GEMINI_API_KEY || '';
-    const hfKey     = env.HF_TOKEN || env.VITE_HF_TOKEN || env.VITE_HF_API_KEY || '';
+    // Removed automatic loading of HF_TOKEN from env vars
     const modelId   = env.MODEL_ID || env.VITE_MODEL_ID || 'black-forest-labs/FLUX.1-schnell';
 
     return {
@@ -23,9 +24,9 @@ export default defineConfig(({ mode }) => {
       define: {
         'process.env.APP_VERSION':          JSON.stringify(process.env.npm_package_version || '7.6.1'),
         'process.env.API_KEY':              JSON.stringify(geminiKey),
-        'process.env.HF_TOKEN':             JSON.stringify(hfKey),
-        'process.env.VITE_HF_API_KEY':      JSON.stringify(hfKey),
-        'process.env.HUGGING_FACE_API_KEY': JSON.stringify(hfKey),
+        'process.env.HF_TOKEN':             JSON.stringify(''), // Explicitly empty, only user input in settings is allowed
+        'process.env.VITE_HF_API_KEY':      JSON.stringify(''), // Explicitly empty
+        'process.env.HUGGING_FACE_API_KEY': JSON.stringify(''), // Explicitly empty
         'process.env.MODEL_ID':             JSON.stringify(modelId),
       },
       resolve: {

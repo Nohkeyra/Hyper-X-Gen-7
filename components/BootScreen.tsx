@@ -35,11 +35,8 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onBootComplete, isDarkMo
       setBootProgress(70);
       await new Promise(res => setTimeout(res, 100));
 
-      if (ENV.HF_TOKEN && ENV.HF_TOKEN.length > 5) {
-        addBootLog("DETECTED: FLUX_OMEGA_BRIDGE");
-        setBootProgress(85);
-        await new Promise(res => setTimeout(res, 100));
-      }
+      // Removed check for ENV.HF_TOKEN as it's hardcoded to '' and user-managed.
+      // The actual HF key validation occurs in App.tsx using localStorage.
 
       addBootLog("STATUS: MAXIMUM_MODE_ACTIVE");
       setBootProgress(100);

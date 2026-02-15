@@ -1,3 +1,4 @@
+
 // FINAL – LOCKED - REFINED V7.2.9
 import React, { useEffect, useMemo, useCallback, useState } from 'react';
 import { PanelMode, KernelConfig, ExtractionResult, PresetItem, PresetCategory, MonogramPreset, Preset, LatticeBuffer, ImageEngine } from '../types.ts';
@@ -137,12 +138,8 @@ export const MonogramPanel: React.FC<MonogramPanelProps> = ({
         finalPrompt = `Create a monogram with initials ${userInitials}, layout ${layout}, style ${style}, theme ${theme}, twist ${twist}, constraints: readable, max 3 letters, no extra letters, flat/studio background`;
     }
     
-    // Engine Switching Logic
-    const preferredEngine = metadata.preferredEngine;
-    const effectiveConfig = {
-      ...kernelConfig,
-      imageEngine: preferredEngine || kernelConfig.imageEngine
-    };
+    // Engine Switching Logic (Removed preset-specific override, use global kernelConfig only)
+    const effectiveConfig = { ...kernelConfig }; // Use global kernelConfig directly
 
     transition(dna || globalDna || uploadedImage ? "DNA_STYLIZE_ACTIVE" : "DEVOURING_BUFFER", true);
     setGenerationNonce(prev => prev + 1); 

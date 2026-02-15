@@ -1,7 +1,4 @@
 
-
-
-
 // ===================== ENUMS =====================
 export enum PanelMode {
   START = 'start',
@@ -41,6 +38,18 @@ export enum ImageEngine {
   GEMINI = 'gemini',
   HF = 'hf'
 }
+
+// New Enums for Vector Parameters (from vector_engine.type_definitions)
+export type ColorMode = 'full-color' | 'limited' | 'monochrome' | 'duotone';
+export type PaletteDepth = '2' | '3' | '4' | '5' | '6' | '8' | '16' | '20' | '24' | '28' | '32';
+export type DetailFidelity = 'Minimal' | 'Moderate' | 'High' | 'Maximum' | 'Very High';
+export type StrokePreset = 'None' | 'Uniform Thin' | 'Uniform Medium' | 'Uniform Heavy' | 'Uniform Very Thin';
+export type MaterialAppearance = 'Flat matte' | 'Flat color zones' | 'Smooth flat color zones' | 'Paper texture' | 'Flat with depth faces' | 'Flat zones representing material surfaces' | 'Flat matte with print layer tension' | 'Smooth luminous flat zones';
+export type LayoutType = 'Flat Lay' | 'Isometric' | 'Portrait centered' | 'Landscape / Natural scene' | 'Product isolated / centered' | 'Free painterly composition' | 'Source-matched' | 'Source-matched smooth' | 'Animal subject centered';
+export type VectorArtStyleCategory = 'Modern Flat' | 'Bold Graphic' | 'Geometric' | 'Minimal Line' | 'Photorealistic Vector' | 'Portrait Vector' | 'Nature Vector' | 'Product Vector' | 'Painterly Vector' | 'Gradient Mesh Vector' | 'Wildlife Vector' | 'Bauhaus' | 'Mid-Century' | 'Swiss International' | 'Art Deco' | 'Pop Art';
+export type SubjectType = 'General' | 'Portrait' | 'Landscape' | 'Product' | 'Animal' | 'Architecture' | 'Abstract';
+export type VisualComplexity = 'Very Low' | 'Low' | 'Medium' | 'High' | 'Very High';
+
 
 // ===================== CORE INTERFACES =====================
 export interface KernelConfig {
@@ -113,21 +122,42 @@ export interface BasePreset {
     mobileTitle?: string;
     mobileIcon?: string;
     mobilePriority?: number;
+    // preferredEngine?: ImageEngine; // Removed for explicit engine assignment
     [key: string]: any;
   };
 }
 
 export interface VectorDna {
-  detail_fidelity: 'Minimal' | 'Moderate' | 'High' | 'Maximum';
+  // Required
+  layout_type: LayoutType;
+  style_category: VectorArtStyleCategory;
+  detail_fidelity: DetailFidelity;
   edge_quality: string;
   palette_strategy: string;
   color_direction: string;
   background: string;
   form_language: string;
-  stroke_preset: 'Uniform Thin' | 'Uniform Medium' | 'Uniform Heavy' | 'None';
+  stroke_preset: StrokePreset;
+  
+  // Optional
+  material_appearance?: MaterialAppearance;
+  visual_complexity?: VisualComplexity;
+  color_mode?: ColorMode;
+  palette_depth?: PaletteDepth;
+  color_preservation?: 'Minimal' | 'Moderate' | 'High' | 'Maximum' | 'Artistic';
+  smoothing?: 'None' | 'Low' | 'Medium' | 'High';
+  subject_type?: SubjectType;
+  skin_tone_priority?: boolean;
+  era_influence?: string;
+  movement?: string;
+  palette_forced?: string;
+  pattern_elements?: string;
+  sticker_halo?: boolean;
+  shadow_treatment?: string;
+
+  // Existing properties that might still be used by some presets
   effect?: string;
   refinement?: string;
-  palette_forced?: string;
   notation?: string;
   fills?: string;
   fidelity_priority?: 'Maximum';
@@ -137,19 +167,17 @@ export interface VectorDna {
   tech_influence?: 'High';
   abstraction_level?: 'High';
   ethereal_quality?: 'High';
-  
-  // Added from user request to support new presets
-  layout_type?: string;
-  style_category?: string;
-  color_mode?: string;
-  palette_depth?: string;
-  material_appearance?: string;
-  visual_complexity?: string;
-  color_preservation?: string;
-  smoothing?: string;
-  subject_type?: string;
-  skin_tone_priority?: boolean;
-  era_influence?: string;
+  shading_technique?: string; // New: Editorial Rich
+  character?: string; // New: Children's Book
+  detail_emphasis?: string; // New: Nature Detailed
+  aesthetic?: string; // New: Retro Poster
+  lighting_emphasis?: string; // New: Concept Art
+  contrast?: string; // New: Comic Full Color
+  emphasis?: string; // New: Food Illustration, Portrait Stylized, Pattern & Textile
+  depth_technique?: string; // New: Scenic Landscape
+  texture_emphasis?: string; // New: Animals Realistic
+  cultural_respect?: string; // New: Cultural Folk Art
+  style_reference?: string; // For Architectural Realism
 }
 
 export interface VectorPreset extends BasePreset {

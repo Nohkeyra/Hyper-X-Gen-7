@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 
 // --- Shared Components ---
@@ -54,9 +53,8 @@ interface PanelLayoutProps {
 
 /**
  * Standard Panel Layout
- * - Strict Breakpoint: 768px (md)
- * - Mobile: Sidebar is available via a toggle, content stacks.
- * - Desktop: Fixed width sidebar, fluid content.
+ * - Optimized for mobile stability.
+ * - Library view is handled via an integrated floating toggle to avoid overlapping navigation.
  */
 export const PanelLayout: React.FC<PanelLayoutProps> = ({ sidebar, canvas, footer }) => {
   const [mobileView, setMobileView] = useState<'canvas' | 'library'>('canvas');
@@ -80,38 +78,45 @@ export const PanelLayout: React.FC<PanelLayoutProps> = ({ sidebar, canvas, foote
       )}
       
       <main className="flex-1 flex flex-col min-w-0 relative overflow-hidden bg-brandNeutral">
-        {/* Scrollable Container for the main content area */}
-        <div className={`flex-1 overflow-y-auto custom-scrollbar ${hasSidebar ? 'pb-14 md:pb-0' : ''}`}> 
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar relative"> 
           
           {/* Mobile Library View */}
-          <div className={`w-full p-6 md:hidden ${mobileView === 'library' && hasSidebar ? 'block' : 'hidden'}`}>
+          <div className={`w-full p-4 md:hidden animate-in fade-in slide-in-from-left-4 duration-500 pb-20 ${mobileView === 'library' && hasSidebar ? 'block' : 'hidden'}`}>
             {sidebar}
           </div>
 
           {/* Canvas View (Mobile + Desktop) */}
-          <div className={`w-full max-w-[1400px] mx-auto flex-col gap-3 md:gap-6 p-2 md:p-6 ${mobileView === 'canvas' ? 'flex' : 'hidden md:flex'}`}>
-            {canvas}
-            {footer}
+          <div className={`w-full max-w-[1400px] mx-auto flex flex-col gap-4 p-2 sm:p-4 md:p-6 animate-in fade-in zoom-in duration-500 ${mobileView === 'canvas' ? 'flex' : 'hidden md:flex'}`}>
+            <div className="w-full">
+              {canvas}
+            </div>
+            <div className="w-full">
+              {footer}
+            </div>
           </div>
+
+          {/* Integrated Mobile Toggle (Pill) */}
+          {hasSidebar && (
+            <div className="md:hidden fixed bottom-[calc(var(--app-controls-bar-h)+1rem)] left-1/2 -translate-x-1/2 z-[150] pointer-events-none">
+              <div className="flex items-center gap-1 p-1 bg-black/80 dark:bg-zinc-900/90 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl pointer-events-auto">
+                <button 
+                  onClick={() => setMobileView('canvas')} 
+                  className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${mobileView === 'canvas' ? 'bg-brandRed text-white shadow-neon-red-soft' : 'text-white/40 hover:text-white/60'}`}
+                >
+                  Canvas
+                </button>
+                <button 
+                  onClick={() => setMobileView('library')} 
+                  className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${mobileView === 'library' ? 'bg-brandRed text-white shadow-neon-red-soft' : 'text-white/40 hover:text-white/60'}`}
+                >
+                  Library
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </main>
-
-      {/* Mobile View Toggler */}
-      {hasSidebar && (
-        <div 
-          className="md:hidden absolute bottom-0 left-0 right-0 h-14 bg-brandDeep border-t border-brandBlue/10 dark:border-white/5 flex items-stretch z-30 shadow-[0_-5px_15px_rgba(0,0,0,0.2)]"
-        >
-          <button onClick={() => setMobileView('canvas')} className={`flex-1 flex flex-col items-center justify-center gap-1 transition-colors ${mobileView === 'canvas' ? 'text-brandRed bg-brandRed/5' : 'text-brandCharcoalMuted dark:text-white/40'}`}>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l-1-1m5 5l-1.5-1.5"></path><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
-            <span className="text-[9px] font-black uppercase tracking-widest">Canvas</span>
-          </button>
-          <div className="w-px bg-brandCharcoal/10 dark:bg-white/10"></div>
-          <button onClick={() => setMobileView('library')} className={`flex-1 flex flex-col items-center justify-center gap-1 transition-colors ${mobileView === 'library' ? 'text-brandRed bg-brandRed/5' : 'text-brandCharcoalMuted dark:text-white/40'}`}>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7"></path></svg>
-            <span className="text-[9px] font-black uppercase tracking-widest">Library</span>
-          </button>
-        </div>
-      )}
     </div>
   );
 };

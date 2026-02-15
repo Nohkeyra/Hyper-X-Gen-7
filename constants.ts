@@ -1,4 +1,5 @@
 
+
 // ===================== ENVIRONMENT SANITIZATION =====================
 const sanitizeEnv = (val: any): string => {
   if (val === undefined || val === null) return '';
@@ -13,12 +14,12 @@ const sanitizeEnv = (val: any): string => {
  * Using direct literals to ensure Vite static replacement engine triggers.
  */
 const V_GEMINI_KEY = process.env.API_KEY || '';
-const V_HF_KEY     = process.env.HF_TOKEN || '';
+// V_HF_KEY removed as Flux token should only be user-entered via UI
 const V_MODEL_ID   = process.env.MODEL_ID || 'black-forest-labs/FLUX.1-schnell';
 
 export const ENV = {
   API_KEY:      sanitizeEnv(V_GEMINI_KEY),
-  HF_TOKEN:     sanitizeEnv(V_HF_KEY),
+  HF_TOKEN:     '', // Flux token is now *only* managed by user input in settings
   HF_MODEL:     sanitizeEnv(V_MODEL_ID),
   API_BASE_URL: 'https://generativelanguage.googleapis.com',
   APP_VERSION:  '7.6.1',

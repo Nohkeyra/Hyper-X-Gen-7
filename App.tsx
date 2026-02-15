@@ -25,7 +25,7 @@ import {
   StartScreen,
 } from './components/index.ts';
 import { vaultDb } from './services/dbService.ts';
-import { LS_KEYS, APP_CONSTANTS } from './constants.ts';
+import { LS_KEYS, APP_CONSTANTS, ENV } from './constants.ts'; // Import ENV
 
 // ─── System Alert Overlay ────────────────────────────────────────────────────
 interface SystemAlert { title: string; message: string; type: 'warning' | 'error' | 'info'; }
@@ -80,7 +80,7 @@ export const App: React.FC = () => {
   const [kernelConfig, setKernelConfig] = useState<KernelConfig>({
     thinkingBudget: 0,
     temperature:    0.2,
-    model:          'gemini-3-pro-preview',
+    model:          'gemini-3-flash-preview',
     deviceContext:  'desktop',
     imageEngine:    ImageEngine.GEMINI,
   });
@@ -94,23 +94,25 @@ export const App: React.FC = () => {
         vaultDb.getAll<Preset>('recent'),
         vaultDb.getAll<LogEntry>('logs'),
         vaultDb.getItem<ExtractionResult>('global_dna', 'current'),
-        // Restore persisted kernelConfig (engine selection survives refresh)
         vaultDb.getItem<KernelConfig>('config', 'kernel'),
       ]);
       setSavedPresets(presets || []);
       setRecentWorks(recent  || []);
       setLogs(dbLogs         || []);
       setGlobalDna(dna       || null);
-      if (savedConfig) setKernelConfig(prev => ({ ...prev, ...savedConfig }));
 
-      // Sync theme class on boot
+      let initialKernelConfig = kernelConfig;
+      if (savedConfig) {
+        initialKernelConfig = { ...initialKernelConfig, ...savedConfig };
+      }
+      setKernelConfig(initialKernelConfig);
+
       if (isDarkMode) document.documentElement.classList.add('dark');
       else            document.documentElement.classList.remove('dark');
     };
     initApp();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps — intentionally run once
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Persist kernelConfig whenever it changes ──────────────────────────────
   useEffect(() => {
     vaultDb.saveItem('config', 'kernel', kernelConfig);
   }, [kernelConfig]);
@@ -128,12 +130,19 @@ export const App: React.FC = () => {
     if (type === LogType.ERROR) {
       const u = message.toUpperCase();
       if (u.includes('QUOTA') || u.includes('LIMIT') || u.includes('OVERLOAD') || u.includes('429') || u.includes('RESOURCE_EXHAUSTED')) {
-        setSystemAlert({ title: 'SYSTEM COOLDOWN ACTIVE', message: 'Neural engines at max capacity. Please wait 60 seconds.', type: 'warning' });
-        setTimeout(() => setSystemAlert(null), 8000);
+        const isPersistent = logs.filter(l => l.type === 'error' && l.message.includes('429')).length > 2;
+        setSystemAlert({ 
+          title: isPersistent ? 'DAILY QUOTA EXHAUSTED' : 'SYSTEM COOLDOWN ACTIVE', 
+          message: isPersistent 
+            ? 'Total request capacity reached. If you have waited 24h, verify your API Key is valid in AI Studio.' 
+            : 'Neural engines at max capacity. Please wait 60 seconds.', 
+          type: 'warning' 
+        });
+        setTimeout(() => setSystemAlert(null), 10000);
         return;
       }
-      if (u.includes('KEY') || u.includes('AUTH') || u.includes('CREDENTIAL')) {
-        setSystemAlert({ title: 'SECURITY PROTOCOL FAILURE', message: 'API authentication failed. Verify your API keys in .env.local or Settings.', type: 'error' });
+      if (u.includes('KEY') || u.includes('AUTH') || u.includes('CREDENTIAL') || u.includes('API_KEY_INVALID')) {
+        setSystemAlert({ title: 'SECURITY PROTOCOL FAILURE', message: 'API handshake failed. Check your API key status or connectivity.', type: 'error' });
         setTimeout(() => setSystemAlert(null), 8000);
         return;
       }
@@ -142,7 +151,7 @@ export const App: React.FC = () => {
         setTimeout(() => setSystemAlert(null), 5000);
       }
     }
-  }, []);
+  }, [logs]);
 
   // ── Persistence helpers ───────────────────────────────────────────────────
   const saveToHistory = useCallback((work: Preset) => {
@@ -171,7 +180,6 @@ export const App: React.FC = () => {
     addLog(`ARTIFACT_PURGED: ${id}`, LogType.WARNING);
   }, [addLog]);
 
-  // ── Theme ─────────────────────────────────────────────────────────────────
   const toggleTheme = useCallback(() => {
     setIsDarkMode(prev => {
       const next = !prev;
@@ -183,7 +191,6 @@ export const App: React.FC = () => {
     });
   }, [addLog]);
 
-  // ── Navigation ────────────────────────────────────────────────────────────
   const handleModeSwitch = useCallback((mode: PanelMode, data?: any) => {
     setActiveMode(mode);
     if (data) {
@@ -206,7 +213,6 @@ export const App: React.FC = () => {
     addLog('VAULT_ARCHIVES_DEEP_CLEANED', LogType.WARNING);
   }, [addLog]);
 
-  // ── Common panel props ────────────────────────────────────────────────────
   const commonProps = {
     kernelConfig,
     integrity: 100,
@@ -220,7 +226,6 @@ export const App: React.FC = () => {
     onClearLattice: () => setLatticeBuffer(null),
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className={`flex flex-col h-screen w-screen bg-brandNeutral dark:bg-brandDeep transition-colors duration-500 overflow-hidden relative ${booting ? 'items-center justify-center' : ''}`}>
       <SystemAlertOverlay alert={systemAlert} onClose={() => setSystemAlert(null)} />

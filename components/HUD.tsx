@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const RECON_STATUS_MESSAGES: Record<string, string> = {
   "IDLE": "Ready for image upload",
@@ -14,20 +14,28 @@ const RECON_STATUS_MESSAGES: Record<string, string> = {
   "AUDIT_FAILED": "Style extraction failed"
 };
 
+const TelemetryReadout = () => {
+  const [val, setVal] = useState('0x000');
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setVal('0x' + Math.floor(Math.random() * 16777215).toString(16).toUpperCase().substring(0, 3));
+    }, 150);
+    return () => clearInterval(timer);
+  }, []);
+  return <span>{val}</span>;
+};
+
 export const DevourerHUD: React.FC<{ devourerStatus: string }> = ({ devourerStatus }) => (
   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none overflow-hidden select-none z-0">
-    {/* Background Rings */}
     <div className="relative w-[150%] h-[150%] flex items-center justify-center opacity-[0.08] dark:opacity-[0.15]">
       <div className="absolute inset-0 border-[1px] border-brandRed rounded-full animate-pulse" />
       <div className="w-[85%] h-[85%] border-[1px] border-brandYellow rounded-full border-dashed animate-spin-slow" />
       <div className="w-[65%] h-[65%] border-[1px] border-brandBlue rounded-full animate-spin-reverse-slow" />
     </div>
 
-    {/* Precision Grid Overlay */}
     <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.05] pointer-events-none" 
          style={{ backgroundImage: `radial-gradient(circle, #CC0001 1.5px, transparent 1.5px)`, backgroundSize: '32px 32px' }} />
 
-    {/* SVG HUD Elements */}
     <svg className="absolute inset-0 w-full h-full opacity-30" viewBox="0 0 1000 1000">
       <circle cx="500" cy="500" r="450" fill="none" stroke="#CC0001" strokeWidth="0.5" strokeDasharray="10 20" />
       <path d="M500 50 L500 100 M500 900 L500 950 M50 500 L100 500 M900 500 L950 500" stroke="#CC0001" strokeWidth="2" />
@@ -38,14 +46,20 @@ export const DevourerHUD: React.FC<{ devourerStatus: string }> = ({ devourerStat
       <div className="text-[7px] font-black text-brandRed bg-black/60 px-3 py-1 border border-brandRed/20 tracking-[0.3em] animate-pulse backdrop-blur-sm">
         OMEGA_CORE_LOCKED
       </div>
-      <div className="text-[6px] font-mono text-white/30">LAT_SYNC: {Math.random().toString(16).substring(2,8).toUpperCase()}</div>
+      <div className="text-[6px] font-mono text-white/30 uppercase tracking-widest flex gap-2">
+        <span>SEED: <TelemetryReadout /></span>
+        <span>LOAD: {Math.floor(Math.random()*20)+80}%</span>
+      </div>
     </div>
 
     <div className="absolute top-12 left-12 flex flex-col gap-1.5">
-      <div className="h-1.5 w-32 bg-brandRed/10 relative overflow-hidden rounded-full">
+      <div className="h-1.5 w-32 bg-brandRed/10 relative overflow-hidden rounded-full border border-brandRed/20">
         <div className="absolute inset-0 bg-brandRed animate-shimmer" />
       </div>
-      <div className="text-[6px] font-black text-brandRed/60 uppercase tracking-widest italic">SYNTHESIS_STABILITY_100%</div>
+      <div className="text-[6px] font-black text-brandRed/60 uppercase tracking-widest italic flex items-center gap-2">
+        <div className="w-1 h-1 bg-brandRed rounded-full animate-ping" />
+        LATTICE_STABILITY_RESONANCE
+      </div>
     </div>
     
     <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 px-10 py-3 bg-brandCharcoal/90 rounded-sm backdrop-blur-xl border border-brandRed/30 shadow-2xl transition-all">
@@ -68,11 +82,9 @@ export const ReconHUD: React.FC<{ reconStatus: string; authenticityScore?: numbe
         <div className="absolute inset-4 border-2 border-brandYellow/10 rounded-full animate-spin-slow" />
         <div className="absolute inset-10 border-[1px] border-brandBlue/20 rounded-full border-dotted animate-spin-reverse-slow" />
         
-        {/* Target Crosshair */}
         <div className="absolute h-full w-[0.5px] bg-brandRed/40" />
         <div className="absolute w-full h-[0.5px] bg-brandRed/40" />
         
-        {/* Corner Brackets inside the ring */}
         <div className="absolute top-12 left-12 w-6 h-6 border-t border-l border-brandRed/60" />
         <div className="absolute top-12 right-12 w-6 h-6 border-t border-r border-brandRed/60" />
         <div className="absolute bottom-12 left-12 w-6 h-6 border-b border-l border-brandRed/60" />
@@ -85,7 +97,6 @@ export const ReconHUD: React.FC<{ reconStatus: string; authenticityScore?: numbe
            <div className="w-1 h-4 bg-brandYellow/40" />
         </div>
         
-        {/* Dynamic Status */}
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 px-10 py-3 bg-brandCharcoal/95 rounded-sm backdrop-blur-xl border border-brandRed/40 shadow-2xl">
           <div className="text-[11px] font-black uppercase text-brandRed tracking-[0.5em] animate-pulse drop-shadow-[0_0_10px_rgba(204,0,1,0.9)]">
             {displayStatus}
@@ -110,6 +121,9 @@ export const FilterHUD: React.FC<{ filterStatus: string }> = ({ filterStatus }) 
       {filterStatus}
     </div>
     <div className="h-[1px] w-full bg-white/20" />
-    <div className="text-[6px] font-black text-white/40 uppercase tracking-widest italic">SPECTRAL_ENGINE_ENGAGED</div>
+    <div className="text-[6px] font-black text-white/40 uppercase tracking-widest italic flex items-center gap-2">
+      <div className="w-1 h-1 bg-white rounded-full animate-ping" />
+      SPECTRAL_ENGINE_ENGAGED
+    </div>
   </div>
 );

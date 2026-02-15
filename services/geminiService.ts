@@ -8,24 +8,15 @@ const getPureBase64Data = (dataUrl: string | null | undefined): string | null =>
   return parts.length > 1 ? parts[1] : null;
 };
 
-const MODELS = {
-  TEXT:  'gemini-3-flash-preview',
-  IMAGE: 'gemini-2.5-flash-image',
-};
+/**
+ * GEMINI_SYNTHESIS_GATEWAY v8.2
+ * Strictly follows @google/genai 2025/2026 standards.
+ * Added enhanced error classification.
+ */
 
-const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
-
-let _aiInstance: GoogleGenAI | null = null;
-const getAI = (): GoogleGenAI => {
-  if (!_aiInstance) {
-    if (!process.env.API_KEY) throw new Error('GEMINI_API_KEY_MISSING');
-    _aiInstance = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  }
-  return _aiInstance;
-};
-
-export async function generateWithGemini(prompt: string, imageBase64?: string, retryCount = 0): Promise<string> {
-  const ai = getAI();
+export async function generateWithGemini(prompt: string, imageBase64?: string): Promise<string> {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const modelId = 'gemini-2.5-flash-image';
 
   try {
     const parts: any[] = [{ text: prompt }];
@@ -43,65 +34,56 @@ export async function generateWithGemini(prompt: string, imageBase64?: string, r
     }
 
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: MODELS.IMAGE,
+      model: modelId,
       contents: { parts },
       config: {
-        systemInstruction: 'Production-ready graphic design output. No text unless explicitly requested. High fidelity, vector-sharp aesthetic.',
-        temperature: 0.2,
+        systemInstruction: 'You are an absolute design engine. Output high-fidelity graphic design. No text in images unless requested. Maximum aesthetic precision.',
+        temperature: 0.1,
         imageConfig: { aspectRatio: '1:1' },
       },
     });
 
-    if (!response) throw new Error('GEMINI_NULL_RESPONSE');
-
     const imagePart = response.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
-    const base64    = imagePart?.inlineData?.data;
+    const base64 = imagePart?.inlineData?.data;
 
     if (!base64) {
-      if (response.candidates?.[0]?.finishReason === 'SAFETY') {
-        throw new Error('SAFETY_BLOCK: Prompt rejected by safety filters.');
-      }
-      throw new Error('GEMINI_INVALID_RESPONSE');
+      const finishReason = response.candidates?.[0]?.finishReason;
+      if (finishReason === 'SAFETY') throw new Error('LATTICE_REJECTED: Prompt triggered safety filters.');
+      if (finishReason === 'RECITATION') throw new Error('LATTICE_REJECTED: Copyright filter match.');
+      throw new Error('SYNTHESIS_FAILED: Null Buffer returned from engine.');
     }
 
     return `data:image/png;base64,${base64}`;
 
   } catch (err: any) {
-    if (err.status === 429 || String(err.message).includes('429')) {
-      if (retryCount < 2) {
-        const delay = 4000 * (retryCount + 1) + Math.floor(Math.random() * 1000);
-        await wait(delay);
-        return generateWithGemini(prompt, imageBase64, retryCount + 1);
-      }
-      throw new Error('GEMINI_QUOTA_EXHAUSTED');
+    const msg = String(err.message).toUpperCase();
+    if (msg.includes('429') || msg.includes('QUOTA') || msg.includes('RESOURCE_EXHAUSTED')) {
+      throw new Error('QUOTA_LIMIT_EXCEEDED: Your Gemini free-tier requests are temporarily exhausted.');
     }
-    throw new Error(`GEMINI_ERROR: ${err.message || 'Unknown'}`);
+    if (msg.includes('API_KEY_INVALID') || msg.includes('403') || msg.includes('AUTHENTICATION')) {
+      throw new Error('API_KEY_INVALID: The project credentials have expired or are incorrect.');
+    }
+    throw new Error(`GEMINI_GATEWAY_ERROR: ${err.message}`);
   }
 }
 
-/**
- * VISION_BRIDGE_PROTOCOL:
- * Converts a source image into a high-density textual description for text-only engines (Flux).
- */
 export async function describeImage(imageBase64: string): Promise<string> {
-  const ai = getAI();
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const dataOnly = getPureBase64Data(imageBase64);
-  if (!dataOnly) throw new Error('INVALID_IMAGE_DATA');
+  if (!dataOnly) throw new Error('INVALID_BUFFER');
 
   try {
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: MODELS.TEXT,
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
       contents: {
         parts: [
           { inlineData: { mimeType: 'image/jpeg', data: dataOnly } },
-          { text: "Deconstruct this image for a synthesis engine. Describe the subject, composition, key colors, and stylistic markers in high detail. Do not use conversational language. Output a single descriptive paragraph." }
+          { text: "ANALYZE: Style, color, geometry, and layout. Avoid subject descriptions. One dense design-focused paragraph." }
         ]
       },
-      config: { temperature: 0.2 },
     });
-    return response.text || "A visual graphic.";
+    return response.text || "Generic visual lattice.";
   } catch (err) {
-    console.error("[GEMINI_SERVICE] DESCRIBE_IMAGE_FAILED:", err);
     throw err;
   }
 }
@@ -113,11 +95,11 @@ export async function refineTextPrompt(
   dna?: ExtractionResult
 ): Promise<string> {
   try {
-    const ai = getAI();
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: MODELS.TEXT,
-      contents: `Refine for ${mode}: "${prompt}". High density visual description, under 30 words. Output string only, no chat.`,
-      config: { temperature: 0.7 },
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `REFINED_SYNTAX for ${mode}: "${prompt}". High density, visual only, <30 words.`,
+      config: { temperature: 0.8 },
     });
     return response.text?.replace(/"/g, '') || prompt;
   } catch {
@@ -130,21 +112,21 @@ export async function extractStyleFromImage(
   config: KernelConfig,
   prompt: string
 ): Promise<ExtractionResult> {
-  const ai = getAI();
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const dataOnly = getPureBase64Data(base64Image);
-  if (!dataOnly) throw new Error('INVALID_IMAGE_DATA');
+  if (!dataOnly) throw new Error('INVALID_BUFFER');
 
   try {
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: MODELS.TEXT,
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
       contents: { parts: [{ inlineData: { mimeType: 'image/jpeg', data: dataOnly } }, { text: prompt }] },
-      config: { responseMimeType: 'application/json' },
+      config: { 
+        responseMimeType: 'application/json',
+        systemInstruction: "You are a forensic design analyst. Output valid JSON only."
+      },
     });
     return JSON.parse(response.text || '{}');
   } catch (error: any) {
-    if (String(error).includes('429') || String(error).includes('limit')) {
-      throw new Error('DAILY_LIMIT_REACHED');
-    }
     throw error;
   }
 }
@@ -155,10 +137,10 @@ export async function classifyStyleWithAI(
   config: KernelConfig
 ): Promise<{ category: StyleCategory; confidence: number; recommendedPanel: PanelMode }> {
   try {
-    const ai = getAI();
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: MODELS.TEXT,
-      contents: `Classify this design style: "${description}". Features: ${JSON.stringify(features)}`,
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `CLASSIFY: "${description}". DNA: ${JSON.stringify(features)}`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {

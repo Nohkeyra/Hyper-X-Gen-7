@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { PanelMode, PresetCategory, PresetItem, Preset } from '../types.ts';
 
@@ -43,7 +44,8 @@ export const PresetCarousel: React.FC<PresetCarouselProps> = ({ categories, acti
                 const inactiveIconBg = getIconColor(item);
                 
                 const activeCardBg = 'bg-brandBlue border-brandYellow text-brandYellow shadow-[4px_4px_0px_0px_rgba(0,50,160,0.2)] dark:bg-black dark:border-brandYellow dark:text-brandYellow dark:shadow-neon-yellow';
-                const inactiveCardBg = 'bg-brandDeep text-brandCharcoal dark:bg-brandDeep dark:text-white/60 border-brandYellow/10 dark:border-brandYellow/10 hover:border-brandBlue/30 dark:hover:border-white/30';
+                // Updated inactiveCardBg for better visibility in dark mode
+                const inactiveCardBg = 'bg-brandDeep text-brandCharcoal dark:bg-white/10 dark:text-white/80 dark:border-white/20 dark:hover:bg-white/20 dark:hover:border-white/30';
 
                 return (
                   <button 

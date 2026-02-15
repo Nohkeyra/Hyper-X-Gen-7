@@ -1,13 +1,17 @@
+
 import { generateWithFlux } from './fluxService.ts';
 import { generateWithGemini, describeImage } from './geminiService.ts';
 import { PanelMode, ExtractionResult, KernelConfig, ImageEngine, GenerationResult } from '../types.ts';
 
 /**
- * OMEGA IMAGE ORCHESTRATOR v2.5 (ERROR PRIORITY PATCH)
+ * OMEGA IMAGE ORCHESTRATOR v2.6 (RESILIENCE PATCH)
  * 
  * Routes synthesis to the engine defined in KernelConfig.imageEngine.
  * - Gemini: Multimodal native.
  * - Flux (HF): Text-to-Image via Vision Bridge.
+ * 
+ * PATCH V2.6: Hardened catch-blocks for network-level failures to ensure
+ * reliable fallback to Gemini native kernel.
  */
 
 export async function generateImage(
@@ -17,62 +21,57 @@ export async function generateImage(
 ): Promise<GenerationResult> {
   const engine = config?.imageEngine ?? ImageEngine.GEMINI;
 
-  // --- GEMINI NATIVE PATH (Multimodal) ---
+  // --- GEMINI NATIVE PATH ---
   if (engine === ImageEngine.GEMINI) {
     const imageUrl = await generateWithGemini(prompt, image);
     return { imageUrl, engineUsed: ImageEngine.GEMINI, fallbackTriggered: false };
   }
 
-  // --- HF / FLUX OMEGA PATH (Text-to-Image) ---
+  // --- HF / FLUX OMEGA PATH ---
   try {
-    // 1. Sanitize Prompt: Flux hates "SYSTEM_MODE:" and technical directives.
     let cleanPrompt = prompt
       .replace(/SYSTEM_MODE: \w+/g, '')
       .replace(/\[DIRECTIVE:.*?\]/g, '')
-      .replace(/ARTISTIC_DNA:.*$/, '') // Remove raw DNA append, it's too technical
+      .replace(/ARTISTIC_DNA:.*$/, '')
       .replace(/\s+/g, ' ')
       .trim();
 
-    // 2. Vision Bridge: If image exists, describe it to Flux.
     if (image) {
-      console.log("[ORCHESTRATOR] INITIATING_VISION_BRIDGE: Deconstructing source image for Flux engine...");
       try {
         const visualDescription = await describeImage(image);
-        cleanPrompt = `Create a high-fidelity image with exactly this composition: ${visualDescription}. \n\nStyle Application: ${cleanPrompt}. \n\nEnsure exact layout match.`;
+        cleanPrompt = `Visual Reference: ${visualDescription}. Style: ${cleanPrompt}. Ensure perfect structural alignment.`;
       } catch (visionErr) {
-        console.warn("[ORCHESTRATOR] VISION_BRIDGE_FAILED: Falling back to user prompt only.", visionErr);
-        cleanPrompt = `${cleanPrompt} (Note: Source image analysis failed, generating from text only)`;
+        console.warn("[ORCHESTRATOR] VISION_BRIDGE_FAILED:", visionErr);
       }
     }
 
     const imageUrl = await generateWithFlux(cleanPrompt);
     return { imageUrl, engineUsed: ImageEngine.HF, fallbackTriggered: false };
-  } catch (err: any) {
-    // 3. Fallback Protocol
-    const isFluxFailure = 
-      ['HF_KEY', 'FLUX_', 'TIMEOUT'].some(k => err.message.includes(k)) ||
-      String(err.message).startsWith('FLUX_');
 
-    if (isFluxFailure) {
-      console.warn(`[ORCHESTRATOR] PRIMARY_ENGINE_FAILURE: ${err.message}. Transitioning to Gemini fallback kernel...`);
+  } catch (err: any) {
+    // DETECT ENGINE FAILURE SIGNATURES
+    const isEngineUnreachable = 
+      err.message.includes('CONNECTION_BLOCKED') || 
+      err.message.includes('KEY_INVALID') || 
+      err.message.includes('TIMEOUT') ||
+      err.message.includes('Failed to fetch') ||
+      err.message.includes('HF_KEY_MISSING'); // <--- ADDED: Explicitly catch missing HF key for fallback
+
+    if (isEngineUnreachable || String(err.message).startsWith('FLUX_')) {
+      console.warn(`[ORCHESTRATOR] ENGINE_DRIFT_DETECTED: ${err.message}. Initiating Gemini Fallback...`);
+      
       try {
         const imageUrl = await generateWithGemini(prompt, image);
         return { imageUrl, engineUsed: ImageEngine.GEMINI, fallbackTriggered: true };
       } catch (geminiErr: any) {
-        // ERROR PRIORITY LOGIC:
-        // If Flux failed due to Key/Network, AND Gemini failed due to Quota,
-        // The user needs to know about the Flux failure first, as that was their intent.
-        
-        const fluxErrorMsg = err.message;
-        
-        if (geminiErr.message === 'GEMINI_QUOTA_EXHAUSTED') {
-           // Append the fallback failure as a footnote, but keep the main error Flux-related
-           throw new Error(`${fluxErrorMsg} (Fallback Gemini also exhausted).`);
-        }
-        
-        throw new Error(`SYSTEM_CRITICAL: ${fluxErrorMsg} -> ${geminiErr.message}`);
+        // Forensically report the root cause if fallback also fails
+        const rootCause = err.message;
+        const secondaryCause = geminiErr.message;
+        throw new Error(`SYST_COLLAPSE: [Primary: ${rootCause}] -> [Fallback: ${secondaryCause}]`);
       }
     }
+    
+    // Pass through other errors (e.g. user cancellations if implemented)
     throw err;
   }
 }
@@ -84,8 +83,6 @@ function buildCompositePrompt(
   extraDirectives?: string,
   dna?: ExtractionResult
 ): string {
-  // For Gemini, we pass the full technical context. 
-  // For Flux, the Orchestrator will strip the headers later.
   return [
     `SYSTEM_MODE: ${mode.toUpperCase()}`,
     prompt,
